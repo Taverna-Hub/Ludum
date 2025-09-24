@@ -1,0 +1,213 @@
+Domain Ludum {
+	Subdomain Social
+	Subdomain Financa
+	Subdomain Conteudo
+	Subdomain Review
+	Subdomain Mods
+	Subdomain Conta
+	Subdomain Jogo
+}
+
+ContextMap {
+	Subdomain Social
+	Subdomain Financa
+	Subdomain Conteudo
+	Subdomain Review
+	Subdomain Mods
+	Subdomain Conta
+	Subdomain Jogo
+
+	// Exemplo de compartilhamento de kernel
+	Conta Shared-Kernel Social
+	Jogo Shared-Kernel Conteudo
+	Jogo Shared-Kernel Review
+	Jogo Shared-Kernel Mods
+	Conta Shared-Kernel Financa
+}
+
+BoundedContext Conta implements Conta {
+	Aggregate Conta {
+		Entity Conta {
+			aggregateRoot
+
+			-ContaId id
+			String nomeUsuario
+			-Email email
+			String senha
+			TipoConta tipo
+			boolean ativa
+		}
+
+		ValueObject ContaId {
+			int id
+		}
+
+		ValueObject Email {
+            String email
+        }
+
+		Enum TipoConta {
+			JOGADOR
+			DESENVOLVEDORA
+		}
+	}
+}
+
+BoundedContext Social implements Social {
+	Aggregate Seguimento {
+		Entity Seguimento {
+			aggregateRoot
+
+			-SeguimentoId id
+			-ContaId seguidor
+			-ContaId seguido
+		}
+
+		ValueObject SeguimentoId {
+			int id
+		}
+	}
+
+    Aggregate Seguimento {
+        Entity Seguimento {
+            aggregateRoot
+
+            -SeguimentoId id
+            -ContaId seguidor
+            -ContaId seguido
+        }
+
+        ValueObject SeguimentoId {
+            int id
+        }
+    }
+}
+
+BoundedContext Jogo implements Jogo {
+	Aggregate Jogo {
+		Entity Jogo {
+			aggregateRoot
+
+			-JogoId id
+			String nome
+			String slug
+			-ContaId desenvolvedora
+			List<Tag> tags notEmpty
+			boolean publicado
+		}
+
+		ValueObject JogoId {
+			int id
+		}
+
+		ValueObject Tag {
+			String nome
+		}
+	}
+
+	Aggregate Biblioteca {
+		Entity Biblioteca {
+			aggregateRoot
+
+			-ContaId jogador
+			List<JogoId> jogos
+		}
+	}
+}
+
+BoundedContext Conteudo implements Conteudo {
+	Aggregate Post {
+		Entity Post {
+			aggregateRoot
+
+			-PostId id
+			-JogoId jogo
+			String texto
+			List<Midia> midias nullable
+			Date agendamento nullable
+		}
+
+		ValueObject PostId {
+			int id
+		}
+
+		ValueObject Midia {
+			String url
+			boolean segura
+		}
+	}
+}
+
+BoundedContext Review implements Review {
+	Aggregate Review {
+		Entity Review {
+			aggregateRoot
+
+			-ReviewId id
+			-JogoId jogo
+			-ContaId jogador
+			String texto
+			int nota
+		}
+
+		ValueObject ReviewId {
+			int id
+		}
+	}
+}
+
+BoundedContext Mods implements Mods {
+	Aggregate Mod {
+		Entity Mod {
+			aggregateRoot
+
+			-ModId id
+			-JogoId jogo
+			-ContaId criador
+			String titulo
+			String descricao
+			String versao
+			String arquivoUrl
+		}
+
+		ValueObject ModId {
+			int id
+		}
+	}
+}
+
+BoundedContext Financa implements Financa {
+	Aggregate Carteira {
+		Entity Carteira {
+			aggregateRoot
+
+			-ContaId dono
+			BigDecimal saldoDisponivel
+			BigDecimal saldoBloqueado
+		}
+	}
+
+	Aggregate Transacao {
+		Entity Transacao {
+			aggregateRoot
+
+			-TransacaoId id
+			-ContaId origem
+			-ContaId destino nullable
+			BigDecimal valor
+			TipoTransacao tipo
+			Date data
+		}
+
+		ValueObject TransacaoId {
+			int id
+		}
+
+		Enum TipoTransacao {
+			COMPRA
+			CROWDFUNDING
+			REEMBOLSO
+			SAQUE
+		}
+	}
+}

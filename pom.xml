@@ -18,7 +18,7 @@
         <module>frontend</module>
         <module>backend</module>
         <module>aplicacao</module>
-        <module>dominio</module>
+        <module>dominio-principal</module>
         <module>persistencia</module>
     </modules>
 </project>
