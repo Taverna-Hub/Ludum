@@ -1,213 +1,366 @@
 Domain Ludum {
-	Subdomain Social
-	Subdomain Financa
-	Subdomain Conteudo
-	Subdomain Review
-	Subdomain Mods
-	Subdomain Conta
-	Subdomain Jogo
+	Subdomain Identidade {
+		type = SUPPORTING_DOMAIN
+	}
+
+	Subdomain Catalogo {
+		type = CORE_DOMAIN
+	}
+
+	Subdomain Financeiro {
+		type = SUPPORTING_DOMAIN
+	}
+
+	Subdomain Comunidade {
+		type = SUPPORTING_DOMAIN
+	}
+
 }
 
-ContextMap {
-	Subdomain Social
-	Subdomain Financa
-	Subdomain Conteudo
-	Subdomain Review
-	Subdomain Mods
-	Subdomain Conta
-	Subdomain Jogo
-
-	// Exemplo de compartilhamento de kernel
-	Conta Shared-Kernel Social
-	Jogo Shared-Kernel Conteudo
-	Jogo Shared-Kernel Review
-	Jogo Shared-Kernel Mods
-	Conta Shared-Kernel Financa
-}
-
-BoundedContext Conta implements Conta {
+// Gerenciamento de contas, perfis (seguir, bloquear)
+BoundedContext IdentidadeEInteracaoContext implements Identidade {
 	Aggregate Conta {
-		Entity Conta {
-			aggregateRoot
-
-			-ContaId id
-			String nomeUsuario
-			-Email email
-			String senha
-			TipoConta tipo
-			boolean ativa
-		}
-
-		ValueObject ContaId {
-			int id
-		}
-
-		ValueObject Email {
-            String email
-        }
-
-		Enum TipoConta {
-			JOGADOR
-			DESENVOLVEDORA
-		}
+	Entity Conta {
+		aggregateRoot
+		-ContaId id
+		String nome
+		TipoConta tipo
+		StatusConta status
+		List<ContaId> seguidores
+		List<ContaId> seguindo
+		List<JogoId> jogosSeguidos
+		List<Tag> tagsSeguidas
+		List<ContaId> desenvolvedorasSeguidas
+		List<ContaId> bloqueios
 	}
+	Repository ContaRepository {
+      void salvar(@Conta conta);
+      @Conta obterPorId(@ContaId id);
 }
 
-BoundedContext Social implements Social {
-	Aggregate Seguimento {
-		Entity Seguimento {
-			aggregateRoot
+Service RelacionamentoService {
+      void seguirAlvo(@ContaId seguidorId, @AlvoId alvoId, @TipoAlvo tipoAlvo);
+      void deixarDeSeguirAlvo(@ContaId seguidorId, @AlvoId alvoId, @TipoAlvo tipoAlvo);
+      void bloquearConta(@ContaId bloqueadorId, @ContaId alvoId);
+    }
 
-			-SeguimentoId id
-			-ContaId seguidor
-			-ContaId seguido
-		}
+    ValueObject ContaId { String id }
+    ValueObject AlvoId { String id } // pode ser ContaId, JogoId,
+    enum TipoConta { JOGADOR, DESENVOLVEDORA }
+    enum StatusConta { ATIVA, INATIVA, BLOQUEADA }
+    enum TipoAlvo { CONTA, JOGO, TAG, DESENVOLVEDORA }
+  }
+}
 
-		ValueObject SeguimentoId {
-			int id
-		}
-	}
+// Upload, validação e publicação
+BoundedContext CatalogoDeJogosContext implements Catalogo {
 
-    Aggregate Seguimento {
-        Entity Seguimento {
-            aggregateRoot
+  Aggregate Jogo {
+    Entity Jogo {
+      aggregateRoot
 
-            -SeguimentoId id
-            -ContaId seguidor
-            -ContaId seguido
-        }
+      -JogoId id
+      -DesenvolvedoraId desenvolvedoraId
+      String titulo
+      Slug slug
+      String descricao
+      URL capaOficial
+      List<URL> screenshots
+      List<URL> videos
+      List<Tag> tags
+      boolean contemConteudoAdulto
+      StatusPublicacao status
+      Date dataDeLancamento
+    }
 
-        ValueObject SeguimentoId {
-            int id
-        }
+    Repository JogoRepository {
+      void salvar(@Jogo jogo);
+      @Jogo obterPorId(@JogoId id);
+      @Jogo obterPorSlug(@Slug slug);
+      boolean existeTituloParaDesenvolvedora(@DesenvolvedoraId devId, String titulo);
+    }
+
+    Service GestaoDeJogosService {
+      @Jogo processarUpload(@DesenvolvedoraId devId, @PacoteZip pacote, @Manifesto manifesto);
+      void publicarJogo(@JogoId jogoId);
+    }
+
+    ValueObject JogoId { String id }
+    ValueObject DesenvolvedoraId { String id } 
+    ValueObject Slug { String valor }
+    ValueObject Tag { String nome }
+    ValueObject PacoteZip { byte[] conteudo }
+    ValueObject Manifesto { String conteudo }
+
+    enum StatusPublicacao {
+      EM_UPLOAD,
+      AGUARDANDO_VALIDACAO,
+      PUBLICADO,
+      REJEITADO,
+      ARQUIVADO
+    }
+  }
+}
+
+// Aquisição, biblioteca do usuário e o acesso (download)
+BoundedContext AquisicaoEBibliotecaContext implements Catalogo {
+
+  Aggregate Biblioteca {
+    Entity Biblioteca {
+      aggregateRoot
+      -JogadorId jogadorId
+      List<ItemBiblioteca> itens
+    }
+    
+    Repository BibliotecaRepository {
+        @Biblioteca obterPorJogador(@JogadorId jogadorId);
+        void salvar(@Biblioteca biblioteca);
+    }
+
+    Service CompraService {
+      @Recibo comprarJogo(@JogadorId jogadorId, @JogoId jogoId, @Valor valorOfertado, @Saldo saldoParaAbater);
+      void solicitarReembolso(@JogadorId jogadorId, @AquisicaoId aquisicaoId);
+    }
+
+    Service AcessoService {
+      void autorizarDownload(@JogadorId jogadorId, @JogoId jogoId, @KeyDeAcesso key);
+      void registrarDownloadConcluido(@JogadorId jogadorId, @JogoId jogoId);
+    }
+
+    ValueObject JogadorId { String id } 
+    ValueObject JogoId { String id }
+    ValueObject AquisicaoId { String id }
+    ValueObject KeyDeAcesso { String codigo }
+    ValueObject Recibo {
+      -AquisicaoId aquisicaoId
+      Date data
+      Valor valorPago
+    }
+    ValueObject ItemBiblioteca {
+      -JogoId jogoId
+      Date dataAquisicao
+      ModeloDeAcesso modelo
+    }
+    
+    enum ModeloDeAcesso { GRATUITO, PAGO, ACESSO_ANTECIPADO_COM_KEY }
+  }
+}
+
+// Gestão da carteira, saldos, transações e saques
+BoundedContext FinanceiroContext implements Financeiro {
+  
+  Aggregate Carteira {
+    Entity Carteira {
+      aggregateRoot
+      -ContaId contaId
+      Saldo saldo
+      List<Transacao> historico
+    }
+    
+    Repository CarteiraRepository {
+      @Carteira obterPorContaId(@ContaId contaId);
+      void salvar(@Carteira carteira);
+    }
+    
+    Service OperacoesFinanceirasService {
+      void adicionarSaldo(@ContaId contaId, @Valor valor);
+      void processarConfirmacaoPagamento(@TransacaoId transacaoId);
+      void solicitarSaque(@ContaId contaId, @Valor valor);
+      void liberarSaldoDeVenda(@TransacaoId transacaoId);
+      void liberarSaldoDeCrowdfunding(@CampanhaId campanhaId);
+      void estornarParaCarteira(@ContaId contaId, @Valor valor, String motivo);
+    }
+    
+    ValueObject ContaId { String id }
+    ValueObject TransacaoId { String id }
+    ValueObject CampanhaId { String id }
+
+    ValueObject Saldo {
+      double disponivel
+      double bloqueado
+    }
+    
+    Entity Transacao {
+      -TransacaoId id
+      TipoTransacao tipo
+      StatusTransacao status
+      Date data
+      Valor valor
+    }
+    
+    enum TipoTransacao { CREDITO, DEBITO_COMPRA, SAQUE, ESTORNO, CONTRIBUICAO_CROWDFUNDING }
+    enum StatusTransacao { PENDENTE, CONFIRMADA, BLOQUEADA, CANCELADA }
+  }
+}
+
+// Financiamento coletivo (Crowdfunding)
+BoundedContext CrowdfundingContext implements Financeiro {
+    
+    Aggregate Campanha {
+      Entity Campanha {
+        aggregateRoot
+        -CampanhaId id
+        -JogoId jogoId
+        -DesenvolvedoraId desenvolvedoraId
+        MetaFinanceira meta
+        double valorArrecadado
+        Date dataInicio
+        Date dataFim
+        StatusCampanha status
+        List<Apoio> apoios
+      }
+      
+      Repository CampanhaRepository {
+        @Campanha obterPorId(@CampanhaId id);
+        void salvar(@Campanha campanha);
+      }
+      
+      Service GestaoDeCampanhasService {
+        @Campanha criarCampanha(@DesenvolvedoraId devId, @JogoId jogoId, @MetaFinanceira meta, Date inicio, Date fim);
+        @Apoio contribuir(@JogadorId apoiadorId, @CampanhaId campanhaId, @Valor valor);
+        void solicitarReembolsoApoio(@ApoioId apoioId);
+        void finalizarCampanha(@CampanhaId campanhaId); 
+      }
+      
+      ValueObject CampanhaId { String id }
+      ValueObject JogoId { String id }
+      ValueObject DesenvolvedoraId { String id }
+      ValueObject JogadorId { String id }
+      ValueObject ApoioId { String id }
+      
+      ValueObject MetaFinanceira {
+        double minima
+        double desejada
+      }
+      
+      Entity Apoio {
+        -ApoioId id
+        -JogadorId apoiadorId
+        Valor valor
+        Date data
+        StatusApoio status
+      }
+      
+      enum StatusCampanha { PLANEJADA, ATIVA, BEM_SUCEDIDA, FRACASSADA, CANCELADA }
+      enum StatusApoio { CONFIRMADO, REEMBOLSADO }
     }
 }
 
-BoundedContext Jogo implements Jogo {
-	Aggregate Jogo {
-		Entity Jogo {
-			aggregateRoot
+// Interações da comunidade: posts e reviews
+BoundedContext EngajamentoComunitarioContext implements Comunidade {
 
-			-JogoId id
-			String nome
-			String slug
-			-ContaId desenvolvedora
-			List<Tag> tags notEmpty
-			boolean publicado
-		}
+  Aggregate Post {
+    Entity Post {
+      aggregateRoot
+      -PostId id
+      -JogoId jogoId
+      -AutorId autorId 
+      String texto
+      Midia midiaOpcional
+      StatusPost status
+      Date dataPublicacao
+      Date dataAgendamento
+    }
+    
+    Repository PostRepository {
+      void salvar(@Post post);
+      @Post obterPorId(@PostId id);
+    }
+    
+    Service PostService {
+      @Post criarPost(@AutorId autorId, @JogoId jogoId, String texto, @Midia midia);
+      void agendarPost(@PostId postId, Date dataAgendamento);
+    }
+    
+    ValueObject PostId { String id }
+    ValueObject Midia {
+      TipoMidia tipo
+      URL url
+      boolean requerVerificacaoConteudoAdulto
+    }
+    enum StatusPost { RASCUNHO, AGENDADO, PUBLICADO, FALHA_NO_AGENDAMENTO }
+    enum TipoMidia { IMAGEM, VIDEO }
+  }
 
-		ValueObject JogoId {
-			int id
-		}
-
-		ValueObject Tag {
-			String nome
-		}
-	}
-
-	Aggregate Biblioteca {
-		Entity Biblioteca {
-			aggregateRoot
-
-			-ContaId jogador
-			List<JogoId> jogos
-		}
-	}
+  Aggregate Review {
+    Entity Review {
+      aggregateRoot
+      -ReviewId id
+      -JogoId jogoId
+      -AutorId autorId 
+      int nota 
+      String comentario
+      boolean recomenda
+      Date dataCriacao
+      Date dataUltimaEdicao
+    }
+    
+    Repository ReviewRepository {
+      @Review obterReviewPorJogoEAutor(@JogoId jogoId, @AutorId autorId);
+      void salvar(@Review review);
+    }
+    
+    Service ReviewService {
+      @Review publicarReview(@AutorId autorId, @JogoId jogoId, int nota, String comentario, boolean recomenda);
+      @Review editarReview(@ReviewId reviewId, int novaNota, String novoComentario, boolean novaRecomendacao);
+    }
+    
+    ValueObject ReviewId { String id }
+    ValueObject JogoId { String id }
+    ValueObject AutorId { String id }
+  }
 }
 
-BoundedContext Conteudo implements Conteudo {
-	Aggregate Post {
-		Entity Post {
-			aggregateRoot
-
-			-PostId id
-			-JogoId jogo
-			String texto
-			List<Midia> midias nullable
-			Date agendamento nullable
-		}
-
-		ValueObject PostId {
-			int id
-		}
-
-		ValueObject Midia {
-			String url
-			boolean segura
-		}
-	}
-}
-
-BoundedContext Review implements Review {
-	Aggregate Review {
-		Entity Review {
-			aggregateRoot
-
-			-ReviewId id
-			-JogoId jogo
-			-ContaId jogador
-			String texto
-			int nota
-		}
-
-		ValueObject ReviewId {
-			int id
-		}
-	}
-}
-
-BoundedContext Mods implements Mods {
-	Aggregate Mod {
-		Entity Mod {
-			aggregateRoot
-
-			-ModId id
-			-JogoId jogo
-			-ContaId criador
-			String titulo
-			String descricao
-			String versao
-			String arquivoUrl
-		}
-
-		ValueObject ModId {
-			int id
-		}
-	}
-}
-
-BoundedContext Financa implements Financa {
-	Aggregate Carteira {
-		Entity Carteira {
-			aggregateRoot
-
-			-ContaId dono
-			BigDecimal saldoDisponivel
-			BigDecimal saldoBloqueado
-		}
-	}
-
-	Aggregate Transacao {
-		Entity Transacao {
-			aggregateRoot
-
-			-TransacaoId id
-			-ContaId origem
-			-ContaId destino nullable
-			BigDecimal valor
-			TipoTransacao tipo
-			Date data
-		}
-
-		ValueObject TransacaoId {
-			int id
-		}
-
-		Enum TipoTransacao {
-			COMPRA
-			CROWDFUNDING
-			REEMBOLSO
-			SAQUE
-		}
-	}
+// Oficina de Mods
+BoundedContext OficinaDeModsContext implements Comunidade {
+    
+    Aggregate Mod {
+      Entity Mod {
+        aggregateRoot
+        -ModId id
+        -JogoId jogoAssociado
+        -AutorId autorId 
+        String nome
+        String descricao
+        List<VersaoMod> versoes
+        List<AvaliacaoMod> avaliacoes
+        List<JogadorId> inscritos
+      }
+      
+      Repository ModRepository {
+        void salvar(@Mod mod);
+        @Mod obterPorId(@ModId id);
+      }
+      
+      Service GestaoDeModsService {
+        @Mod submeterNovoMod(@AutorId autorId, @JogoId jogoId, String nome, String descricao, @ArquivoMod arquivo);
+        @VersaoMod publicarNovaVersao(@ModId modId, String notasDaVersao, @ArquivoMod arquivo);
+        void removerMod(@ModId modId, @DesenvolvedoraId devId); 
+        void avaliarMod(@ModId modId, @JogadorId jogadorId, int nota);
+      }
+      
+      Service InscricaoService {
+        void inscreverEmMod(@JogadorId jogadorId, @ModId modId);
+        void desinscreverDeMod(@JogadorId jogadorId, @ModId modId);
+      }
+      
+      Entity VersaoMod {
+        -VersaoId id
+        String notasDaVersao
+        Date dataPublicacao
+        URL urlDownload
+      }
+      
+      ValueObject ModId { String id }
+      ValueObject JogoId { String id }
+      ValueObject AutorId { String id }
+      ValueObject JogadorId { String id }
+      ValueObject DesenvolvedoraId { String id }
+      ValueObject VersaoId { String id }
+      ValueObject ArquivoMod { byte[] conteudo }
+      ValueObject AvaliacaoMod {
+        -JogadorId jogadorId
+        int nota 
+      }
+    }
 }
