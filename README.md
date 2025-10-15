@@ -130,15 +130,14 @@ Permite adicionar e sacar saldo, com histórico de transações e regras de segu
 #### Mapa de Histórias
 <a href="https://github.com/Taverna-Hub/Ludum/blob/main/entregaveis/mapa/mapa-usuario.svg">
     <img
-        src="https://github.com/Taverna-Hub/Ludum/blob/main/entregaveis/mapa/mapa-usuario.svg"
+        src="https://github.com/Taverna-Hub/Ludum/raw/main/entregaveis/mapa/mapa-usuario.svg"
         alt="Mapa de Histórias"
         width="100%"
     >
 
 ### Links
- ---
- # Adicionar ainda!
-
+ desc. dominio
+---
 <a name="equipe"></a>
 
 ### 👥 Nossa Equipe
