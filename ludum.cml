@@ -9,15 +9,19 @@ Domain Ludum {
   Subdomain Identidade {
     type = SUPPORTING_DOMAIN
   }
+
   Subdomain Catalogo {
     type = CORE_DOMAIN
   }
+
   Subdomain Financeiro {
     type = SUPPORTING_DOMAIN
   }
+
   Subdomain Comunidade {
     type = SUPPORTING_DOMAIN
   }
+
 }
 
 // ================================================================================
@@ -25,21 +29,17 @@ Domain Ludum {
 // Gerencia contas, perfis e as relações sociais (seguir, bloquear).
 // ================================================================================
 BoundedContext IdentidadeEInteracaoContext implements Identidade {
-
-  Aggregate Conta {
-    Entity Conta {
-		aggregateRoot
-		-ContaId id
-		String nome
-		String senha_hash // Armazenar hash, não a senha
-		-TipoConta tipo
-		-StatusConta status
-
-      	void publicarJogo(JogoId jogoId);
-
-	}
-
-    Repository ContaRepository {
+Aggregate Conta {
+  Entity Conta {
+  aggregateRoot
+  -ContaId id
+  String nome
+  String senha_hash // Armazenar hash, não a senha
+  -TipoConta tipo
+  -StatusConta status
+  void publicarJogo(JogoId jogoId);
+}
+Repository ContaRepository {
       void salvar(Conta conta);
       Conta obterPorId(ContaId id);
     }
@@ -98,44 +98,41 @@ BoundedContext IdentidadeEInteracaoContext implements Identidade {
 // Gerencia o ciclo de vida dos jogos: upload, validação e publicação.
 // ================================================================================
 BoundedContext CatalogoDeJogosContext implements Catalogo {
-
   Aggregate Jogo {
-    Entity Jogo {
-      -JogoId id
-      -ContaId desenvolvedoraId
-      -Slug slug
-      URL capaOficial
-      -StatusPublicacao status
-      String titulo
-      String descricao
-      List<URL> screenshots
-      List<URL> videos
-      List<Tag> tags
-      boolean isNSFW
-      Date dataDeLancamento
-
-	  Slug montarSlug(String titulo);
-	  
-    }
-
-	Entity Vercao{
-		-vercaoId id
-		-JogoId jogoId
-		-PacoteZip
+  Entity Jogo {
+    -JogoId id
+    -ContaId desenvolvedoraId
+    -Slug slug
+    URL capaOficial
+    -StatusPublicacao status
+    String titulo
+    String descricao
+    List<URL> screenshots
+    List<URL> videos
+    List<Tag> tags
+    boolean isNSFW
+    Date dataDeLancamento
+    Slug montarSlug(
+    String titulo);
+  }
+  Entity Vercao{
+    -vercaoId id
+    -JogoId jogoId
+    -PacoteZip
 		String nomeVercao
-
-	}
-
-    Repository JogoRepository {
+  }
+  Repository JogoRepository {
       void salvar(@Jogo jogo);
       Jogo obterPorId(@JogoId id);
       Jogo obterPorSlug(@Slug slug);
       boolean existeSlugParaDesenvolvedora(@ContaId devId, @JogoId jogo);
+}
+
+Service GestaoDeJogosService {
+      Vercao processarUpload(ContaId devId, PacoteZip pacote, @JogoId id);
+      boolean verificarMalware(PacoteZip pacote);
     }
 
-    Service GestaoDeJogosService {
-      Vercao processarUpload(ContaId devId, PacoteZip pacote, @JogoId id);
-    }
     ValueObject JogoId { String id }
     ValueObject Slug { String valor }
     ValueObject Tag { String nome }
