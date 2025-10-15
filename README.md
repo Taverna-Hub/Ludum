@@ -146,4 +146,4 @@ Permite adicionar e sacar saldo, com histórico de transações e regras de segu
 
  | [<img src="https://github.com/deadcube04.png" width="100" style="border-radius:50%"><br>Gabriel Melo](https://github.com/deadcube04) | [<img src="https://github.com/Pandor4b.png" width="100" style="border-radius:50%"><br>Ana Clara](https://github.com/Pandor4b) | [<img src="https://github.com/luankat0.png" width="100" style="border-radius:50%"><br>Luan Kato](https://github.com/luankat0) | [<img src="https://github.com/Sophia-15.png" width="100" style="border-radius:50%"><br>Sophia Gallindo](https://github.com/Sophia-15) | [<img src="https://github.com/MathhAraujo.png" width="100" style="border-radius:50%"><br>Matheus Araújo](https://github.com/MathhAraujo) |
  | :---: | :---: | :---: | :---: | :---: |
- | 📧 gmca@cesar.school | 📧 acgs@cesar.school | 📧 lhk@cesar.school | 📧 sagp@cesar.school | mhma@cesar.school |
+ | 📧 gmca@cesar.school | 📧 acgs@cesar.school | 📧 lhk@cesar.school | 📧 sagp@cesar.school | 📧 mhma@cesar.school |
