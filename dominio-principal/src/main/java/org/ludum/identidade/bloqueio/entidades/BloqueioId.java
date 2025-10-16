@@ -1,4 +1,4 @@
-package org.ludum.bloqueio.entidades;
+package org.ludum.identidade.bloqueio.entidades;
 
 import java.util.Objects;
 

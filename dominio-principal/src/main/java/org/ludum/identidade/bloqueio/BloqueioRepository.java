@@ -1,8 +1,7 @@
-package org.ludum.bloqueio;
+package org.ludum.identidade.bloqueio;
 
-import org.ludum.bloqueio.entidades.Bloqueio;
-import org.ludum.bloqueio.entidades.BloqueioId;
-import org.ludum.conta.entidades.ContaId;
+import org.ludum.identidade.bloqueio.entidades.Bloqueio;
+import org.ludum.identidade.conta.entidades.ContaId;
 
 import java.util.Optional;
 
