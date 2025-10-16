@@ -49,6 +49,8 @@ public class RelacionamentoService {
 
         switch (tipoAlvo) {
             case CONTA:
+                ContaId alvoContaId = new ContaId(alvoId.getValue());
+
                 // Verificar se o usuário alvo existe
                 Conta alvoConta = contaRepository.obterPorId(alvoContaId);
                 if (alvoConta == null) {
@@ -56,13 +58,12 @@ public class RelacionamentoService {
                 }
 
                 // Usuários bloqueados não podem seguir quem bloqueou
-                ContaId alvoContaId = new ContaId(alvoId.getValue());
 
-                if (bloqueioRepository.verificarBloqueio(alvoContaId, seguidorId)) {
+                if (bloqueioRepository.buscar(alvoContaId, seguidorId).isPresent()) {
                     throw new IllegalArgumentException("Você está bloqueado por este usuário.");
                 }
 
-                if (bloqueioRepository.verificarBloqueio(seguidorId, alvoContaId)) {
+                if (bloqueioRepository.buscar(seguidorId, alvoContaId).isPresent()) {
                     throw new IllegalArgumentException("Você bloqueou este usuário.");
                 }
                 break;
@@ -109,7 +110,7 @@ public class RelacionamentoService {
         }
 
         // Verificar se já existe bloqueio
-        if (bloqueioRepository.verificarBloqueio(bloqueadorId, alvoId)) {
+        if (bloqueioRepository.buscar(bloqueadorId, alvoId).isPresent()) {
             throw new IllegalArgumentException("Você já bloqueou este usuário.");
         }
 
@@ -124,5 +125,8 @@ public class RelacionamentoService {
         
         AlvoId bloqueadorSeguimentoId = new AlvoId(bloqueadorId.getValue());
         seguimentoRepository.obter(alvoId, bloqueadorSeguimentoId).ifPresent(seguimentoRepository::remover);
+    }
+    public void desbloquearConta(ContaId bloqueadorId, ContaId alvoId) {
+        bloqueioRepository.buscar(bloqueadorId, alvoId).ifPresent(bloqueioRepository::remover);
     }
 }

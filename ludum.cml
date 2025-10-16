@@ -82,7 +82,7 @@ Repository ContaRepository {
     Repository BloqueioRepository {
       void salvar(Bloqueio bloqueio);
       void remover(Bloqueio bloqueio);
-      boolean verificarBloqueio(ContaId bloqueadorId, ContaId alvoId);
+      Bloqueio buscar(ContaId bloqueadorId, ContaId alvoId);
     }
     BloqueioId { String id }
   }
@@ -92,6 +92,7 @@ Repository ContaRepository {
     void seguirAlvo(ContaId seguidorId, AlvoId alvoId, TipoAlvo tipoAlvo);
     void deixarDeSeguirAlvo(ContaId seguidorId, AlvoId alvoId);
     void bloquearConta(ContaId bloqueadorId, ContaId alvoId);
+    void desbloquearConta(ContaId bloqueadorId, ContaId alvoId);
   }
 }
 
