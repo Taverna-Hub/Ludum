@@ -22,13 +22,20 @@ Domain Ludum {
     type = SUPPORTING_DOMAIN
   }
 
+  Subdomain Crowdfunding {
+    type = SUPPORTING_DOMAIN
+  }
+
+  Subdomain OficinaDeMods {
+    type = SUPPORTING_DOMAIN
+  }
 }
 
 // ================================================================================
-// CONTEXTO: IdentidadeEInteracaoContext
+// CONTEXTO: Identidade
 // Gerencia contas, perfis e as relações sociais (seguir, bloquear).
 // ================================================================================
-BoundedContext IdentidadeEInteracaoContext implements Identidade {
+BoundedContext Identidade implements Identidade {
 Aggregate Conta {
   Entity Conta {
   aggregateRoot
@@ -97,10 +104,10 @@ Repository ContaRepository {
 }
 
 // ================================================================================
-// CONTEXTO: CatalogoDeJogosContext
+// CONTEXTO: Catalogo
 // Gerencia o ciclo de vida dos jogos: upload, validação e publicação.
 // ================================================================================
-BoundedContext CatalogoDeJogosContext implements Catalogo {
+BoundedContext Catalogo implements Catalogo {
   Aggregate Jogo {
   Entity Jogo {
     -JogoId id
@@ -146,10 +153,10 @@ Service GestaoDeJogosService {
 ValueObject PacoteZip { byte[] conteudo }
 
 // ================================================================================
-// CONTEXTO: AquisicaoEBibliotecaContext
+// CONTEXTO: Catalogo
 // Gerencia a aquisição, a biblioteca do usuário e o acesso (download).
 // ================================================================================
-BoundedContext AquisicaoEBibliotecaContext implements Catalogo {
+BoundedContext Catalogo implements Catalogo {
 
   Aggregate Biblioteca {
     Entity Biblioteca {
@@ -181,10 +188,10 @@ BoundedContext AquisicaoEBibliotecaContext implements Catalogo {
 
 
 // ================================================================================
-// CONTEXTO: FinanceiroContext
+// CONTEXTO: Financeiro
 // Gestão da carteira, saldos, transações e saques.
 // ================================================================================
-BoundedContext FinanceiroContext implements Financeiro {
+BoundedContext Financeiro implements Financeiro {
   Aggregate Carteira {
     Entity Carteira {
 		aggregateRoot
@@ -249,10 +256,10 @@ BoundedContext FinanceiroContext implements Financeiro {
 }
 
 // ================================================================================
-// CONTEXTO: CrowdfundingContext
+// CONTEXTO: Crowdfunding
 // Gerencia o financiamento coletivo (Crowdfunding).
 // ================================================================================
-BoundedContext CrowdfundingContext implements Financeiro {
+BoundedContext Crowdfunding implements Crowdfunding {
   Aggregate Campanha {
     Entity Campanha {
       -CampanhaId id
@@ -310,10 +317,10 @@ BoundedContext CrowdfundingContext implements Financeiro {
 }
 
 // ================================================================================
-// CONTEXTO: EngajamentoComunitarioContext
+// CONTEXTO: Comunidade
 // Interações da comunidade: posts e reviews.
 // ================================================================================
-BoundedContext EngajamentoComunitarioContext implements Comunidade {
+BoundedContext Comunidade implements Comunidade {
   Aggregate Post {
     Entity Post {
       aggregateRoot
@@ -422,10 +429,10 @@ BoundedContext EngajamentoComunitarioContext implements Comunidade {
 }
 
 // ================================================================================
-// CONTEXTO: OficinaDeModsContext
+// CONTEXTO: OficinaDeMods
 // Gerencia a criação e o uso de Mods.
 // ================================================================================
-BoundedContext OficinaDeModsContext implements Comunidade {
+BoundedContext OficinaDeMods implements OficinaDeMods {
   Aggregate Mod {
     Entity Mod {
 		aggregateRoot
