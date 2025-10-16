@@ -42,7 +42,7 @@ public class RelacionamentoService {
 
         // Verificar se ainda não existe relação de seguimento entre eles
         if (seguimentoRepository.obter(seguidorId, alvoId).isPresent()) {
-            throw new IllegalArgumentException("Já existe um seguimento entre estes usuários.");
+            throw new IllegalArgumentException("Já existe um seguimento entre estas entidades.");
         }
 
        
@@ -56,9 +56,6 @@ public class RelacionamentoService {
                 if (alvoConta == null) {
                     throw new IllegalArgumentException("Usuário alvo não encontrado.");
                 }
-
-                // Usuários bloqueados não podem seguir quem bloqueou
-
                 if (bloqueioRepository.buscar(alvoContaId, seguidorId).isPresent()) {
                     throw new IllegalArgumentException("Você está bloqueado por este usuário.");
                 }
@@ -66,12 +63,27 @@ public class RelacionamentoService {
                 if (bloqueioRepository.buscar(seguidorId, alvoContaId).isPresent()) {
                     throw new IllegalArgumentException("Você bloqueou este usuário.");
                 }
+
                 break;
             case JOGO:
                 // TODO: Verificar se o jogo existe
                 break;
+                
             case DESENVOLVEDORA:
-                // TODO: Verificar se a desenvolvedora existe
+
+                Conta desenvolvedora = contaRepository.obterPorId(new ContaId(alvoId.getValue()));
+
+                if (desenvolvedora == null) {
+                    throw new IllegalArgumentException("Usuário alvo não encontrado.");
+                }
+
+                if (bloqueioRepository.buscar(desenvolvedora.getId(), seguidorId).isPresent()) {
+                    throw new IllegalArgumentException("Você está bloqueado por este usuário.");
+                }
+
+                if (bloqueioRepository.buscar(seguidorId, desenvolvedora.getId()).isPresent()) {
+                    throw new IllegalArgumentException("Você bloqueou este usuário.");
+                }
                 break;
             case TAG:
                 // TODO: Verificar se a tag seguida tem pelo menos 1 jogo atrelada a ela
