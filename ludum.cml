@@ -29,6 +29,7 @@ Domain Ludum {
   Subdomain OficinaDeMods {
     type = SUPPORTING_DOMAIN
   }
+
 }
 
 // ================================================================================
@@ -125,11 +126,11 @@ BoundedContext Catalogo implements Catalogo {
     Slug montarSlug(
     String titulo);
   }
-  Entity Vercao{
-    -vercaoId id
+  Entity Versao{
+    -versaoId id
     -JogoId jogoId
     -PacoteZip
-		String nomeVercao
+		String nomeVersao
   }
   Repository JogoRepository {
       void salvar(@Jogo jogo);
@@ -139,13 +140,25 @@ BoundedContext Catalogo implements Catalogo {
 }
 
 Service GestaoDeJogosService {
-      Vercao processarUpload(ContaId devId, PacoteZip pacote, @JogoId id);
+      Versao processarUpload(ContaId devId, PacoteZip pacote, @JogoId id);
       boolean verificarMalware(PacoteZip pacote);
     }
 
     ValueObject JogoId { String id }
     ValueObject Slug { String valor }
-    ValueObject Tag { String nome }
+
+    Entity Tag {
+      -TagId id
+      String nome
+    }
+
+    ValueObject TagId { String id }
+
+    Repository TagRepository {
+      Tag obterPorNome(String nome);
+      void salvar(Tag tag);
+    }
+
     enum StatusPublicacao { EM_UPLOAD, AGUARDANDO_VALIDACAO, PUBLICADO, REJEITADO, ARQUIVADO }
   }
 }
@@ -324,14 +337,17 @@ BoundedContext Comunidade implements Comunidade {
   Aggregate Post {
     Entity Post {
       aggregateRoot
-      -PostId id
+      -PostId postId
+      -JogoId jogoId
       -ContaId autorId
       String titulo
       String conteudo
       Date dataPublicacao
-	  URL Imagem
-	  -PostStatus status
-	  List<Tag> tags
+	    URL Imagem
+	    -PostStatus status
+	    List<Tag> tags
+      List<Comentario> comentarios;
+      List<Curtida> curtidas;
 
 
       void editarConteudo(String novoTitulo, String novoConteudo);
@@ -341,35 +357,35 @@ BoundedContext Comunidade implements Comunidade {
       void removerComentario(ComentarioId comentarioId, ContaId solicitanteId);
     }
 
-	ValueObject Tag{
-		String nome
-	}
-
 	enum PostStatus{ PUBLICADO, EM_RASCUNHO, AGENDADO }
 
-    Entity Comentario {
-      -ComentarioId id
-	  -PostId postId
-      -ContaId autorId
-      String texto
-      Date data
-
-      void editarTexto(String novoTexto);
-    }
-
-	Entity Curtida{
+  ValueObject Curtida{
 		-Post PostId
 		-Conta contaId
-
 	}
+
+  ValueObject PostId { String id }
+  ValueObject ComentarioId { String id }
+
+  Entity Comentario {
+    -ComentarioId id
+    -PostId postId
+    -ContaId autorId
+    String texto
+    Date data
+
+    void editarTexto(String novoTexto);
+  }
+
 
     Repository PostRepository {
       void salvar(Post post);
       Post obterPorId(PostId id);
+      void remover(Post post);
+      List<Post> obterTodosPosts();
       List<Post> obterPorAutor(ContaId autorId);
       List<Post> buscarPorTag(String tag);
-      void remover(Post post);
-	  List<Post> obterPorStatus(PostStatus);
+	    List<Post> obterPorStatus(PostStatus);
     }
 
     Service PostService {
@@ -378,12 +394,9 @@ BoundedContext Comunidade implements Comunidade {
       void curtirPost(@PostId postId, @ContaId contaId);
       void comentarPost(@PostId postId, @ContaId autorId, String texto);
       void removerPost(@PostId postId, @ContaId solicitanteId);
-	  void agendarPost(@PostId, Date dataDeAgendamento)
-	  void criarRascunho(@Post post, @ContaId contaId)
+	    void agendarPost(@PostId, Date dataDeAgendamento)
+	    void criarRascunho(@Post post, @ContaId contaId)
     }
-
-    ValueObject PostId { String id }
-    ValueObject ComentarioId { String id }
 
   }
 
