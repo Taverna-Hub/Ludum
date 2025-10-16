@@ -3,6 +3,8 @@ package org.ludum.conta.entidades;
 import org.ludum.conta.enums.StatusConta;
 import org.ludum.conta.enums.TipoConta;
 
+import java.util.Objects;
+
 public class Conta {
     private ContaId id;
     private String nome;
@@ -11,14 +13,16 @@ public class Conta {
     private StatusConta status;
 
     public Conta(ContaId id, String nome, String senhaHash, TipoConta tipo, StatusConta status) {
-        this.id = id;
-        this.nome = nome;
-        this.senhaHash = senhaHash;
-        this.tipo = tipo;
-        this.status = status;
+        this.id = Objects.requireNonNull(id);
+        this.nome = Objects.requireNonNull(nome);
+        this.senhaHash = Objects.requireNonNull(senhaHash);
+        this.tipo = Objects.requireNonNull(tipo);
+        this.status = Objects.requireNonNull(status);
     }
 
-    void publicarJogo(){    } // TODO
+    public void publicarJogo() {
+        // TODO: Implementar lógica de publicação de jogo
+    }
 
     public ContaId getId() {
         return id;
