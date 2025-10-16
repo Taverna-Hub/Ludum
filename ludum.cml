@@ -59,11 +59,6 @@ Repository ContaRepository {
 		-TipoAlvo tipoAlvo
     }
 
-    Service SeguimentoService {
-        void seguirAlvo(ContaId seguidorId, AlvoId seguidoId, TipoAlvo tipoAlvo);
-        void deixarDeSeguirAlvo(ContaId seguidorId, AlvoId seguidoId);
-    }
-
     Repository SeguimentoRepository {
 		void salvar(Seguimento seguimento);
 		void remover(Seguimento seguimento);
