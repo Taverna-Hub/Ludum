@@ -1,15 +1,17 @@
-package org.ludum.identidade.seguimento;
+package org.ludum.identidade.seguimento.services;
 
-import org.ludum.identidade.bloqueio.BloqueioRepository;
-import org.ludum.identidade.bloqueio.entidades.Bloqueio;
-import org.ludum.identidade.bloqueio.entidades.BloqueioId;
-import org.ludum.identidade.conta.ContaRepository;
-import org.ludum.identidade.conta.entidades.Conta;
-import org.ludum.identidade.conta.entidades.ContaId;
+import org.ludum.identidade.bloqueio.repositories.BloqueioRepository;
+import org.ludum.identidade.bloqueio.entities.Bloqueio;
+import org.ludum.identidade.bloqueio.entities.BloqueioId;
+import org.ludum.identidade.conta.repositories.ContaRepository;
+import org.ludum.identidade.conta.entities.Conta;
+import org.ludum.identidade.conta.entities.ContaId;
 import org.ludum.identidade.conta.enums.StatusConta;
-import org.ludum.identidade.seguimento.entidades.AlvoId;
-import org.ludum.identidade.seguimento.entidades.Seguimento;
-import org.ludum.identidade.seguimento.entidades.SeguimentoId;
+import org.ludum.identidade.seguimento.repositories.SeguimentoRepository;
+import org.ludum.identidade.seguimento.enums.TipoAlvo;
+import org.ludum.identidade.seguimento.entities.AlvoId;
+import org.ludum.identidade.seguimento.entities.Seguimento;
+import org.ludum.identidade.seguimento.entities.SeguimentoId;
 
 public class RelacionamentoService {
 

@@ -1,4 +1,4 @@
-package org.ludum.identidade.conta.entidades;
+package org.ludum.identidade.conta.entities;
 
 import org.ludum.identidade.conta.enums.StatusConta;
 import org.ludum.identidade.conta.enums.TipoConta;
