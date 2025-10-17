@@ -148,12 +148,19 @@ BoundedContext Catalogo implements Catalogo {
       -JogoId jogoId
       -PacoteZip
       String nomeVersao
+      String descricaoVersao
     }
 
     ValueObject VersaoId { String id }
   
+  Repository VersaoRepository {
+    void salvar(Versao versao);
+    Versao obterPorId(VersaoId id);
+    List<Versao> obterPorJogoId(JogoId jogoId);
+  }
+
     Service GestaoDeJogosService {
-      Versao processarUpload(ContaId devId, PacoteZip pacote, @JogoId id)
+      void processarUpload(ContaId devId, VersaoId versaoId)
       boolean verificarMalware(PacoteZip pacote)
     }
 
@@ -190,25 +197,25 @@ BoundedContext Catalogo implements Catalogo {
 // CONTEXTO: Catalogo
 // Gerencia a aquisição, a biblioteca do usuário e o acesso (download).
 // ================================================================================
-BoundedContext Catalogo implements Catalogo {
+BoundedContext CatalogoBiblioteca implements CatalogoBiblioteca {
 
   Aggregate Biblioteca {
     Entity Biblioteca {
 		aggregateRoot
-		-ContaId jogadorId
+		-@ContaId jogadorId
 		List<ItemBiblioteca> itens // Essencial para o agregado, OK.
+      void adicionarJogo(@JogoId jogoId)
 	    void removerJogo(@JogoId jogoId)
 
     }
     Repository BibliotecaRepository {
-      Biblioteca obterPorJogador(JogadorId jogadorId);
+      Biblioteca obterPorJogador(ContaId jogadorId);
       void salvar(Biblioteca biblioteca);
-
     }
 
     Service BibliotecaService {
-	  void adiconarJogo(@JogoId jogoId, @ContaId jogadorId, @Transacao Transacaoid, @ModeloDeAcesso modelo)
-      PacoteZip ProcessarDownload(JogadorId jogadorId, JogoId jogoId);
+	  void adiconarJogo(@JogoId jogoId, @ContaId jogadorId, @TransacaoId Transacaoid, @ModeloDeAcesso modelo)
+      PacoteZip ProcessarDownload(@ContaId jogadorId, JogoId jogoId);
     }
  
     ValueObject ItemBiblioteca { 
