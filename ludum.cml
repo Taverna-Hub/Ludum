@@ -111,6 +111,7 @@ Repository ContaRepository {
 BoundedContext Catalogo implements Catalogo {
   Aggregate Jogo {
     Entity Jogo {
+      aggregateRoot
       -JogoId id
       -ContaId desenvolvedoraId
       -Slug slug
@@ -124,7 +125,22 @@ BoundedContext Catalogo implements Catalogo {
       boolean isNSFW
       Date dataDeLancamento
 
-      Slug montarSlug( String titulo );
+      Slug montarSlug(String titulo);
+      void publicar();
+      void rejeitar();
+      void arquivar();
+      void validarParaPublicacao();
+    }
+
+    ValueObject JogoId { String id }
+    ValueObject Slug { String valor }
+    ValueObject PacoteZip { byte[] conteudo }
+
+    Repository JogoRepository {
+      void salvar(@Jogo jogo);
+      Jogo obterPorId(@JogoId id);
+      Jogo obterPorSlug(@Slug slug);
+      boolean existeSlugParaDesenvolvedora(@ContaId devId, @JogoId jogo); 
     }
     
     Entity Versao{
@@ -135,24 +151,25 @@ BoundedContext Catalogo implements Catalogo {
     }
 
     ValueObject VersaoId { String id }
-    
-    Repository JogoRepository {
-      void salvar(@Jogo jogo);
-      Jogo obterPorId(@JogoId id);
-      Jogo obterPorSlug(@Slug slug);
-      boolean existeSlugParaDesenvolvedora(@ContaId devId, @JogoId jogo); 
-    }
-
+  
     Service GestaoDeJogosService {
-      Versao processarUpload(ContaId devId, PacoteZip pacote, @JogoId id);
-      boolean verificarMalware(PacoteZip pacote);
+      Versao processarUpload(ContaId devId, PacoteZip pacote, @JogoId id)
+      boolean verificarMalware(PacoteZip pacote)
     }
 
-    ValueObject JogoId { String id }
-    ValueObject Slug { String valor }
-    ValueObject PacoteZip { byte[] conteudo }
+    Service PublicacaoService {
+      void publicarJogo(@ContaId devId, @JogoId jogoId)
+      void rejeitarJogo(@JogoId jogoId, String motivo)
+      void arquivarJogo(@ContaId devId, @JogoId jogoId)
+    }
 
+    enum StatusPublicacao { EM_UPLOAD, AGUARDANDO_VALIDACAO, PUBLICADO, REJEITADO, ARQUIVADO }
+
+  }
+
+  Aggregate Tag {
     Entity Tag {
+      aggregateRoot
       -TagId id
       String nome
     }
@@ -160,12 +177,12 @@ BoundedContext Catalogo implements Catalogo {
     ValueObject TagId { String id }
 
     Repository TagRepository {
-      Tag obterPorNome(String nome);
-      void salvar(Tag tag);
+      Tag obterPorNome(String nome)
+      void salvar(Tag tag)
+      Tag obterPorId(TagId id)
+      List<Tag> obterTodas()
+      void remover(Tag tag)
     }
-
-    enum StatusPublicacao { EM_UPLOAD, AGUARDANDO_VALIDACAO, PUBLICADO, REJEITADO, ARQUIVADO }
-
   }
 }
 
