@@ -29,6 +29,7 @@ Domain Ludum {
   Subdomain OficinaDeMods {
     type = SUPPORTING_DOMAIN
   }
+
 }
 
 // ================================================================================
@@ -109,72 +110,112 @@ Repository ContaRepository {
 // ================================================================================
 BoundedContext Catalogo implements Catalogo {
   Aggregate Jogo {
-  Entity Jogo {
-    -JogoId id
-    -ContaId desenvolvedoraId
-    -Slug slug
-    URL capaOficial
-    -StatusPublicacao status
-    String titulo
-    String descricao
-    List<URL> screenshots
-    List<URL> videos
-    List<Tag> tags
-    boolean isNSFW
-    Date dataDeLancamento
-    Slug montarSlug(
-    String titulo);
-  }
-  Entity Vercao{
-    -vercaoId id
-    -JogoId jogoId
-    -PacoteZip
-		String nomeVercao
-  }
-  Repository JogoRepository {
-      void salvar(@Jogo jogo);
-      Jogo obterPorId(@JogoId id);
-      Jogo obterPorSlug(@Slug slug);
-      boolean existeSlugParaDesenvolvedora(@ContaId devId, @JogoId jogo);
-}
+    Entity Jogo {
+      aggregateRoot
+      -JogoId id
+      -ContaId desenvolvedoraId
+      -Slug slug
+      URL capaOficial
+      -StatusPublicacao status
+      String titulo
+      String descricao
+      List<URL> screenshots
+      List<URL> videos
+      List<Tag> tags
+      boolean isNSFW
+      Date dataDeLancamento
 
-Service GestaoDeJogosService {
-      Vercao processarUpload(ContaId devId, PacoteZip pacote, @JogoId id);
-      boolean verificarMalware(PacoteZip pacote);
+      Slug montarSlug(String titulo);
+      void publicar();
+      void rejeitar();
+      void arquivar();
+      void validarParaPublicacao();
     }
 
     ValueObject JogoId { String id }
     ValueObject Slug { String valor }
-    ValueObject Tag { String nome }
+    ValueObject PacoteZip { byte[] conteudo }
+
+    Repository JogoRepository {
+      void salvar(@Jogo jogo);
+      Jogo obterPorId(@JogoId id);
+      Jogo obterPorSlug(@Slug slug);
+      boolean existeSlugParaDesenvolvedora(@ContaId devId, @JogoId jogo); 
+    }
+    
+    Entity Versao{
+      -VersaoId id
+      -JogoId jogoId
+      -PacoteZip
+      String nomeVersao
+      String descricaoVersao
+    }
+
+    ValueObject VersaoId { String id }
+  
+  Repository VersaoRepository {
+    void salvar(Versao versao);
+    Versao obterPorId(VersaoId id);
+    List<Versao> obterPorJogoId(JogoId jogoId);
+  }
+
+    Service GestaoDeJogosService {
+      void processarUpload(ContaId devId, VersaoId versaoId)
+      boolean verificarMalware(PacoteZip pacote)
+    }
+
+    Service PublicacaoService {
+      void publicarJogo(@ContaId devId, @JogoId jogoId)
+      void rejeitarJogo(@JogoId jogoId, String motivo)
+      void arquivarJogo(@ContaId devId, @JogoId jogoId)
+    }
+
     enum StatusPublicacao { EM_UPLOAD, AGUARDANDO_VALIDACAO, PUBLICADO, REJEITADO, ARQUIVADO }
+
+  }
+
+  Aggregate Tag {
+    Entity Tag {
+      aggregateRoot
+      -TagId id
+      String nome
+    }
+
+    ValueObject TagId { String id }
+
+    Repository TagRepository {
+      Tag obterPorNome(String nome)
+      void salvar(Tag tag)
+      Tag obterPorId(TagId id)
+      List<Tag> obterTodas()
+      void remover(Tag tag)
+    }
   }
 }
-
-ValueObject PacoteZip { byte[] conteudo }
 
 // ================================================================================
 // CONTEXTO: Catalogo
 // Gerencia a aquisição, a biblioteca do usuário e o acesso (download).
 // ================================================================================
-BoundedContext Catalogo implements Catalogo {
+BoundedContext CatalogoBiblioteca implements CatalogoBiblioteca {
 
   Aggregate Biblioteca {
     Entity Biblioteca {
 		aggregateRoot
-		-ContaId jogadorId
+		-@ContaId jogadorId
 		List<ItemBiblioteca> itens // Essencial para o agregado, OK.
+      void adicionarJogo(@JogoId jogoId)
 	    void removerJogo(@JogoId jogoId)
 
     }
     Repository BibliotecaRepository {
-      Biblioteca obterPorJogador(JogadorId jogadorId);
+      Biblioteca obterPorJogador(ContaId jogadorId);
       void salvar(Biblioteca biblioteca);
-
     }
 
     Service BibliotecaService {
-	  void adiconarJogo(@JogoId jogoId, @ContaId jogadorId, @Transacao Transacaoid, @ModeloDeAcesso modelo)
-      PacoteZip ProcessarDownload(JogadorId jogadorId, JogoId jogoId);
+	  void adiconarJogo(@JogoId jogoId, @ContaId jogadorId, @TransacaoId Transacaoid, @ModeloDeAcesso modelo)
+      PacoteZip ProcessarDownload(@ContaId jogadorId, JogoId jogoId);
     }
  
     ValueObject ItemBiblioteca { 
@@ -207,13 +248,13 @@ BoundedContext Financeiro implements Financeiro {
 
 
     Service OperacoesFinanceirasService { 
-      void comprarJogo(Conta jogadorId, JogoId jogoId, Valor valorOfertado);
-      void solicitarReembolso(Conta jogadorId, ReciboId reciboId);
-		
+      boolean comprarJogo(Conta jogadorId, JogoId jogoId, Valor valorOfertado);
+      boolean solicitarReembolso(Conta jogadorId, ReciboId reciboId);
+      boolean adicionarSaldo(Carteira carteira, BigDecimal valor, boolean pagamentoConfirmado);
+      boolean solicitarSaque(Carteira carteira, BigDecimal valor, boolean contaValidada, Date dataVenda, boolean isCrowdfunding, boolean metaAtingida);
 	 }
 
     ValueObject ContaId { String id }
-    ValueObject TransacaoId { String id }
     ValueObject Saldo { BigDecimal disponivel; BigDecimal bloqueado }
 
    
@@ -230,29 +271,31 @@ BoundedContext Financeiro implements Financeiro {
         Date data
         BigDecimal valor
 
-	  	Recibo gerarRecibo();
 
       }
 
     Repository TransacaoRepository {
+        void salvar(Transacao transacao);
         Transacao obterPorId(TransacaoId id);
         List<Transacao> obterHistoricoPorConta(ContaId contaId, DatePeriodo periodo);
+        void salvarRecibo(Recibo recibo);
     }
 
-	ValueObject ReciboId { String id }
-	ValueObject Recibo { 
+
+
+	Entity Recibo { 
 		-ReciboId id;
 		Date data;
 		BigDecimal valorPago;
 	}
 
+	ValueObject ReciboId { String id }
+  ValueObject TransacaoId { String id }
+
 	 enum TipoTransacao { CREDITO, DEBITO, SAQUE, PIX }
-    enum StatusTransacao { PENDENTE, CONFIRMADA, CANCELADA }
-
-
+   enum StatusTransacao { PENDENTE, CONFIRMADA, CANCELADA }
 
     }
-
 }
 
 // ================================================================================
@@ -324,14 +367,17 @@ BoundedContext Comunidade implements Comunidade {
   Aggregate Post {
     Entity Post {
       aggregateRoot
-      -PostId id
+      -PostId postId
+      -JogoId jogoId
       -ContaId autorId
       String titulo
       String conteudo
       Date dataPublicacao
-	  URL Imagem
-	  -PostStatus status
-	  List<Tag> tags
+	    URL Imagem
+	    -PostStatus status
+	    List<Tag> tags
+      List<Comentario> comentarios;
+      List<Curtida> curtidas;
 
 
       void editarConteudo(String novoTitulo, String novoConteudo);
@@ -341,35 +387,35 @@ BoundedContext Comunidade implements Comunidade {
       void removerComentario(ComentarioId comentarioId, ContaId solicitanteId);
     }
 
-	ValueObject Tag{
-		String nome
-	}
-
 	enum PostStatus{ PUBLICADO, EM_RASCUNHO, AGENDADO }
 
-    Entity Comentario {
-      -ComentarioId id
-	  -PostId postId
-      -ContaId autorId
-      String texto
-      Date data
-
-      void editarTexto(String novoTexto);
-    }
-
-	Entity Curtida{
+  ValueObject Curtida{
 		-Post PostId
 		-Conta contaId
-
 	}
+
+  ValueObject PostId { String id }
+  ValueObject ComentarioId { String id }
+
+  Entity Comentario {
+    -ComentarioId id
+    -PostId postId
+    -ContaId autorId
+    String texto
+    Date data
+
+    void editarTexto(String novoTexto);
+  }
+
 
     Repository PostRepository {
       void salvar(Post post);
       Post obterPorId(PostId id);
+      void remover(Post post);
+      List<Post> obterTodosPosts();
       List<Post> obterPorAutor(ContaId autorId);
       List<Post> buscarPorTag(String tag);
-      void remover(Post post);
-	  List<Post> obterPorStatus(PostStatus);
+	    List<Post> obterPorStatus(PostStatus);
     }
 
     Service PostService {
@@ -378,12 +424,9 @@ BoundedContext Comunidade implements Comunidade {
       void curtirPost(@PostId postId, @ContaId contaId);
       void comentarPost(@PostId postId, @ContaId autorId, String texto);
       void removerPost(@PostId postId, @ContaId solicitanteId);
-	  void agendarPost(@PostId, Date dataDeAgendamento)
-	  void criarRascunho(@Post post, @ContaId contaId)
+	    void agendarPost(@PostId, Date dataDeAgendamento)
+	    void criarRascunho(@Post post, @ContaId contaId)
     }
-
-    ValueObject PostId { String id }
-    ValueObject ComentarioId { String id }
 
   }
 
