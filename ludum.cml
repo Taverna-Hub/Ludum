@@ -110,42 +110,47 @@ Repository ContaRepository {
 // ================================================================================
 BoundedContext Catalogo implements Catalogo {
   Aggregate Jogo {
-  Entity Jogo {
-    -JogoId id
-    -ContaId desenvolvedoraId
-    -Slug slug
-    URL capaOficial
-    -StatusPublicacao status
-    String titulo
-    String descricao
-    List<URL> screenshots
-    List<URL> videos
-    List<Tag> tags
-    boolean isNSFW
-    Date dataDeLancamento
-    Slug montarSlug(
-    String titulo);
-  }
-  Entity Versao{
-    -versaoId id
-    -JogoId jogoId
-    -PacoteZip
-		String nomeVersao
-  }
-  Repository JogoRepository {
+    Entity Jogo {
+      -JogoId id
+      -ContaId desenvolvedoraId
+      -Slug slug
+      URL capaOficial
+      -StatusPublicacao status
+      String titulo
+      String descricao
+      List<URL> screenshots
+      List<URL> videos
+      List<Tag> tags
+      boolean isNSFW
+      Date dataDeLancamento
+
+      Slug montarSlug( String titulo );
+    }
+    
+    Entity Versao{
+      -VersaoId id
+      -JogoId jogoId
+      -PacoteZip
+      String nomeVersao
+    }
+
+    ValueObject VersaoId { String id }
+    
+    Repository JogoRepository {
       void salvar(@Jogo jogo);
       Jogo obterPorId(@JogoId id);
       Jogo obterPorSlug(@Slug slug);
-      boolean existeSlugParaDesenvolvedora(@ContaId devId, @JogoId jogo);
-}
+      boolean existeSlugParaDesenvolvedora(@ContaId devId, @JogoId jogo); 
+    }
 
-Service GestaoDeJogosService {
+    Service GestaoDeJogosService {
       Versao processarUpload(ContaId devId, PacoteZip pacote, @JogoId id);
       boolean verificarMalware(PacoteZip pacote);
     }
 
     ValueObject JogoId { String id }
     ValueObject Slug { String valor }
+    ValueObject PacoteZip { byte[] conteudo }
 
     Entity Tag {
       -TagId id
@@ -160,10 +165,9 @@ Service GestaoDeJogosService {
     }
 
     enum StatusPublicacao { EM_UPLOAD, AGUARDANDO_VALIDACAO, PUBLICADO, REJEITADO, ARQUIVADO }
+
   }
 }
-
-ValueObject PacoteZip { byte[] conteudo }
 
 // ================================================================================
 // CONTEXTO: Catalogo
