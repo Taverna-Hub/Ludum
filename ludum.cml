@@ -446,7 +446,6 @@ BoundedContext Comunidade implements Comunidade {
 
       void editarConteudo(String novoTitulo, String novoTexto);
       void ajustarNota(int novaNota);
-      void marcarComoInapropriado();
     }
 
     Repository ReviewRepository {
@@ -461,14 +460,13 @@ BoundedContext Comunidade implements Comunidade {
 		
       void avaliarJogo(@JogoId jogoId, @ContaId autorId, int nota, String titulo, String texto, boolean recomenda);
       void editarAvaliacao(@ReviewId reviewId, @ContaId autorId, String novoTitulo, String novoTexto, int novaNota);
-      void sinalizarReview(@ReviewId reviewId, @ContaId sinalizadorId, String motivo);
-      void moderarReview(@ReviewId reviewId, @ContaId moderadorId, StatusReview novoStatus, String motivo);
+      void apagarAvaliacao(@ReviewId reviewId, @ContaId solicitanteId);
     }
 
     ValueObject ReviewId { String id }
 
 
-    enum StatusReview { PUBLICADO, EDITADO, SINALIZADO }
+    enum StatusReview { PUBLICADO, EDITADO }
   }
 }
 
