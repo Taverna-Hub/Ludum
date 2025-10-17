@@ -241,13 +241,13 @@ BoundedContext Financeiro implements Financeiro {
 
 
     Service OperacoesFinanceirasService { 
-      void comprarJogo(Conta jogadorId, JogoId jogoId, Valor valorOfertado);
-      void solicitarReembolso(Conta jogadorId, ReciboId reciboId);
-		
+      boolean comprarJogo(Conta jogadorId, JogoId jogoId, Valor valorOfertado);
+      boolean solicitarReembolso(Conta jogadorId, ReciboId reciboId);
+      boolean adicionarSaldo(Carteira carteira, BigDecimal valor, boolean pagamentoConfirmado);
+      boolean solicitarSaque(Carteira carteira, BigDecimal valor, boolean contaValidada, Date dataVenda, boolean isCrowdfunding, boolean metaAtingida);
 	 }
 
     ValueObject ContaId { String id }
-    ValueObject TransacaoId { String id }
     ValueObject Saldo { BigDecimal disponivel; BigDecimal bloqueado }
 
    
@@ -264,29 +264,31 @@ BoundedContext Financeiro implements Financeiro {
         Date data
         BigDecimal valor
 
-	  	Recibo gerarRecibo();
 
       }
 
     Repository TransacaoRepository {
+        void salvar(Transacao transacao);
         Transacao obterPorId(TransacaoId id);
         List<Transacao> obterHistoricoPorConta(ContaId contaId, DatePeriodo periodo);
+        void salvarRecibo(Recibo recibo);
     }
 
-	ValueObject ReciboId { String id }
-	ValueObject Recibo { 
+
+
+	Entity Recibo { 
 		-ReciboId id;
 		Date data;
 		BigDecimal valorPago;
 	}
 
+	ValueObject ReciboId { String id }
+  ValueObject TransacaoId { String id }
+
 	 enum TipoTransacao { CREDITO, DEBITO, SAQUE, PIX }
-    enum StatusTransacao { PENDENTE, CONFIRMADA, CANCELADA }
-
-
+   enum StatusTransacao { PENDENTE, CONFIRMADA, CANCELADA }
 
     }
-
 }
 
 // ================================================================================
