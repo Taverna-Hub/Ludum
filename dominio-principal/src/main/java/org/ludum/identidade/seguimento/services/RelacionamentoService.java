@@ -1,5 +1,9 @@
 package org.ludum.identidade.seguimento.services;
 
+import org.ludum.catalogo.jogo.JogoRepository;
+import org.ludum.catalogo.jogo.entidades.JogoId;
+import org.ludum.catalogo.tag.TagRepository;
+import org.ludum.catalogo.tag.entidades.TagId;
 import org.ludum.identidade.bloqueio.repositories.BloqueioRepository;
 import org.ludum.identidade.bloqueio.entities.Bloqueio;
 import org.ludum.identidade.bloqueio.entities.BloqueioId;
@@ -18,13 +22,20 @@ public class RelacionamentoService {
     private final SeguimentoRepository seguimentoRepository;
     private final ContaRepository contaRepository;
     private final BloqueioRepository bloqueioRepository;
+    private final JogoRepository jogoRepository;
+    private final TagRepository tagRepository;
 
-    public RelacionamentoService(SeguimentoRepository seguimentoRepository, 
-                                  ContaRepository contaRepository,
-                                  BloqueioRepository bloqueioRepository) {
+    public RelacionamentoService(
+            SeguimentoRepository seguimentoRepository,
+            ContaRepository contaRepository,
+            BloqueioRepository bloqueioRepository,
+            JogoRepository jogoRepository, TagRepository tagRepository) {
+
         this.seguimentoRepository = seguimentoRepository;
         this.contaRepository = contaRepository;
         this.bloqueioRepository = bloqueioRepository;
+        this.jogoRepository = jogoRepository;
+        this.tagRepository = tagRepository;
     }
 
     public void seguirAlvo(ContaId seguidorId, AlvoId alvoId, TipoAlvo tipoAlvo) {
@@ -47,7 +58,7 @@ public class RelacionamentoService {
             throw new IllegalArgumentException("Já existe um seguimento entre estas entidades.");
         }
 
-       
+
 
         switch (tipoAlvo) {
             case CONTA:
@@ -68,9 +79,13 @@ public class RelacionamentoService {
 
                 break;
             case JOGO:
-                // TODO: Verificar se o jogo existe
+                JogoId jogoId = new JogoId(alvoId.getValue());
+
+                if (jogoRepository.obterPorId(jogoId) == null) {
+                    throw new IllegalArgumentException("Jogo não encontrado.");
+                }
                 break;
-                
+
             case DESENVOLVEDORA:
 
                 Conta desenvolvedora = contaRepository.obterPorId(new ContaId(alvoId.getValue()));
@@ -88,7 +103,14 @@ public class RelacionamentoService {
                 }
                 break;
             case TAG:
-                // TODO: Verificar se a tag seguida tem pelo menos 1 jogo atrelada a ela
+
+                TagId tagId = new TagId(alvoId.getValue());
+                if (tagRepository.obterPorId(tagId) == null) {
+                    throw new IllegalArgumentException("Tag não encontrado.");
+                }
+                if (jogoRepository.obterJogosPorTag(tagId).isEmpty()) {
+                    throw new IllegalArgumentException("Tag não disponivel, nenhum jogo atrelado á ela");
+                }
                 break;
         }
 
