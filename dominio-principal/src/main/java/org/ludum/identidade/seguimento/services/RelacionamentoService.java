@@ -1,28 +1,41 @@
-package org.ludum.identidade.seguimento;
+package org.ludum.identidade.seguimento.services;
 
-import org.ludum.identidade.bloqueio.BloqueioRepository;
-import org.ludum.identidade.bloqueio.entidades.Bloqueio;
-import org.ludum.identidade.bloqueio.entidades.BloqueioId;
-import org.ludum.identidade.conta.ContaRepository;
-import org.ludum.identidade.conta.entidades.Conta;
-import org.ludum.identidade.conta.entidades.ContaId;
+import org.ludum.catalogo.jogo.JogoRepository;
+import org.ludum.catalogo.jogo.entidades.JogoId;
+import org.ludum.catalogo.tag.TagRepository;
+import org.ludum.catalogo.tag.entidades.TagId;
+import org.ludum.identidade.bloqueio.repositories.BloqueioRepository;
+import org.ludum.identidade.bloqueio.entities.Bloqueio;
+import org.ludum.identidade.bloqueio.entities.BloqueioId;
+import org.ludum.identidade.conta.repositories.ContaRepository;
+import org.ludum.identidade.conta.entities.Conta;
+import org.ludum.identidade.conta.entities.ContaId;
 import org.ludum.identidade.conta.enums.StatusConta;
-import org.ludum.identidade.seguimento.entidades.AlvoId;
-import org.ludum.identidade.seguimento.entidades.Seguimento;
-import org.ludum.identidade.seguimento.entidades.SeguimentoId;
+import org.ludum.identidade.seguimento.repositories.SeguimentoRepository;
+import org.ludum.identidade.seguimento.enums.TipoAlvo;
+import org.ludum.identidade.seguimento.entities.AlvoId;
+import org.ludum.identidade.seguimento.entities.Seguimento;
+import org.ludum.identidade.seguimento.entities.SeguimentoId;
 
 public class RelacionamentoService {
 
     private final SeguimentoRepository seguimentoRepository;
     private final ContaRepository contaRepository;
     private final BloqueioRepository bloqueioRepository;
+    private final JogoRepository jogoRepository;
+    private final TagRepository tagRepository;
 
-    public RelacionamentoService(SeguimentoRepository seguimentoRepository, 
-                                  ContaRepository contaRepository,
-                                  BloqueioRepository bloqueioRepository) {
+    public RelacionamentoService(
+            SeguimentoRepository seguimentoRepository,
+            ContaRepository contaRepository,
+            BloqueioRepository bloqueioRepository,
+            JogoRepository jogoRepository, TagRepository tagRepository) {
+
         this.seguimentoRepository = seguimentoRepository;
         this.contaRepository = contaRepository;
         this.bloqueioRepository = bloqueioRepository;
+        this.jogoRepository = jogoRepository;
+        this.tagRepository = tagRepository;
     }
 
     public void seguirAlvo(ContaId seguidorId, AlvoId alvoId, TipoAlvo tipoAlvo) {
@@ -42,10 +55,10 @@ public class RelacionamentoService {
 
         // Verificar se ainda não existe relação de seguimento entre eles
         if (seguimentoRepository.obter(seguidorId, alvoId).isPresent()) {
-            throw new IllegalArgumentException("Já existe um seguimento entre estes usuários.");
+            throw new IllegalArgumentException("Já existe um seguimento entre estas entidades.");
         }
 
-       
+
 
         switch (tipoAlvo) {
             case CONTA:
@@ -56,9 +69,6 @@ public class RelacionamentoService {
                 if (alvoConta == null) {
                     throw new IllegalArgumentException("Usuário alvo não encontrado.");
                 }
-
-                // Usuários bloqueados não podem seguir quem bloqueou
-
                 if (bloqueioRepository.buscar(alvoContaId, seguidorId).isPresent()) {
                     throw new IllegalArgumentException("Você está bloqueado por este usuário.");
                 }
@@ -66,15 +76,41 @@ public class RelacionamentoService {
                 if (bloqueioRepository.buscar(seguidorId, alvoContaId).isPresent()) {
                     throw new IllegalArgumentException("Você bloqueou este usuário.");
                 }
+
                 break;
             case JOGO:
-                // TODO: Verificar se o jogo existe
+                JogoId jogoId = new JogoId(alvoId.getValue());
+
+                if (jogoRepository.obterPorId(jogoId) == null) {
+                    throw new IllegalArgumentException("Jogo não encontrado.");
+                }
                 break;
+
             case DESENVOLVEDORA:
-                // TODO: Verificar se a desenvolvedora existe
+
+                Conta desenvolvedora = contaRepository.obterPorId(new ContaId(alvoId.getValue()));
+
+                if (desenvolvedora == null) {
+                    throw new IllegalArgumentException("Usuário alvo não encontrado.");
+                }
+
+                if (bloqueioRepository.buscar(desenvolvedora.getId(), seguidorId).isPresent()) {
+                    throw new IllegalArgumentException("Você está bloqueado por este usuário.");
+                }
+
+                if (bloqueioRepository.buscar(seguidorId, desenvolvedora.getId()).isPresent()) {
+                    throw new IllegalArgumentException("Você bloqueou este usuário.");
+                }
                 break;
             case TAG:
-                // TODO: Verificar se a tag seguida tem pelo menos 1 jogo atrelada a ela
+
+                TagId tagId = new TagId(alvoId.getValue());
+                if (tagRepository.obterPorId(tagId) == null) {
+                    throw new IllegalArgumentException("Tag não encontrado.");
+                }
+                if (jogoRepository.obterJogosPorTag(tagId).isEmpty()) {
+                    throw new IllegalArgumentException("Tag não disponivel, nenhum jogo atrelado á ela");
+                }
                 break;
         }
 

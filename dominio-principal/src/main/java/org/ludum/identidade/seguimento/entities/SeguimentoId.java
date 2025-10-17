@@ -1,11 +1,11 @@
-package org.ludum.identidade.seguimento.entidades;
+package org.ludum.identidade.seguimento.entities;
 
 import java.util.Objects;
 
-public class AlvoId {
+public class SeguimentoId {
     private final String value;
 
-    public AlvoId(String value) {
+    public SeguimentoId(String value) {
         this.value = Objects.requireNonNull(value);
     }
 

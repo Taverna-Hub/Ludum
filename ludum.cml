@@ -141,6 +141,7 @@ BoundedContext Catalogo implements Catalogo {
       Jogo obterPorId(@JogoId id);
       Jogo obterPorSlug(@Slug slug);
       boolean existeSlugParaDesenvolvedora(@ContaId devId, @JogoId jogo); 
+      List<Jogo> obterJogosPorTag(@Tag tag);
     }
     
     Entity Versao{
