@@ -1,6 +1,6 @@
 package org.ludum.comunidade.post.entidades;
 
-import org.ludum.identidade.conta.entidades.ContaId;
+import org.ludum.identidade.conta.entities.ContaId;
 
 import java.util.Objects;
 

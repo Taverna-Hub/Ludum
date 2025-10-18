@@ -3,7 +3,7 @@ package org.ludum.comunidade.post.services;
 import org.ludum.comunidade.post.entidades.*;
 import org.ludum.comunidade.post.enums.PostStatus;
 import org.ludum.comunidade.post.repositorios.PostRepository;
-import org.ludum.identidade.conta.entidades.ContaId;
+import org.ludum.identidade.conta.entities.ContaId;
 
 import java.net.URL;
 import java.time.Duration;

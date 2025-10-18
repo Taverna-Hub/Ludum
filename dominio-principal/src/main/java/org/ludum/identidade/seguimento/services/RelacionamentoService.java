@@ -1,6 +1,6 @@
 package org.ludum.identidade.seguimento.services;
 
-import org.ludum.catalogo.jogo.JogoRepository;
+import org.ludum.catalogo.jogo.repositorios.JogoRepository;
 import org.ludum.catalogo.jogo.entidades.JogoId;
 import org.ludum.catalogo.tag.TagRepository;
 import org.ludum.catalogo.tag.entidades.TagId;

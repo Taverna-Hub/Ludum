@@ -3,7 +3,7 @@ package org.ludum.catalogo.jogo.entidades;
 import org.ludum.catalogo.jogo.enums.StatusPublicacao;
 import org.ludum.catalogo.tag.entidades.Tag;
 import org.ludum.catalogo.tag.entidades.TagId;
-import org.ludum.identidade.conta.entidades.ContaId;
+import org.ludum.identidade.conta.entities.ContaId;
 
 import java.net.URL;
 import java.time.LocalDate;
@@ -25,6 +25,7 @@ public class Jogo {
     private List<Tag> tags;
     private boolean isNSFW;
     private LocalDate dataDeLancamento;
+    private final List<Versao> versaoHistory;
 
     public Jogo(JogoId id, ContaId desenvolvedoraId, String titulo, String descricao,
             URL capaOficial, List<Tag> tags, boolean isNSFW, LocalDate dataDeLancamento) {
@@ -45,6 +46,7 @@ public class Jogo {
         this.dataDeLancamento = dataDeLancamento;
         this.screenshots = new ArrayList<>();
         this.videos = new ArrayList<>();
+        this.versaoHistory = new ArrayList<Versao>();
     }
 
     public Slug montarSlug(String titulo) {
@@ -108,6 +110,18 @@ public class Jogo {
         // TODO: IMPLEMENTAÇÃO
     }
 
+    public void adicionarVersao(PacoteZip pacote, VersaoId versaoId, String nomeVersao, String descVersao) {
+        Versao newVersao = new Versao(pacote, this.id, versaoId ,nomeVersao, descVersao);
+        if (this.versaoHistory.stream().anyMatch(v -> v.getId().equals(versaoId))) {
+            throw new IllegalStateException("Versão com mesmo id já existe");
+        }
+
+        if(this.versaoHistory.stream().anyMatch(v -> v.getNomeVersao().equalsIgnoreCase(nomeVersao))){
+            throw new IllegalStateException("Versão com mesmo título já existe");
+        }
+        this.versaoHistory.add(newVersao);
+    }
+
     public JogoId getId() {
         return id;
     }
@@ -155,6 +169,9 @@ public class Jogo {
     public LocalDate getDataDeLancamento() {
         return dataDeLancamento;
     }
+
+    public List<Versao> getVersaoHistory() {
+        return List.copyOf(versaoHistory);}
 
     public void setCapaOficial(URL capaOficial) {
         this.capaOficial = capaOficial;

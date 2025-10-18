@@ -1,11 +1,12 @@
-package org.ludum.catalogo.jogo;
+package org.ludum.catalogo.jogo.services;
 
+import org.ludum.catalogo.jogo.repositorios.JogoRepository;
 import org.ludum.catalogo.jogo.entidades.Jogo;
 import org.ludum.catalogo.jogo.entidades.JogoId;
 import org.ludum.catalogo.jogo.enums.StatusPublicacao;
-import org.ludum.identidade.conta.entidades.Conta;
-import org.ludum.identidade.conta.entidades.ContaId;
-import org.ludum.identidade.conta.ContaRepository;
+import org.ludum.identidade.conta.entities.Conta;
+import org.ludum.identidade.conta.entities.ContaId;
+import org.ludum.identidade.conta.repositories.ContaRepository;
 import org.ludum.identidade.conta.enums.StatusConta;
 import org.ludum.identidade.conta.enums.TipoConta;
 

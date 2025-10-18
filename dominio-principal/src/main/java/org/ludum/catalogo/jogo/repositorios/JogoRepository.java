@@ -1,4 +1,4 @@
-package org.ludum.catalogo.jogo;
+package org.ludum.catalogo.jogo.repositorios;
 
 import org.ludum.catalogo.jogo.entidades.Jogo;
 import org.ludum.catalogo.jogo.entidades.JogoId;
@@ -7,7 +7,6 @@ import org.ludum.catalogo.tag.entidades.TagId;
 import org.ludum.identidade.conta.entities.ContaId;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface JogoRepository {
 
