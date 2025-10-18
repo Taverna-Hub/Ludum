@@ -131,7 +131,7 @@ BoundedContext Catalogo implements Catalogo {
       void rejeitar();
       void arquivar();
       void validarParaPublicacao();
-      void adicionarVersao(Versao versao)
+      void adicionarVersao(PacoteZip pacote, VersaoId versaoId, String nomeVersao, String descVersao)
     }
 
     ValueObject JogoId { String id }
@@ -203,7 +203,7 @@ BoundedContext CatalogoBiblioteca implements CatalogoBiblioteca {
 		aggregateRoot
 		-@ContaId jogadorId
 		List<ItemBiblioteca> itens // Essencial para o agregado, OK.
-    ItemBiblioteca checaPresencaDeJogo(@JogoId jogoId)
+    ItemBiblioteca buscarJogoEmBiblioteca(@JogoId jogoId)
     void adicionarJogo(@ModeloDeAcesso modeloDeAcesso, @JogoId jogoId)
 	  void removerJogo(@JogoId jogoId)
 
