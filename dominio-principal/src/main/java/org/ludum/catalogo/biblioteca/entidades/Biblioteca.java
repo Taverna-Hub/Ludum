@@ -2,7 +2,7 @@ package org.ludum.catalogo.biblioteca.entidades;
 
 import org.ludum.catalogo.biblioteca.enums.ModeloDeAcesso;
 import org.ludum.catalogo.jogo.entidades.JogoId;
-import org.ludum.financeiro.carteira.entidades.ContaId;
+import org.ludum.identidade.conta.entities.ContaId;
 
 import java.util.ArrayList;
 import java.util.List;
