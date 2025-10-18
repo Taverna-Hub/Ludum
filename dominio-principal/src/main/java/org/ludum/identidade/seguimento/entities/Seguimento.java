@@ -1,7 +1,7 @@
-package org.ludum.identidade.seguimento.entidades;
+package org.ludum.identidade.seguimento.entities;
 
-import org.ludum.identidade.conta.entidades.ContaId;
-import org.ludum.identidade.seguimento.TipoAlvo;
+import org.ludum.identidade.conta.entities.ContaId;
+import org.ludum.identidade.seguimento.enums.TipoAlvo;
 
 import java.util.Objects;
 

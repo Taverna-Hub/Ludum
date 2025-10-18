@@ -3,7 +3,11 @@ package org.ludum.catalogo.jogo;
 import org.ludum.catalogo.jogo.entidades.Jogo;
 import org.ludum.catalogo.jogo.entidades.JogoId;
 import org.ludum.catalogo.jogo.entidades.Slug;
-import org.ludum.identidade.conta.entidades.ContaId;
+import org.ludum.catalogo.tag.entidades.TagId;
+import org.ludum.identidade.conta.entities.ContaId;
+
+import java.util.List;
+import java.util.Optional;
 
 public interface JogoRepository {
 
@@ -14,4 +18,6 @@ public interface JogoRepository {
     Jogo obterPorSlug(Slug slug);
 
     boolean existeSlugParaDesenvolvedora(ContaId devId, Slug slug);
+
+    List<Jogo> obterJogosPorTag(TagId tagId);
 }

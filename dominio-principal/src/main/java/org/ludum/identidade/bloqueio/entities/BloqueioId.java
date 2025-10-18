@@ -1,11 +1,11 @@
-package org.ludum.identidade.conta.entidades;
+package org.ludum.identidade.bloqueio.entities;
 
 import java.util.Objects;
 
-public class ContaId {
+public class BloqueioId {
     private String value;
 
-    public ContaId(String value) {
+    public BloqueioId(String value) {
         this.value = Objects.requireNonNull(value);
     }
 
