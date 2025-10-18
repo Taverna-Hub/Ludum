@@ -124,12 +124,14 @@ BoundedContext Catalogo implements Catalogo {
       List<Tag> tags
       boolean isNSFW
       Date dataDeLancamento
+      List<Versao> versaoHistory
 
       Slug montarSlug(String titulo);
       void publicar();
       void rejeitar();
       void arquivar();
       void validarParaPublicacao();
+      void adicionarVersao(Versao versao)
     }
 
     ValueObject JogoId { String id }
@@ -149,18 +151,14 @@ BoundedContext Catalogo implements Catalogo {
       -PacoteZip
       String nomeVersao
       String descricaoVersao
+      void validarPacoteZip(@PacoteZip pacoteZip)
+      void validarNomeVersao(String nomeVersao)
     }
 
     ValueObject VersaoId { String id }
-  
-  Repository VersaoRepository {
-    void salvar(Versao versao);
-    Versao obterPorId(VersaoId id);
-    List<Versao> obterPorJogoId(JogoId jogoId);
-  }
 
     Service GestaoDeJogosService {
-      void processarUpload(ContaId devId, VersaoId versaoId)
+      void processarUpload(@ContaId devId, Versao versao)
       boolean verificarMalware(PacoteZip pacote)
     }
 
@@ -204,8 +202,9 @@ BoundedContext CatalogoBiblioteca implements CatalogoBiblioteca {
 		aggregateRoot
 		-@ContaId jogadorId
 		List<ItemBiblioteca> itens // Essencial para o agregado, OK.
-      void adicionarJogo(@JogoId jogoId)
-	    void removerJogo(@JogoId jogoId)
+    ItemBiblioteca checaPresencaDeJogo(@JogoId jogoId)
+    void adicionarJogo(@ModeloDeAcesso modeloDeAcesso, @JogoId jogoId)
+	  void removerJogo(@JogoId jogoId)
 
     }
     Repository BibliotecaRepository {
