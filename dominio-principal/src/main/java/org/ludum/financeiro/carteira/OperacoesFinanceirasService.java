@@ -46,21 +46,29 @@ public class OperacoesFinanceirasService {
         return true;
     }
 
-    public boolean comprarJogo(Carteira carteira, BigDecimal valor) {
-        Objects.requireNonNull(carteira, "Carteira não pode ser nula");
+    public boolean comprarJogo(Carteira carteiraSaida, Carteira carteiraEntrada, BigDecimal valor) {
+        Objects.requireNonNull(carteiraSaida, "Carteira de saída não pode ser nula");
+        Objects.requireNonNull(carteiraEntrada, "Carteira de entrada não pode ser nula");
         Objects.requireNonNull(valor, "Valor não pode ser nulo");
 
         if (valor.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Valor deve ser maior que zero");
         }
 
-        if (carteira.getSaldo().getDisponivel().compareTo(valor) >= 0) {
-            carteira.getSaldo().subtrairDisponivel(valor);
+        if (carteiraSaida.getSaldo().getDisponivel().compareTo(valor) >= 0) {
+            carteiraSaida.getSaldo().subtrairDisponivel(valor);
+            carteiraEntrada.getSaldo().setDisponivel(valor);
 
-            Transacao transacao = new Transacao(null, carteira.getId(), null, TipoTransacao.DEBITO,
+            // Transação de débito para a carteira de saída
+            Transacao transacaoDebito = new Transacao(null, carteiraSaida.getId(), carteiraEntrada.getId(), TipoTransacao.DEBITO,
                 StatusTransacao.CONFIRMADA, LocalDateTime.now(), valor);
+            transacaoRepository.salvar(transacaoDebito);
 
-            transacaoRepository.salvar(transacao);
+            // Transação de crédito para a carteira de entrada
+            Transacao transacaoCredito = new Transacao(null, carteiraSaida.getId(), carteiraEntrada.getId(), TipoTransacao.CREDITO,
+                StatusTransacao.CONFIRMADA, LocalDateTime.now(), valor);
+            transacaoRepository.salvar(transacaoCredito);
+
             return true;
         } else {
             return false;
@@ -72,7 +80,7 @@ public class OperacoesFinanceirasService {
         long diferencaHoras = TimeUnit.MILLISECONDS.toHours(diferencaMillis);
 
         if (diferencaHoras <= 24) {
-            carteira.getSaldo().setDisponivel(valor);
+            carteira.getSaldo().setDisponivel(carteira.getSaldo().getDisponivel().add(valor));
 
             Transacao transacao = new Transacao(null, null, carteira.getId(), TipoTransacao.CREDITO,
                 StatusTransacao.CONFIRMADA, LocalDateTime.now(), valor);

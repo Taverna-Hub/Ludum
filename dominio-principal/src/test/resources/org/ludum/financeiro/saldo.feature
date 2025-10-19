@@ -33,7 +33,7 @@ Feature: Saldo
 
   Scenario: Tentar usar saldo insuficiente (negativo)
     Given que tenho R$20 disponíveis na carteira
-    And o jogo custa R$25
+    And o jogo custa R$27
     When tento comprar o jogo
     Then a compra não deve ser concluída e nenhum débito deve ocorrer no saldo
 

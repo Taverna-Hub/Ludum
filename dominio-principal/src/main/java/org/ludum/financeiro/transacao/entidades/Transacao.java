@@ -3,9 +3,9 @@ package org.ludum.financeiro.transacao.entidades;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-import org.ludum.financeiro.carteira.entidades.ContaId;
 import org.ludum.financeiro.transacao.enums.StatusTransacao;
 import org.ludum.financeiro.transacao.enums.TipoTransacao;
+import org.ludum.identidade.conta.entities.ContaId;
 
 public class Transacao {
   private TransacaoId id;
