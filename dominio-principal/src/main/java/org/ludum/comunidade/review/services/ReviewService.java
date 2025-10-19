@@ -1,9 +1,11 @@
 package org.ludum.comunidade.review.services;
 
-import org.ludum.catalogo.jogo.JogoRepository;
+import org.ludum.catalogo.biblioteca.entidades.Biblioteca;
+import org.ludum.catalogo.biblioteca.repositorios.BibliotecaRepository;
 import org.ludum.catalogo.jogo.entidades.Jogo;
 import org.ludum.catalogo.jogo.entidades.JogoId;
 import org.ludum.catalogo.jogo.enums.StatusPublicacao;
+import org.ludum.catalogo.jogo.repositorios.JogoRepository;
 import org.ludum.comunidade.review.entidades.Review;
 import org.ludum.comunidade.review.entidades.ReviewId;
 import org.ludum.comunidade.review.enums.*;
@@ -17,11 +19,12 @@ public class ReviewService {
 
     private final ReviewRepository reviewRepository;
     private final JogoRepository jogoRepository;
-    // TODO: Adicionar BibliotecaRepository quando estiver implementado
+    private final BibliotecaRepository bibliotecaRepository;
 
-    public ReviewService(ReviewRepository reviewRepository, JogoRepository jogoRepository) {
+    public ReviewService(ReviewRepository reviewRepository, JogoRepository jogoRepository, BibliotecaRepository bibliotecaRepository) {
         this.reviewRepository = reviewRepository;
         this.jogoRepository = jogoRepository;
+        this.bibliotecaRepository = bibliotecaRepository;
     }
 
     /**
@@ -45,8 +48,11 @@ public class ReviewService {
             throw new IllegalArgumentException("Não é possível avaliar um jogo que não está publicado.");
         }
 
-        // TODO: Validar se o usuário comprou ou baixou o jogo (aguardando BibliotecaRepository)
-        // BibliotecaRepository.verificarSeUsuarioPossuiJogo(autorId, jogoId)
+        // Validar se o usuário comprou ou baixou o jogo
+        Biblioteca biblioteca = bibliotecaRepository.obterPorJogador(autorId);
+        if (biblioteca == null || biblioteca.buscarJogoEmBiblioteca(jogoId).isEmpty()) {
+            throw new IllegalArgumentException("Você precisa ter o jogo na sua biblioteca para avaliá-lo.");
+        }
 
         // Validar se já existe uma review deste usuário para este jogo
         if (reviewRepository.obterPorAutorEJogo(autorId, jogoId).isPresent()) {
@@ -79,8 +85,43 @@ public class ReviewService {
         reviewRepository.salvar(novaReview);
     }
 
-    public void editarAvaliacao(ReviewId reviewId, ContaId autorId, String novoTitulo, String novoTexto, int novaNota) {
-        // TODO: Implementar lógica de edição de avaliação (H-2)
+    /**
+     * H-2: Como usuário, quero editar uma review já existente.
+     *
+     * Critérios de Aceitação:
+     * - O usuário pode editar apenas a própria review.
+     * - O sistema deve manter o histórico da última edição (data/hora).
+     * - Após a edição, a review atualizada substitui a anterior.
+     */
+    public void editarAvaliacao(ReviewId reviewId, ContaId autorId, String novoTitulo, String novoTexto, int novaNota, boolean novaRecomendacao) {
+        // Validar se a review existe
+        Review review = reviewRepository.obterPorId(reviewId);
+        if (review == null) {
+            throw new IllegalArgumentException("Review não encontrada.");
+        }
+
+        // Validar se o usuário é o autor da review
+        String autorOriginal = review.getAutorId().getValue();
+        if (!autorOriginal.equals(autorId.getValue())) {
+            throw new IllegalArgumentException("Você só pode editar suas próprias avaliações.");
+        }
+
+        // Validar dados da edição
+        if (novoTitulo == null || novoTitulo.trim().isEmpty()) {
+            throw new IllegalArgumentException("O título da review não pode estar vazio.");
+        }
+
+        if (novoTexto == null || novoTexto.trim().isEmpty()) {
+            throw new IllegalArgumentException("O texto da review não pode estar vazio.");
+        }
+
+        // Editar conteúdo e nota usando os métodos do agregado
+        review.editarConteudo(novoTitulo, novoTexto);
+        review.ajustarNota(novaNota);
+        review.setRecomendado(novaRecomendacao);
+
+        // Salvar a review editada
+        reviewRepository.salvar(review);
     }
 
 }

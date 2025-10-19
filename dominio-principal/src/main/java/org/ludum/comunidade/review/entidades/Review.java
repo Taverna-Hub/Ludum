@@ -15,6 +15,7 @@ public class Review {
     private String titulo;
     private String texto;
     private Date data;
+    private Date dataUltimaEdicao;
     private boolean isRecomendado;
     private StatusReview status;
 
@@ -27,6 +28,7 @@ public class Review {
         this.titulo = Objects.requireNonNull(titulo);
         this.texto = Objects.requireNonNull(texto);
         this.data = Objects.requireNonNull(data);
+        this.dataUltimaEdicao = null;
         this.isRecomendado = isRecomendado;
         this.status = Objects.requireNonNull(status);
     }
@@ -38,16 +40,25 @@ public class Review {
     }
 
     public void editarConteudo(String novoTitulo, String novoTexto) {
-        // TODO: Implementar lógica de edição de conteúdo
+        if (novoTitulo == null || novoTitulo.trim().isEmpty()) {
+            throw new IllegalArgumentException("O título não pode estar vazio.");
+        }
+        if (novoTexto == null || novoTexto.trim().isEmpty()) {
+            throw new IllegalArgumentException("O texto não pode estar vazio.");
+        }
+        this.titulo = novoTitulo;
+        this.texto = novoTexto;
+        this.dataUltimaEdicao = new Date();
+        this.status = StatusReview.EDITADO;
     }
 
     public void ajustarNota(int novaNota) {
-        // TODO: Implementar lógica de ajuste de nota
+        validarNota(novaNota);
+        this.nota = novaNota;
+        this.dataUltimaEdicao = new Date();
+        this.status = StatusReview.EDITADO;
     }
 
-    public void marcarComoInapropriado() {
-        // TODO: Implementar lógica de marcação como inapropriado
-    }
 
     public ReviewId getId() {
         return id;
@@ -103,6 +114,14 @@ public class Review {
 
     public void setData(Date data) {
         this.data = data;
+    }
+
+    public Date getDataUltimaEdicao() {
+        return dataUltimaEdicao;
+    }
+
+    public void setDataUltimaEdicao(Date dataUltimaEdicao) {
+        this.dataUltimaEdicao = dataUltimaEdicao;
     }
 
     public boolean isRecomendado() {

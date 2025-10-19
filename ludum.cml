@@ -431,6 +431,7 @@ enum PostStatus{ PUBLICADO, EM_RASCUNHO, AGENDADO }
       String titulo    
       String texto     
       Date data        
+      Date dataUltimaEdicao
       boolean isRecomendado
       StatusReview status
 
