@@ -134,7 +134,7 @@ public class ReviewService {
 
         List<Review> todasReviews = reviewRepository.obterTodasPorJogo(jogoId);
         return todasReviews.stream()
-                .filter(review -> review.getStatus() && review.getStatus() != StatusReview.EXCLUIDO)
+                .filter(review -> review.getStatus() != StatusReview.EXCLUIDO)
                 .collect(java.util.stream.Collectors.toList());
     }
 
@@ -201,4 +201,42 @@ public class ReviewService {
         reviewRepository.salvar(review);
     }
 
+    /**
+     * H-5: Como usuário, quero filtrar as reviews de um jogo.
+     *
+     * Critérios de Aceitação:
+     * - O sistema deve filtrar e ordenar por data de avaliação.
+     * - O sistema deve filtrar apenas as avaliações da nota selecionada.
+     */
+    
+    public List<Review> filtrarReviewsPorNota(JogoId jogoId, int nota) {
+        // Validar nota
+        if (nota < 0 || nota > 5) {
+            throw new IllegalArgumentException("A nota deve estar entre 0 e 5.");
+        }
+
+        List<Review> reviews = obterReviewsDoJogo(jogoId);
+        
+        return reviews.stream()
+                .filter(review -> review.getNota() == nota)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    public List<Review> ordenarReviewsPorData(JogoId jogoId, boolean maisRecentesPrimeiro) {
+        List<Review> reviews = obterReviewsDoJogo(jogoId);
+        
+        if (maisRecentesPrimeiro) {
+            // Ordenar do mais recente para o mais antigo
+            return reviews.stream()
+                    .sorted((r1, r2) -> r2.getData().compareTo(r1.getData()))
+                    .collect(java.util.stream.Collectors.toList());
+        } else {
+            // Ordenar do mais antigo para o mais recente
+            return reviews.stream()
+                    .sorted((r1, r2) -> r1.getData().compareTo(r2.getData()))
+                    .collect(java.util.stream.Collectors.toList());
+        }
+    }
+
 }
+
