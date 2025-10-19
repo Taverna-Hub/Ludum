@@ -51,5 +51,5 @@ Feature: Comprar jogo
 
   Scenario: Reembolso fora do prazo (>24h) (negativo)
     Given que comprei o jogo há mais de 24h
-    When solicito reembolso
-    Then o sistema deve impedir o reembolso
+    When solicito reembolso fora do prazo
+    Then o sistema deve impedir o reembolso devido ao prazo

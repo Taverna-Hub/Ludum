@@ -33,17 +33,15 @@ public class OperacoesFinanceirasService {
 
         if (pagamentoConfirmado) {
             if (valor.compareTo(new BigDecimal("100")) > 0) {
-                carteira.getSaldo().setBloqueado(valor);
-                transacao.setStatus(StatusTransacao.PENDENTE);
+                carteira.getSaldo().addBloqueado(valor);
+                transacao.setStatus(StatusTransacao.PENDENTE); 
             } else {
-                carteira.getSaldo().setDisponivel(valor);
+                carteira.getSaldo().addDisponivel(valor);
             }
-        } else {
-            return false;
         }
 
         transacaoRepository.salvar(transacao);
-        return true;
+        return true; 
     }
 
     public boolean comprarJogo(Carteira carteiraSaida, Carteira carteiraEntrada, BigDecimal valor) {
@@ -57,16 +55,15 @@ public class OperacoesFinanceirasService {
 
         if (carteiraSaida.getSaldo().getDisponivel().compareTo(valor) >= 0) {
             carteiraSaida.getSaldo().subtrairDisponivel(valor);
-            carteiraEntrada.getSaldo().setDisponivel(valor);
+            
+            carteiraEntrada.getSaldo().addBloqueado(valor);
 
-            // Transação de débito para a carteira de saída
             Transacao transacaoDebito = new Transacao(null, carteiraSaida.getId(), carteiraEntrada.getId(), TipoTransacao.DEBITO,
                 StatusTransacao.CONFIRMADA, LocalDateTime.now(), valor);
             transacaoRepository.salvar(transacaoDebito);
 
-            // Transação de crédito para a carteira de entrada
             Transacao transacaoCredito = new Transacao(null, carteiraSaida.getId(), carteiraEntrada.getId(), TipoTransacao.CREDITO,
-                StatusTransacao.CONFIRMADA, LocalDateTime.now(), valor);
+                StatusTransacao.PENDENTE, LocalDateTime.now(), valor); 
             transacaoRepository.salvar(transacaoCredito);
 
             return true;
@@ -79,8 +76,8 @@ public class OperacoesFinanceirasService {
         long diferencaMillis = new Date().getTime() - dataTransacao.getTime();
         long diferencaHoras = TimeUnit.MILLISECONDS.toHours(diferencaMillis);
 
-        if (diferencaHoras <= 24) {
-            carteira.getSaldo().setDisponivel(carteira.getSaldo().getDisponivel().add(valor));
+        if (diferencaHoras >= 0 && diferencaHoras <= 24) { 
+            carteira.getSaldo().addDisponivel(valor);
 
             Transacao transacao = new Transacao(null, null, carteira.getId(), TipoTransacao.CREDITO,
                 StatusTransacao.CONFIRMADA, LocalDateTime.now(), valor);
@@ -92,10 +89,10 @@ public class OperacoesFinanceirasService {
         }
     }
 
-    public boolean solicitarSaque(Carteira carteira, BigDecimal valor, boolean contaValidada, 
+    public boolean solicitarSaque(Carteira carteira, BigDecimal valor, 
         Date dataVenda, boolean isCrowdfunding, boolean metaAtingida) {
 
-        if (!contaValidada) {
+        if (!carteira.isContaExternaValida()) {
             return false;
         }
 
@@ -110,7 +107,7 @@ public class OperacoesFinanceirasService {
                 return false;
             }
         } else if (diferencaHoras < 24) {
-            return false;
+            return false; 
         }
 
         if (carteira.getSaldo().getDisponivel().compareTo(valor) >= 0) {

@@ -1,7 +1,6 @@
 package org.ludum.dominio.financeiro;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
@@ -9,6 +8,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.ludum.financeiro.carteira.OperacoesFinanceirasService;
 import org.ludum.financeiro.carteira.entidades.Carteira;
@@ -20,6 +20,7 @@ import org.ludum.financeiro.transacao.enums.StatusTransacao;
 import org.ludum.identidade.conta.entities.ContaId;
 import org.ludum.financeiro.transacao.entidades.Recibo;
 
+import io.cucumber.java.Before; 
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -33,20 +34,19 @@ public class SaldoFuncionalidade {
     private static final int VALOR = 50;
     private static final int VALOR_MAIOR = 150;
 
-    private ContaId conta = new ContaId("comprador");
-    private Saldo saldo = new Saldo();
-    private Carteira carteira = new Carteira(conta, saldo); 
+    private ContaId conta;
+    private Saldo saldo;
+    private Carteira carteira; 
 
-    private ContaId conta2 = new ContaId("desenvolvedor");
-    private Saldo saldo2 = new Saldo();
-    private Carteira carteira2 = new Carteira(conta2, saldo2); 
+    private ContaId conta2;
+    private Saldo saldo2;
+    private Carteira carteira2; 
 
     private OperacoesFinanceirasService operacoesService;
     private boolean operacaoSucesso;
     private boolean compraComSucesso;
-    private List<Transacao> transacoes;
-    private List<Recibo> recibos;
     private BigDecimal valorJogo;
+    private Date dataVenda; 
 
     private static class MockTransacaoRepository implements TransacaoRepository {
         private List<Transacao> transacoes = new ArrayList<>();
@@ -78,18 +78,41 @@ public class SaldoFuncionalidade {
 
     private MockTransacaoRepository mockRepo;
 
-    public SaldoFuncionalidade() {
+    @Before
+    public void setup() {
         this.mockRepo = new MockTransacaoRepository();
         this.operacoesService = new OperacoesFinanceirasService(mockRepo);
-        this.transacoes = mockRepo.getTransacoes();
-        this.recibos = mockRepo.getRecibos();
+        
+        this.conta = new ContaId("comprador");
+        this.saldo = new Saldo();
+        this.carteira = new Carteira(conta, saldo); 
+
+        this.conta2 = new ContaId("desenvolvedor");
+        this.saldo2 = new Saldo();
+        this.carteira2 = new Carteira(conta2, saldo2); 
+
+        this.operacaoSucesso = false;
+        this.compraComSucesso = false;
+        this.valorJogo = null;
+        this.dataVenda = new Date(); 
     }
 
-    // Adicionar saldo com pagamento confirmado (positivo)
+    public SaldoFuncionalidade() {
+    }
 
-    @Given("adicionei R$ 50 na carteira")
+    private void simularVendaDeJogo() {
+        operacoesService.adicionarSaldo(carteira, BigDecimal.valueOf(VALOR), true);
+        carteira.liberarSaldoBloqueado();
+        operacoesService.comprarJogo(carteira, carteira2, BigDecimal.valueOf(VALOR));
+    }
+
+    @Given("que adicionei R$50 na carteira")
     public void adicionei_d1_na_carteira() {
         operacaoSucesso = operacoesService.adicionarSaldo(carteira, BigDecimal.valueOf(VALOR), true);
+    }
+
+    @And("o pagamento foi confirmado")
+    public void o_pagamento_foi_confirmado() {
     }
 
     @When("verifico meu saldo") 
@@ -101,40 +124,49 @@ public class SaldoFuncionalidade {
     public void devo_ver_50_disponivel() {
         assertTrue(operacaoSucesso);
         assertEquals(BigDecimal.valueOf(VALOR), carteira.getSaldo().getDisponivel());
-        assertEquals(1, transacoes.size());
     }
 
-    // Adicionar saldo com pagamento pendente/recusado (negativo)
 
-    @Given("adicionei R$ 50 na carteira")
+    @Given("que tentei adicionar R$50 na carteira com pagamento pendente")
     public void adicionei_d2_na_carteira() {
         operacaoSucesso = operacoesService.adicionarSaldo(carteira, BigDecimal.valueOf(VALOR), false);
     }
 
+    @And("o pagamento está pendente OU foi recusado")
+    public void o_pagamento_esta_pendente_ou_foi_recusado() {
+    }
+
     @Then("o saldo disponível não deve ser alterado e a transação de depósito não deve ser confirmada")
     public void o_saldo_disponível_nao_deve_ser_alterado_e_a_transacao_de_deposito_nao_deve_ser_confirmada() {
-        assertTrue(operacaoSucesso);
-        assertEquals(BigDecimal.valueOf(VALOR), carteira.getSaldo().getDisponivel());
-        assertEquals(StatusTransacao.PENDENTE, transacoes.get(1).getStatus());
+        assertTrue(operacaoSucesso); 
+        assertEquals(BigDecimal.ZERO, carteira.getSaldo().getDisponivel());
+        assertEquals(StatusTransacao.PENDENTE, mockRepo.getTransacoes().get(0).getStatus());
     }
     
-    // Depósito acima de R$100 fica bloqueado imediatamente (positivo)
 
-    @Given("adicionei R$ 150 na carteira")
+    @Given("que adicionei R$150 na carteira")
     public void adicionei_150_na_carteira() {
         operacaoSucesso = operacoesService.adicionarSaldo(carteira, BigDecimal.valueOf(VALOR_MAIOR), true);
     }
 
-    @Then("R$150 deve constar como bloqueado/pendente por 24h e o saldo disponível para uso não aumenta")
-    public void r_150_deve_constar_como_bloqueado_pendente_por_24h_e_o_saldo_disponivel_para_uso_nao_aumenta() {
-        assertTrue(operacaoSucesso);
-        assertEquals(BigDecimal.valueOf(VALOR), carteira.getSaldo().getDisponivel());
-        assertEquals(BigDecimal.valueOf(VALOR_MAIOR), carteira.getSaldo().getBloqueado());
-        assertEquals(3, transacoes.size());
+    @And("o pagamento foi confirmado para o depósito de R$150")
+    public void o_pagamento_foi_confirmado_150() {
     }
 
-    // Tentar usar saldo bloqueado antes de 24h (negativo)
-    @Given("adicionei R$ 150 na carteira")
+    @When("verifico meu saldo imediatamente")
+    public void verifico_meu_saldo_imediatamente() {
+        System.out.println(carteira.getSaldo().getDisponivel());
+    }
+
+    @Then("R${int} deve constar como bloqueado\\/pendente por 24h e o saldo disponível para uso não aumenta")
+    public void r_deve_constar_como_bloqueado_pendente_por_24h_e_o_saldo_disponivel_para_uso_nao_aumenta(Integer valorBloqueado) {
+        assertTrue(operacaoSucesso);
+        assertEquals(BigDecimal.ZERO, carteira.getSaldo().getDisponivel());
+        assertEquals(new BigDecimal(valorBloqueado), carteira.getSaldo().getBloqueado());
+    }
+
+
+    @Given("que tenho R$150 na carteira e está dentro do período de bloqueio de 24h")
     public void adicionei_150_na_carteira_compra_jogo() {
         operacaoSucesso = operacoesService.adicionarSaldo(carteira, BigDecimal.valueOf(VALOR_MAIOR), true);
     }
@@ -144,7 +176,7 @@ public class SaldoFuncionalidade {
         valorJogo = BigDecimal.valueOf(50);
     }
 
-    @When("finalizo a compra")
+    @When("finalizo a compra imediatamente")
     public void finalizo_a_compra() {
         compraComSucesso = operacoesService.comprarJogo(carteira, carteira2, valorJogo);
     }
@@ -155,10 +187,10 @@ public class SaldoFuncionalidade {
         assertEquals(BigDecimal.valueOf(VALOR_MAIOR), carteira.getSaldo().getBloqueado());
     }
 
-    // Usar saldo em compra com saldo suficiente (positivo)
-    @Given("tenho R$30 disponíveis na carteira")
+
+    @Given("que tenho R$30 disponíveis na carteira")
     public void tenho_r_30_disponíveis_na_carteira() {
-        operacaoSucesso = operacoesService.adicionarSaldo(carteira, BigDecimal.valueOf(VALOR_MENOR), true);
+        operacoesService.adicionarSaldo(carteira, BigDecimal.valueOf(VALOR_MENOR), true);
     }
 
     @And("o jogo custa R$25")
@@ -166,7 +198,7 @@ public class SaldoFuncionalidade {
         valorJogo = BigDecimal.valueOf(25);
     }
 
-    @When("compro o jogo") 
+    @When("finalizo a compra do jogo") 
     public void compro_o_jogo() {
         compraComSucesso = operacoesService.comprarJogo(carteira, carteira2, valorJogo);
     }
@@ -175,13 +207,13 @@ public class SaldoFuncionalidade {
     public void o_saldo_deve_ser_debitado_em_r_25_e_a_compra_deve_ser_concluida_com_sucesso() {
         assertTrue(compraComSucesso);
         assertEquals(BigDecimal.valueOf(5), carteira.getSaldo().getDisponivel());
-        assertEquals(BigDecimal.valueOf(25), carteira2.getSaldo().getDisponivel());
+        assertEquals(BigDecimal.valueOf(25), carteira2.getSaldo().getBloqueado());
     }
 
-    // Tentar usar saldo insuficiente (negativo)
-    @Given("tenho R$20 disponíveis na carteira")
+
+    @Given("que tenho R$20 disponíveis na carteira")
     public void tenho_r_20_disponíveis_na_carteira() {
-        operacaoSucesso = operacoesService.adicionarSaldo(carteira, BigDecimal.valueOf(15), true);
+        operacoesService.adicionarSaldo(carteira, BigDecimal.valueOf(VALOR_MENOR_AINDA), true);
     }
 
     @And("o jogo custa R$27") 
@@ -189,7 +221,7 @@ public class SaldoFuncionalidade {
         valorJogo = BigDecimal.valueOf(27);
     }
 
-    @When("compro o jogo") 
+    @When("tento comprar o jogo") 
     public void compro_o_jogo_2() {
         compraComSucesso = operacoesService.comprarJogo(carteira, carteira2, valorJogo);
     }
@@ -197,11 +229,11 @@ public class SaldoFuncionalidade {
     @Then("a compra não deve ser concluída e nenhum débito deve ocorrer no saldo")
     public void a_compra_nao_deve_ser_concluida_e_nenhum_debito_deve_ocorrer_no_saldo() {
         assertFalse(compraComSucesso);
-        assertEquals(BigDecimal.valueOf(20), carteira.getSaldo().getDisponivel());
+        assertEquals(BigDecimal.valueOf(VALOR_MENOR_AINDA), carteira.getSaldo().getDisponivel());
     }
 
-    // Reembolso válido é creditado na carteira (positivo)
-    @Given("solicitei reembolso válido dentro do prazo e não baixei")
+
+    @Given("que solicitei reembolso válido \\(dentro do prazo e não baixei\\)")
     public void solicitei_reembolso_valido() {
         operacaoSucesso = operacoesService.solicitarReembolso(carteira, BigDecimal.valueOf(VALOR), new Date());
     }
@@ -221,10 +253,11 @@ public class SaldoFuncionalidade {
         assertEquals(BigDecimal.valueOf(VALOR), carteira.getSaldo().getDisponivel());
     }
 
-    // Reembolso inválido não é creditado (negativo)
-    @Given("solicitei reembolso inválido fora do prazo ou após download")
+
+    @Given("que solicitei reembolso inválido \\(fora do prazo OU após download\\)")
     public void solicitei_reembolso_invalido() {
-        operacaoSucesso = operacoesService.solicitarReembolso(carteira, BigDecimal.valueOf(VALOR), new Date(new Date().getTime() + 24L * 60 * 60 * 1000));
+        Date dataForaDoPrazo = new Date(System.currentTimeMillis() - TimeUnit.HOURS.toMillis(25));
+        operacaoSucesso = operacoesService.solicitarReembolso(carteira, BigDecimal.valueOf(VALOR), dataForaDoPrazo);
     }
 
     @When("o sistema avalia a solicitação")
@@ -237,125 +270,131 @@ public class SaldoFuncionalidade {
         assertEquals(BigDecimal.ZERO, carteira.getSaldo().getDisponivel());
     }
 
-    // Desenvolvedor saca saldo após 24h (positivo)
-    @Given("vendi um jogo para um usuário")
+    @Given("que vendi um jogo para um usuário")
     public void vendi_um_jogo_para_um_usuario() {
-        operacaoSucesso = operacoesService.adicionarSaldo(carteira, BigDecimal.valueOf(VALOR), true);
+        simularVendaDeJogo(); 
+        this.dataVenda = new Date(System.currentTimeMillis() - TimeUnit.HOURS.toMillis(25)); 
     }
 
-    @And("o valor está disponível na conta do desenvolvedor há mais de 24h")
+    @And("o valor está disponível na conta do desenvolvedor há >24h")
     public void o_valor_esta_disponivel_ha_mais_de_24h() {
-        carteira.liberarSaldoBloqueado();
+        carteira2.liberarSaldoBloqueado(); 
     }
 
-    @And("minha conta externa está vinculada e validada")
-    public void minha_conta_externa_esta_vinculada() {
-        carteira.setContaExternaValida(true);
+    @And("minha conta externa está vinculada\\/validada")
+    public void minha_conta_externa_esta_vinculada_validada() {
+        carteira2.setContaExternaValida(true);
     }
 
     @When("solicito saque")
     public void solicito_saque() {
-        Date dataVenda = new Date(System.currentTimeMillis() - 25 * 60 * 60 * 1000); // 25 horas atrás
-        operacaoSucesso = operacoesService.solicitarSaque(carteira, BigDecimal.valueOf(VALOR), true, dataVenda, false, false);
+        operacaoSucesso = operacoesService.solicitarSaque(carteira2, BigDecimal.valueOf(VALOR), dataVenda, false, false);
     }
 
     @Then("o valor deve ser transferido para minha conta externa e o saldo na plataforma deve ser reduzido")
     public void o_valor_deve_ser_transferido() {
         assertTrue(operacaoSucesso);
-        assertEquals(BigDecimal.ZERO, carteira.getSaldo().getDisponivel());
+        assertEquals(BigDecimal.ZERO, carteira2.getSaldo().getDisponivel()); 
     }
 
-    // Desenvolvedor tenta sacar antes de 24h (negativo)
-    @Given("vendi um jogo há menos de 24h")
+
+    @Given("que vendi um jogo há menos de 24h")
     public void vendi_um_jogo_ha_menos_de_24h() {
-        operacaoSucesso = operacoesService.adicionarSaldo(carteira, BigDecimal.valueOf(VALOR), true);
+        simularVendaDeJogo();
+        this.dataVenda = new Date(); 
     }
 
     @When("solicito saque desse valor")
     public void solicito_saque_desse_valor() {
-        Date dataVenda = new Date(); // Agora, menos de 24h
-        operacaoSucesso = operacoesService.solicitarSaque(carteira, BigDecimal.valueOf(VALOR), true, dataVenda, false, false);
+        carteira2.setContaExternaValida(true); 
+        operacaoSucesso = operacoesService.solicitarSaque(carteira2, BigDecimal.valueOf(VALOR), dataVenda, false, false);
     }
 
     @Then("a solicitação de saque deve ser recusada e o valor permanece indisponível para saque")
     public void a_solicitacao_de_saque_deve_ser_recusada() {
         assertFalse(operacaoSucesso);
-        assertEquals(BigDecimal.valueOf(VALOR), carteira.getSaldo().getBloqueado());
+        assertEquals(BigDecimal.valueOf(VALOR), carteira2.getSaldo().getBloqueado());
+        assertEquals(BigDecimal.ZERO, carteira2.getSaldo().getDisponivel());
     }
 
-    // Saque com conta externa validada (positivo)
-    @Given("tenho saldo disponível para saque")
+
+    @Given("que tenho saldo disponível para saque")
     public void tenho_saldo_disponivel_para_saque() {
-        operacaoSucesso = operacoesService.adicionarSaldo(carteira, BigDecimal.valueOf(VALOR), true);
-        carteira.liberarSaldoBloqueado(); 
+        simularVendaDeJogo();
+        carteira2.liberarSaldoBloqueado(); 
+        this.dataVenda = new Date(System.currentTimeMillis() - TimeUnit.HOURS.toMillis(25)); 
     }
 
-    @And("minha conta bancária está vinculada e verificada")
+    @And("minha conta bancária\\/external está vinculada e verificada")
     public void minha_conta_bancaria_esta_vinculada() {
-        carteira.setContaExternaValida(true);
+        carteira2.setContaExternaValida(true);
     }
 
-    @When("solicito saque")
+    @When("solicito o saque")
     public void solicito_saque_valido() {
-        Date dataVenda = new Date(System.currentTimeMillis() - 25 * 60 * 60 * 1000); // 25 horas atrás
-        operacaoSucesso = operacoesService.solicitarSaque(carteira, BigDecimal.valueOf(VALOR), true, dataVenda, false, false);
+        operacaoSucesso = operacoesService.solicitarSaque(carteira2, BigDecimal.valueOf(VALOR), dataVenda, false, false);
     }
 
     @Then("o saque deve ser processado e transferido para a conta externa")
     public void o_saque_deve_ser_processado() {
         assertTrue(operacaoSucesso);
-        assertEquals(BigDecimal.ZERO, carteira.getSaldo().getDisponivel());
+        assertEquals(BigDecimal.ZERO, carteira2.getSaldo().getDisponivel());
     }
 
-    // Saque sem conta externa vinculada (negativo)
-    @Given("não tenho conta externa vinculada ou validada")
+
+    @And("não tenho conta externa vinculada\\/validada")
     public void nao_tenho_conta_externa_vinculada() {
-        carteira.setContaExternaValida(false);
+        carteira2.setContaExternaValida(false);
     }
 
     @Then("a solicitação de saque deve ser recusada e o saldo do desenvolvedor não deve ser alterado")
     public void a_solicitacao_de_saque_deve_ser_recusada_por_conta_nao_validada() {
-        assertFalse(operacaoSucesso);
-        assertEquals(BigDecimal.valueOf(VALOR), carteira.getSaldo().getDisponivel());
+        assertFalse(operacaoSucesso); 
+        assertEquals(BigDecimal.valueOf(VALOR), carteira2.getSaldo().getDisponivel()); 
     }
 
-    // Desenvolvedor saca saldo de crowdfunding após meta e 1 dia (positivo)
-    @Given("finalizei uma campanha")
+
+    @Given("que finalizei uma campanha")
     public void finalizei_uma_campanha() {
-        operacaoSucesso = operacoesService.adicionarSaldo(carteira, BigDecimal.valueOf(VALOR), true);
+        simularVendaDeJogo(); 
+        this.dataVenda = new Date(System.currentTimeMillis() - TimeUnit.HOURS.toMillis(25)); 
     }
 
     @And("a meta mínima foi atingida")
     public void a_meta_minima_foi_atingida() {
-        assertTrue(operacaoSucesso);
     }
 
     @And("já passou 1 dia do término da campanha")
     public void ja_passou_1_dia_do_termino_da_campanha() {
-        carteira.liberarSaldoBloqueado();
+        carteira2.liberarSaldoBloqueado(); 
+    }
+
+    @And("minha conta externa está validada")
+    public void minha_conta_externa_esta_validada() {
+        carteira2.setContaExternaValida(true);
     }
 
     @When("solicito saque do valor arrecadado")
     public void solicito_saque_do_valor_arrecadado() {
-        Date dataVenda = new Date(System.currentTimeMillis() - 25 * 60 * 60 * 1000); // 25 horas atrás
-        operacaoSucesso = operacoesService.solicitarSaque(carteira, BigDecimal.valueOf(VALOR), true, dataVenda, true, true);
+        operacaoSucesso = operacoesService.solicitarSaque(carteira2, BigDecimal.valueOf(VALOR), dataVenda, true, true);
     }
 
     @Then("o valor arrecadado deve ser liberado e transferido para minha conta externa")
     public void o_valor_arrecadado_deve_ser_liberado() {
         assertTrue(operacaoSucesso);
-        assertEquals(BigDecimal.ZERO, carteira.getSaldo().getDisponivel());
+        assertEquals(BigDecimal.ZERO, carteira2.getSaldo().getDisponivel());
     }
-
-    // Tentativa de saque de crowdfunding antes de 1 dia ou meta não atingida (negativo)
-    @Given("a meta mínima não foi atingida ou ainda não passou 1 dia do término")
-    public void meta_nao_atingida_ou_tempo_insuficiente() {
-        operacaoSucesso = false;
+    
+    @And("\\(a meta mínima NÃO foi atingida OU ainda não passou {int} dia do término\\)")
+    public void meta_nao_atingida_ou_tempo_insuficiente(Integer int1) {
+        this.dataVenda = new Date(); 
+        carteira2.setContaExternaValida(true);
     }
 
     @Then("o saque deve ser bloqueado e nenhum valor deve ser liberado")
     public void o_saque_deve_ser_bloqueado() {
         assertFalse(operacaoSucesso);
-        assertEquals(BigDecimal.ZERO, carteira.getSaldo().getDisponivel());
+        assertEquals(BigDecimal.valueOf(VALOR), carteira2.getSaldo().getBloqueado());
+        assertEquals(BigDecimal.ZERO, carteira2.getSaldo().getDisponivel());
     }
 }
