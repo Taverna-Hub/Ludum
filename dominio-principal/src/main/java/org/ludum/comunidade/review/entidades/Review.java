@@ -1,8 +1,8 @@
 package org.ludum.comunidade.review.entidades;
 
 import org.ludum.catalogo.jogo.entidades.JogoId;
-import org.ludum.conta.entidades.ContaId;
 import org.ludum.comunidade.review.enums.StatusReview;
+import org.ludum.identidade.conta.entities.ContaId;
 
 import java.util.Date;
 import java.util.Objects;
@@ -22,12 +22,19 @@ public class Review {
         this.id = Objects.requireNonNull(id);
         this.jogoId = Objects.requireNonNull(jogoId);
         this.autorId = Objects.requireNonNull(autorId);
+        validarNota(nota);
         this.nota = nota;
         this.titulo = Objects.requireNonNull(titulo);
         this.texto = Objects.requireNonNull(texto);
         this.data = Objects.requireNonNull(data);
         this.isRecomendado = isRecomendado;
         this.status = Objects.requireNonNull(status);
+    }
+
+    private void validarNota(int nota) {
+        if (nota < 0 || nota > 5) {
+            throw new IllegalArgumentException("A nota deve estar entre 0 e 5.");
+        }
     }
 
     public void editarConteudo(String novoTitulo, String novoTexto) {
