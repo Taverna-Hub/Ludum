@@ -1,5 +1,7 @@
 package org.ludum.comunidade.post.services;
 
+import org.ludum.catalogo.jogo.entidades.JogoId;
+import org.ludum.catalogo.tag.entidades.Tag;
 import org.ludum.comunidade.post.entidades.*;
 import org.ludum.comunidade.post.enums.PostStatus;
 import org.ludum.comunidade.post.repositorios.PostRepository;
@@ -22,10 +24,29 @@ public class PostService {
     private static final long MAX_HORAS_AGENDAMENTO = 24;
 
     private final PostRepository postRepository;
+    private final MalwareScanner malwareScanner;
+    private final ImagemCompressor imagemCompressor;
+    private final ConteudoAdultoValidator conteudoAdultoValidator;
+    private final JogoInfo jogoInfo;
+    private final NotificacaoService notificacaoService;
 
     public PostService(PostRepository postRepository) {
+        this(postRepository, null, null, null, null, null);
+    }
+
+    public PostService(PostRepository postRepository,
+            MalwareScanner malwareScanner,
+            ImagemCompressor imagemCompressor,
+            ConteudoAdultoValidator conteudoAdultoValidator,
+            JogoInfo jogoInfo,
+            NotificacaoService notificacaoService) {
         this.postRepository = Objects.requireNonNull(postRepository,
                 "PostRepository não pode ser nulo");
+        this.malwareScanner = malwareScanner;
+        this.imagemCompressor = imagemCompressor;
+        this.conteudoAdultoValidator = conteudoAdultoValidator;
+        this.jogoInfo = jogoInfo;
+        this.notificacaoService = notificacaoService;
     }
 
     public Post publicarPost(JogoId jogoId, ContaId autorId, String titulo, String conteudo,
@@ -74,7 +95,10 @@ public class PostService {
         validarConteudo(conteudo);
         validarTags(tags);
 
-        // Criar rascunho
+        if (jogoInfo != null) {
+            validarTagsDoJogo(jogoId, tags);
+        }
+
         PostId postId = new PostId(UUID.randomUUID().toString());
         Post post = new Post(postId, jogoId, autorId, titulo, conteudo,
                 null, imagem, PostStatus.EM_RASCUNHO, tags);
@@ -206,15 +230,29 @@ public class PostService {
         long horasAteAgendamento = Duration.between(agora, dataAgendamento).toHours();
 
         if (horasAteAgendamento < MIN_HORAS_AGENDAMENTO) {
-            throw new IllegalArgumentException(
-                    "Data de agendamento deve ser pelo menos " + MIN_HORAS_AGENDAMENTO +
-                            " hora(s) no futuro");
+            String mensagemErro = "Data de agendamento deve ser pelo menos " + MIN_HORAS_AGENDAMENTO +
+                    " hora(s) no futuro";
+            
+            // Notificar sobre falha
+            Post post = postRepository.obterPorId(postId);
+            if (post != null && notificacaoService != null) {
+                notificacaoService.notificarFalhaAgendamento(post.getAutorId(), postId, mensagemErro);
+            }
+            
+            throw new IllegalArgumentException(mensagemErro);
         }
 
         if (horasAteAgendamento > MAX_HORAS_AGENDAMENTO) {
-            throw new IllegalArgumentException(
-                    "Data de agendamento não pode ultrapassar " + MAX_HORAS_AGENDAMENTO +
-                            " horas no futuro");
+            String mensagemErro = "Data de agendamento não pode ultrapassar " + MAX_HORAS_AGENDAMENTO +
+                    " horas no futuro";
+            
+            // Notificar sobre falha
+            Post post = postRepository.obterPorId(postId);
+            if (post != null && notificacaoService != null) {
+                notificacaoService.notificarFalhaAgendamento(post.getAutorId(), postId, mensagemErro);
+            }
+            
+            throw new IllegalArgumentException(mensagemErro);
         }
 
         Post post = postRepository.obterPorId(postId);
@@ -228,11 +266,13 @@ public class PostService {
             postRepository.salvar(post);
 
         } catch (Exception e) {
-            // Fallback: se falhar, retorna para RASCUNHO
-            post.setStatus(PostStatus.EM_RASCUNHO);
-            postRepository.salvar(post);
+            // Notificar sobre falha genérica
+            if (notificacaoService != null) {
+                notificacaoService.notificarFalhaAgendamento(post.getAutorId(), postId, e.getMessage());
+            }
+            
             throw new IllegalStateException(
-                    "Falha ao agendar post. Retornado para rascunho. Motivo: " + e.getMessage(), e);
+                    "Falha ao agendar post. Motivo: " + e.getMessage(), e);
         }
     }
 
@@ -296,5 +336,49 @@ public class PostService {
             throw new IllegalArgumentException(
                     "Post não pode ter mais de " + MAX_TAGS + " tags (atual: " + tags.size() + ")");
         }
+    }
+
+    private void validarTagsDoJogo(JogoId jogoId, List<Tag> tags) {
+        List<Tag> tagsDoJogo = jogoInfo.obterTagsDoJogo(jogoId);
+
+        for (Tag tag : tags) {
+            if (!tagsDoJogo.contains(tag)) {
+                throw new IllegalArgumentException(
+                        "Tag '" + tag + "' não está associada ao jogo");
+            }
+        }
+    }
+
+    private URL processarImagem(URL imagem, JogoId jogoId, ContaId autorId) {
+        // 1. Verificar malware
+        if (malwareScanner != null && malwareScanner.contemMalware(imagem)) {
+            throw new SecurityException("Falha na publicação: malware detectado na imagem");
+        }
+
+        // 2. Verificar conteúdo +18
+        if (conteudoAdultoValidator != null && jogoInfo != null) {
+            boolean jogoAdulto = jogoInfo.isJogoAdulto(jogoId);
+            boolean imagemAdulta = conteudoAdultoValidator.contemConteudoAdulto(imagem);
+
+            if (!jogoAdulto && imagemAdulta) {
+                // Criar PostId temporário para notificação
+                PostId postIdTemp = new PostId(UUID.randomUUID().toString());
+                
+                // Notificar usuário sobre bloqueio
+                if (notificacaoService != null) {
+                    notificacaoService.notificarImagemBloqueada(autorId, postIdTemp);
+                }
+                
+                throw new SecurityException(
+                        "Imagem bloqueada: conteúdo adulto não permitido em jogo não-adulto");
+            }
+        }
+
+        // 3. Compactar se necessário
+        if (imagemCompressor != null && imagemCompressor.excedeLimit(imagem)) {
+            imagem = imagemCompressor.compactar(imagem);
+        }
+
+        return imagem;
     }
 }
