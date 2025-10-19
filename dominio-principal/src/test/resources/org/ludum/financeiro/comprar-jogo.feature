@@ -18,7 +18,7 @@ Feature: Comprar jogo
   Scenario: Compra de jogo publicado com arquivo disponível (positivo)
     Given que o jogo está publicado, disponível para venda e o arquivo do jogo está presente no repositório
     And eu tenho forma de pagamento válida
-    When eu realizo a compra
+    When eu realizo a compra no valor de R$20
     Then a compra é concluída com sucesso e recebo acesso para baixar o jogo
 
   Scenario: Tentativa de comprar jogo publicado sem arquivo disponível (negativo)
@@ -42,7 +42,7 @@ Feature: Comprar jogo
     Given que comprei um jogo há menos de 24h
     And ainda não baixei o jogo
     When solicito reembolso
-    Then devo receber o valor de volta pela forma original (ou crédito, conforme política) e a compra deve ser registrada como reembolsada
+    Then devo receber o valor de volta no saldo a compra deve ser registrada como reembolsada
 
   Scenario: Reembolso negado após download (negativo)
     Given que já baixei o jogo
@@ -51,5 +51,5 @@ Feature: Comprar jogo
 
   Scenario: Reembolso fora do prazo (>24h) (negativo)
     Given que comprei o jogo há mais de 24h
-    When solicito reembolso
-    Then o sistema deve impedir o reembolso
+    When solicito reembolso fora do prazo
+    Then o sistema deve impedir o reembolso devido ao prazo

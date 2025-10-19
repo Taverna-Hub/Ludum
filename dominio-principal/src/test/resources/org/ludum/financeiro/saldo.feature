@@ -8,19 +8,19 @@ Feature: Saldo
     Then devo ver R$50 disponível
 
   Scenario: Adicionar saldo com pagamento pendente/recusado (negativo)
-    Given que adicionei R$50 na carteira
+    Given que tentei adicionar R$50 na carteira com pagamento pendente
     And o pagamento está pendente OU foi recusado
     When verifico meu saldo
     Then o saldo disponível não deve ser alterado e a transação de depósito não deve ser confirmada
 
   Scenario: Depósito acima de R$100 fica bloqueado imediatamente (positivo)
     Given que adicionei R$150 na carteira
-    And o pagamento foi confirmado
+    And o pagamento foi confirmado para o depósito de R$150
     When verifico meu saldo imediatamente
     Then R$150 deve constar como bloqueado/pendente por 24h e o saldo disponível para uso não aumenta
 
   Scenario: Tentar usar saldo bloqueado antes de 24h (negativo)
-    Given que adicionei R$150 na carteira e está dentro do período de bloqueio de 24h
+    Given que tenho R$150 na carteira e está dentro do período de bloqueio de 24h
     And tento comprar um jogo que custa R$50
     When finalizo a compra imediatamente
     Then a compra não deve ser concluída e o saldo bloqueado deve permanecer inalterado
@@ -28,12 +28,12 @@ Feature: Saldo
   Scenario: Usar saldo em compra com saldo suficiente (positivo)
     Given que tenho R$30 disponíveis na carteira
     And o jogo custa R$25
-    When compro o jogo
+    When finalizo a compra do jogo
     Then o saldo deve ser debitado em R$25 e a compra deve ser concluída com sucesso
 
   Scenario: Tentar usar saldo insuficiente (negativo)
     Given que tenho R$20 disponíveis na carteira
-    And o jogo custa R$25
+    And o jogo custa R$27
     When tento comprar o jogo
     Then a compra não deve ser concluída e nenhum débito deve ocorrer no saldo
 
@@ -63,7 +63,7 @@ Feature: Saldo
   Scenario: Saque com conta externa validada (positivo)
     Given que tenho saldo disponível para saque
     And minha conta bancária/external está vinculada e verificada
-    When solicito saque
+    When solicito o saque
     Then o saque deve ser processado e transferido para a conta externa
 
   Scenario: Saque sem conta externa vinculada (negativo)

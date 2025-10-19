@@ -33,34 +33,39 @@ public class OperacoesFinanceirasService {
 
         if (pagamentoConfirmado) {
             if (valor.compareTo(new BigDecimal("100")) > 0) {
-                carteira.getSaldo().setBloqueado(valor);
-                transacao.setStatus(StatusTransacao.PENDENTE);
+                carteira.getSaldo().addBloqueado(valor);
+                transacao.setStatus(StatusTransacao.PENDENTE); 
             } else {
-                carteira.getSaldo().setDisponivel(valor);
+                carteira.getSaldo().addDisponivel(valor);
             }
-        } else {
-            return false;
         }
 
         transacaoRepository.salvar(transacao);
-        return true;
+        return true; 
     }
 
-    public boolean comprarJogo(Carteira carteira, BigDecimal valor) {
-        Objects.requireNonNull(carteira, "Carteira não pode ser nula");
+    public boolean comprarJogo(Carteira carteiraSaida, Carteira carteiraEntrada, BigDecimal valor) {
+        Objects.requireNonNull(carteiraSaida, "Carteira de saída não pode ser nula");
+        Objects.requireNonNull(carteiraEntrada, "Carteira de entrada não pode ser nula");
         Objects.requireNonNull(valor, "Valor não pode ser nulo");
 
         if (valor.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Valor deve ser maior que zero");
         }
 
-        if (carteira.getSaldo().getDisponivel().compareTo(valor) >= 0) {
-            carteira.getSaldo().subtrairDisponivel(valor);
+        if (carteiraSaida.getSaldo().getDisponivel().compareTo(valor) >= 0) {
+            carteiraSaida.getSaldo().subtrairDisponivel(valor);
+            
+            carteiraEntrada.getSaldo().addBloqueado(valor);
 
-            Transacao transacao = new Transacao(null, carteira.getId(), null, TipoTransacao.DEBITO,
+            Transacao transacaoDebito = new Transacao(null, carteiraSaida.getId(), carteiraEntrada.getId(), TipoTransacao.DEBITO,
                 StatusTransacao.CONFIRMADA, LocalDateTime.now(), valor);
+            transacaoRepository.salvar(transacaoDebito);
 
-            transacaoRepository.salvar(transacao);
+            Transacao transacaoCredito = new Transacao(null, carteiraSaida.getId(), carteiraEntrada.getId(), TipoTransacao.CREDITO,
+                StatusTransacao.PENDENTE, LocalDateTime.now(), valor); 
+            transacaoRepository.salvar(transacaoCredito);
+
             return true;
         } else {
             return false;
@@ -71,8 +76,8 @@ public class OperacoesFinanceirasService {
         long diferencaMillis = new Date().getTime() - dataTransacao.getTime();
         long diferencaHoras = TimeUnit.MILLISECONDS.toHours(diferencaMillis);
 
-        if (diferencaHoras <= 24) {
-            carteira.getSaldo().setDisponivel(valor);
+        if (diferencaHoras >= 0 && diferencaHoras <= 24) { 
+            carteira.getSaldo().addDisponivel(valor);
 
             Transacao transacao = new Transacao(null, null, carteira.getId(), TipoTransacao.CREDITO,
                 StatusTransacao.CONFIRMADA, LocalDateTime.now(), valor);
@@ -84,10 +89,10 @@ public class OperacoesFinanceirasService {
         }
     }
 
-    public boolean solicitarSaque(Carteira carteira, BigDecimal valor, boolean contaValidada, 
+    public boolean solicitarSaque(Carteira carteira, BigDecimal valor, 
         Date dataVenda, boolean isCrowdfunding, boolean metaAtingida) {
 
-        if (!contaValidada) {
+        if (!carteira.isContaExternaValida()) {
             return false;
         }
 
@@ -102,7 +107,7 @@ public class OperacoesFinanceirasService {
                 return false;
             }
         } else if (diferencaHoras < 24) {
-            return false;
+            return false; 
         }
 
         if (carteira.getSaldo().getDisponivel().compareTo(valor) >= 0) {
