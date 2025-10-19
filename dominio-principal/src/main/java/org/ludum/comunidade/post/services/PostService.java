@@ -28,11 +28,10 @@ public class PostService {
                 "PostRepository não pode ser nulo");
     }
 
-    // TODO ADICIONAR O JOGOID
-    public Post publicarPost(ContaId autorId, String titulo, String conteudo,
-            URL imagem, List<String> tags) {
+    public Post publicarPost(JogoId jogoId, ContaId autorId, String titulo, String conteudo,
+            URL imagem, List<Tag> tags) {
 
-        // Validações de entrada
+        Objects.requireNonNull(jogoId, "JogoId não pode ser nulo");
         Objects.requireNonNull(autorId, "AutorId não pode ser nulo");
         Objects.requireNonNull(titulo, "Título não pode ser nulo");
         Objects.requireNonNull(conteudo, "Conteúdo não pode ser nulo");
@@ -41,37 +40,29 @@ public class PostService {
             throw new IllegalArgumentException("Título não pode ser vazio");
         }
 
-        // Regra 2: Conteúdo deve ter no máximo 500 caracteres
         validarConteudo(conteudo);
-
-        // Regra 3: Tags devem ter entre 1 e 5 elementos
         validarTags(tags);
 
-        // TODO: Integração com serviços externos (camada de aplicação/infraestrutura)
-        // - Verificar malware nas imagens (serviço externo de segurança)
-        // - Comprimir imagens se necessário (serviço de processamento)
-        // - Detectar conteúdo +18 (serviço de moderação)
-        // Exemplo:
-        // if (imagem != null) {
-        // imagemService.verificarMalware(imagem);
-        // imagemService.comprimirSeNecessario(imagem);
-        // moderacaoService.verificarConteudoInapropriado(conteudo, imagem);
-        // }
+        if (jogoInfo != null) {
+            validarTagsDoJogo(jogoId, tags);
+        }
 
-        // Criar e publicar post
+        if (imagem != null) {
+            imagem = processarImagem(imagem, jogoId, autorId);
+        }
+
         PostId postId = new PostId(UUID.randomUUID().toString());
-        Post post = new Post(postId, autorId, titulo, conteudo,
+        Post post = new Post(postId, jogoId, autorId, titulo, conteudo,
                 LocalDateTime.now(), imagem, PostStatus.PUBLICADO, tags);
 
         postRepository.salvar(post);
         return post;
     }
 
-    // TODO: ADICIONAR JOGO ID
-    public Post criarRascunho(ContaId autorId, String titulo, String conteudo,
-            URL imagem, List<String> tags) {
+    public Post criarRascunho(JogoId jogoId, ContaId autorId, String titulo, String conteudo,
+            URL imagem, List<Tag> tags) {
 
-        // Validações de entrada
+        Objects.requireNonNull(jogoId, "JogoId não pode ser nulo");
         Objects.requireNonNull(autorId, "AutorId não pode ser nulo");
         Objects.requireNonNull(titulo, "Título não pode ser nulo");
         Objects.requireNonNull(conteudo, "Conteúdo não pode ser nulo");
@@ -80,13 +71,12 @@ public class PostService {
             throw new IllegalArgumentException("Título não pode ser vazio");
         }
 
-        // Validar regras de negócio
         validarConteudo(conteudo);
         validarTags(tags);
 
         // Criar rascunho
         PostId postId = new PostId(UUID.randomUUID().toString());
-        Post post = new Post(postId, autorId, titulo, conteudo,
+        Post post = new Post(postId, jogoId, autorId, titulo, conteudo,
                 null, imagem, PostStatus.EM_RASCUNHO, tags);
 
         postRepository.salvar(post);
@@ -118,10 +108,7 @@ public class PostService {
             throw new IllegalStateException("Apenas o autor pode editar o post");
         }
 
-        // Editar usando método do agregado (quando implementado)
-        // Temporariamente usando setters
-        post.setTitulo(novoTitulo);
-        post.setConteudo(novoConteudo);
+        post.editarConteudo(novoTitulo, novoConteudo);
         postRepository.salvar(post);
     }
 
@@ -134,21 +121,8 @@ public class PostService {
             throw new IllegalArgumentException("Post não encontrado");
         }
 
-        // Regra 4: Verificar se já curtiu (evitar duplicatas)
-        // Compara usando equals() do Value Object Curtida
-        Curtida novaCurtida = new Curtida(postId, contaId);
-        boolean jaCurtiu = post.getCurtidas().stream()
-                .anyMatch(curtidaExistente -> curtidaExistente.getContaId().equals(contaId));
-
-        if (jaCurtiu) {
-            throw new IllegalArgumentException(
-                    "Conta " + contaId.getValue() + " já curtiu este post");
-        }
-
-        // Adicionar curtida
-        // Quando Post.adicionarCurtida() estiver implementado, use:
-        // post.adicionarCurtida(novaCurtida);
-        post.getCurtidas().add(novaCurtida);
+        // Adicionar Curtida
+        post.adicionarCurtida(contaId);
         postRepository.salvar(post);
     }
 
@@ -161,15 +135,8 @@ public class PostService {
             throw new IllegalArgumentException("Post não encontrado");
         }
 
-        // Regra 5: Verificar se curtida existe antes de remover
-        boolean removido = post.getCurtidas().removeIf(
-                curtida -> curtida.getContaId().equals(contaId));
-
-        if (!removido) {
-            throw new IllegalArgumentException(
-                    "Conta " + contaId.getValue() + " não curtiu este post");
-        }
-
+        // Remover Curtida
+        post.removerCurtida(contaId);
         postRepository.salvar(post);
     }
 
@@ -192,7 +159,7 @@ public class PostService {
         Comentario comentario = new Comentario(comentarioId, postId, autorId,
                 texto, LocalDateTime.now());
 
-        post.getComentarios().add(comentario);
+        post.adicionarComentario(comentario);
         postRepository.salvar(post);
     }
 
@@ -208,23 +175,8 @@ public class PostService {
             throw new IllegalArgumentException("Post não encontrado");
         }
 
-        // Buscar comentário
-        Comentario comentario = post.getComentarios().stream()
-                .filter(c -> c.getId().equals(comentarioId))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Comentário " + comentarioId + " não encontrado"));
-
-        // Regra 7: Verificar autorização (autor do comentário OU autor do post)
-        boolean ehAutorComentario = comentario.getAutorId().equals(solicitanteId);
-        boolean ehAutorPost = post.getAutorId().equals(solicitanteId);
-
-        if (!ehAutorComentario && !ehAutorPost) {
-            throw new IllegalArgumentException(
-                    "Apenas o autor do comentário ou do post pode remover este comentário");
-        }
-
-        post.getComentarios().remove(comentario);
+        // Remoção de comentário
+        post.removerComentario(comentarioId, solicitanteId);
         postRepository.salvar(post);
     }
 
@@ -270,15 +222,9 @@ public class PostService {
             throw new IllegalArgumentException("Post não encontrado");
         }
 
-        // Validação de estado
-        if (post.getStatus() != PostStatus.EM_RASCUNHO) {
-            throw new IllegalStateException("Apenas posts em rascunho podem ser agendados");
-        }
-
         try {
             // Agendar post
-            post.setStatus(PostStatus.AGENDADO);
-            // TODO: Adicionar campo dataAgendamento no Post.java
+            post.agendarPost(dataAgendamento);
             postRepository.salvar(post);
 
         } catch (Exception e) {
@@ -299,21 +245,12 @@ public class PostService {
             throw new IllegalArgumentException("Post não encontrado");
         }
 
-        // Validação de autorização
         if (!post.getAutorId().equals(autorId)) {
             throw new IllegalStateException("Apenas o autor pode publicar o post");
         }
 
-        // Regra 8: Validação de estado
-        if (post.getStatus() != PostStatus.EM_RASCUNHO &&
-                post.getStatus() != PostStatus.AGENDADO) {
-            throw new IllegalStateException(
-                    "Apenas posts em rascunho ou agendados podem ser publicados");
-        }
-
         // Publicar post
-        post.setStatus(PostStatus.PUBLICADO);
-        post.setDataPublicacao(LocalDateTime.now());
+        post.publicarPost();
         postRepository.salvar(post);
     }
 
@@ -349,7 +286,7 @@ public class PostService {
         }
     }
 
-    private void validarTags(List<String> tags) {
+    private void validarTags(List<Tag> tags) {
         if (tags == null || tags.isEmpty()) {
             throw new IllegalArgumentException(
                     "Post deve ter pelo menos " + MIN_TAGS + " tag");
