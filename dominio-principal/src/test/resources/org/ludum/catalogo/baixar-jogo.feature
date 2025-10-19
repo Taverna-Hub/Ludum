@@ -1,7 +1,7 @@
-Feature: Download de Jogo Gratuito
-  Para que eu possa jogar novos títulos sem custo,
-  Como um usuário com conta ativa,
-  Eu quero baixar jogos marcados como gratuitos.
+Feature: Download de Jogos
+  Para acessar e jogar títulos que desejo,
+  Como um usuário da plataforma,
+  Eu quero poder baixar jogos gratuitos e pagos que possuo.
 
   Scenario: Usuário com conta ativa baixa um jogo gratuito já lançado
     Given que eu sou um usuário com uma conta no status "ativa"
@@ -23,11 +23,6 @@ Feature: Download de Jogo Gratuito
     When eu tento baixar "Lendas do Amanhã"
     Then o sistema deve impedir o início do download
     And deve me informar que o jogo ainda não foi lançado
-
-Feature: Download de Jogo Pago Comprado
-  Para acessar o conteúdo que adquiri,
-  Como um usuário que já comprou um jogo,
-  Eu quero poder baixá-lo quando desejar.
 
   Scenario: Usuário baixa um jogo comprado que já foi lançado
     Given que eu sou um usuário com uma conta ativa
