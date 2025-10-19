@@ -59,6 +59,14 @@ public class Review {
         this.status = StatusReview.EDITADO;
     }
 
+    public void excluir() {
+        this.status = StatusReview.EXCLUIDO;
+        this.dataUltimaEdicao = new Date();
+    }
+
+    public boolean isExcluida() {
+        return this.status == StatusReview.EXCLUIDO;
+    }
 
     public ReviewId getId() {
         return id;

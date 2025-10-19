@@ -38,29 +38,25 @@ public class ReviewService {
      * - A review deve conter: Nota (0-5) estrelas, Comentário (texto), Recomendação (true/false).
      */
     public void avaliarJogo(JogoId jogoId, ContaId autorId, int nota, String titulo, String texto, boolean recomenda) {
-        // Validar se o jogo existe
+
         Jogo jogo = jogoRepository.obterPorId(jogoId);
         if (jogo == null) {
             throw new IllegalArgumentException("Jogo não encontrado.");
         }
 
-        // Validar se o jogo está publicado
         if (jogo.getStatus() != StatusPublicacao.PUBLICADO) {
             throw new IllegalArgumentException("Não é possível avaliar um jogo que não está publicado.");
         }
 
-        // Validar se o usuário comprou ou baixou o jogo
         Biblioteca biblioteca = bibliotecaRepository.obterPorJogador(autorId);
         if (biblioteca == null || biblioteca.buscarJogoEmBiblioteca(jogoId).isEmpty()) {
             throw new IllegalArgumentException("Você precisa ter o jogo na sua biblioteca para avaliá-lo.");
         }
 
-        // Validar se já existe uma review deste usuário para este jogo
         if (reviewRepository.obterPorAutorEJogo(autorId, jogoId).isPresent()) {
             throw new IllegalArgumentException("Você já avaliou este jogo. Use a função de editar para alterar sua avaliação.");
         }
 
-        // Validar dados da review
         if (titulo == null || titulo.trim().isEmpty()) {
             throw new IllegalArgumentException("O título da review não pode estar vazio.");
         }
@@ -69,7 +65,6 @@ public class ReviewService {
             throw new IllegalArgumentException("O texto da review não pode estar vazio.");
         }
 
-        // Criar a review
         ReviewId reviewId = new ReviewId(UUID.randomUUID().toString());
         Review novaReview = new Review(
             reviewId,
@@ -95,19 +90,17 @@ public class ReviewService {
      * - Após a edição, a review atualizada substitui a anterior.
      */
     public void editarAvaliacao(ReviewId reviewId, ContaId autorId, String novoTitulo, String novoTexto, int novaNota, boolean novaRecomendacao) {
-        // Validar se a review existe
+
         Review review = reviewRepository.obterPorId(reviewId);
         if (review == null) {
             throw new IllegalArgumentException("Review não encontrada.");
         }
 
-        // Validar se o usuário é o autor da review
         String autorOriginal = review.getAutorId().getValue();
         if (!autorOriginal.equals(autorId.getValue())) {
             throw new IllegalArgumentException("Você só pode editar suas próprias avaliações.");
         }
 
-        // Validar dados da edição
         if (novoTitulo == null || novoTitulo.trim().isEmpty()) {
             throw new IllegalArgumentException("O título da review não pode estar vazio.");
         }
@@ -116,12 +109,10 @@ public class ReviewService {
             throw new IllegalArgumentException("O texto da review não pode estar vazio.");
         }
 
-        // Editar conteúdo e nota usando os métodos do agregado
         review.editarConteudo(novoTitulo, novoTexto);
         review.ajustarNota(novaNota);
         review.setRecomendado(novaRecomendacao);
 
-        // Salvar a review editada
         reviewRepository.salvar(review);
     }
 
@@ -135,16 +126,15 @@ public class ReviewService {
      */
     
     public List<Review> obterReviewsDoJogo(JogoId jogoId) {
-        // Validar se o jogo existe
+
         Jogo jogo = jogoRepository.obterPorId(jogoId);
         if (jogo == null) {
             throw new IllegalArgumentException("Jogo não encontrado.");
         }
 
-        // Retornar todas as reviews publicadas (excluindo sinalizadas)
         List<Review> todasReviews = reviewRepository.obterTodasPorJogo(jogoId);
         return todasReviews.stream()
-                .filter(review -> review.getStatus() != StatusReview.SINALIZADO)
+                .filter(review -> review.getStatus() && review.getStatus() != StatusReview.EXCLUIDO)
                 .collect(java.util.stream.Collectors.toList());
     }
 
@@ -179,6 +169,36 @@ public class ReviewService {
 
         int totalRecomendacoes = obterTotalRecomendacoes(jogoId);
         return (double) totalRecomendacoes / reviews.size() * 100;
+    }
+
+    /**
+     * H-4: Como usuário, quero remover a minha review.
+     *
+     * Critérios de Aceitação:
+     * - Apenas o autor pode excluir a review.
+     * - Excluir a review significa desativar/ocultar (não apagar do banco, para manter histórico).
+     * - Reviews excluídas não devem aparecer publicamente.
+     */
+    public void removerReview(ReviewId reviewId, ContaId autorId) {
+
+        Review review = reviewRepository.obterPorId(reviewId);
+        if (review == null) {
+            throw new IllegalArgumentException("Review não encontrada.");
+        }
+
+        if (!review.getAutorId().getValue().equals(autorId.getValue())) {
+            throw new IllegalArgumentException("Você só pode remover suas próprias avaliações.");
+        }
+
+        if (review.isExcluida()) {
+            throw new IllegalArgumentException("Esta review já foi removida.");
+        }
+
+        // Realizar exclusão lógica (soft delete)
+        review.excluir();
+
+        // Salvar a review com status EXCLUIDO
+        reviewRepository.salvar(review);
     }
 
 }
