@@ -42,16 +42,16 @@ Aggregate Conta {
   aggregateRoot
   -ContaId id
   String nome
-  String senha_hash // Armazenar hash, não a senha
+  String senhaHash // Armazenar hash, não a senha
   -TipoConta tipo
   -StatusConta status
-  void publicarJogo(JogoId jogoId);
+  void publicarJogo();
 }
 Repository ContaRepository {
       void salvar(Conta conta);
       Conta obterPorId(ContaId id);
     }
-    ValueObject ContaId { String id }
+    ValueObject ContaId { String value }
     enum TipoConta { JOGADOR, DESENVOLVEDORA }
     enum StatusConta { ATIVA, INATIVA }
   }
@@ -70,12 +70,12 @@ Repository ContaRepository {
     Repository SeguimentoRepository {
 		void salvar(Seguimento seguimento);
 		void remover(Seguimento seguimento);
-		Seguimento obter(ContaId seguidorId, AlvoId seguidoId);
+		Optional<Seguimento> obter(ContaId seguidorId, AlvoId seguidoId);
 		List<Seguimento> obterSeguidoresDe(AlvoId seguidoId);
 		List<Seguimento> obterSeguidosPor(ContaId seguidorId);
     }
-    ValueObject SeguimentoId { String id }
-    ValueObject AlvoId { String id }
+    ValueObject SeguimentoId { String value }
+    ValueObject AlvoId { String value }
 
     enum TipoAlvo { CONTA, JOGO, TAG, DESENVOLVEDORA }
 
@@ -437,6 +437,8 @@ enum PostStatus{ PUBLICADO, EM_RASCUNHO, AGENDADO }
 
       void editarConteudo(String novoTitulo, String novoTexto);
       void ajustarNota(int novaNota);
+      void excluir();
+      boolean isExcluida();
     }
 
     Repository ReviewRepository {
@@ -445,19 +447,25 @@ enum PostStatus{ PUBLICADO, EM_RASCUNHO, AGENDADO }
       List<Review> obterPorJogo(JogoId jogoId, int pagina, int tamanhoPagina);
       List<Review> obterPorAutor(ContaId autorId, int pagina, int tamanhoPagina);
       void remover(Review review);
+      Optional<Review> obterPorAutorEJogo(ContaId autorId, JogoId jogoId);
+      List<Review> obterTodasPorJogo(JogoId jogoId);
     }
 
     Service ReviewService {
-		
       void avaliarJogo(@JogoId jogoId, @ContaId autorId, int nota, String titulo, String texto, boolean recomenda);
-      void editarAvaliacao(@ReviewId reviewId, @ContaId autorId, String novoTitulo, String novoTexto, int novaNota);
-      void apagarAvaliacao(@ReviewId reviewId, @ContaId solicitanteId);
+      void editarAvaliacao(@ReviewId reviewId, @ContaId autorId, String novoTitulo, String novoTexto, int novaNota, boolean novaRecomendacao);
+      void removerReview(@ReviewId reviewId, @ContaId autorId);
+      List<Review> obterReviewsDoJogo(@JogoId jogoId);
+      double calcularMediaEstrelas(@JogoId jogoId);
+      int obterTotalRecomendacoes(@JogoId jogoId);
+      double calcularPorcentagemRecomendacoes(@JogoId jogoId);
+      List<Review> filtrarReviewsPorNota(@JogoId jogoId, int nota);
+      List<Review> ordenarReviewsPorData(@JogoId jogoId, boolean maisRecentesPrimeiro);
     }
 
-    ValueObject ReviewId { String id }
+    ValueObject ReviewId { String value }
 
-
-    enum StatusReview { PUBLICADO, EDITADO }
+    enum StatusReview { PUBLICADO, EDITADO, EXCLUIDO }
   }
 }
 
