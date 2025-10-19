@@ -109,32 +109,31 @@ Repository ContaRepository {
 // Gerencia o ciclo de vida dos jogos: upload, validação e publicação.
 // ================================================================================
 BoundedContext Catalogo implements Catalogo {
-  Aggregate Jogo {
-    Entity Jogo {
-      aggregateRoot
-      -JogoId id
-      -ContaId desenvolvedoraId
-      -Slug slug
-      URL capaOficial
-      -StatusPublicacao status
-      String titulo
-      String descricao
-      List<URL> screenshots
-      List<URL> videos
-      List<Tag> tags
-      boolean isNSFW
-      Date dataDeLancamento
-      List<Versao> versaoHistory
-
-      Slug montarSlug(String titulo);
-      void publicar();
+Aggregate Jogo {
+  Entity Jogo {
+  aggregateRoot
+  -JogoId id
+  -ContaId desenvolvedoraId
+  -Slug slug
+  URL capaOficial
+  -StatusPublicacao status
+  String titulo
+  String descricao
+  List<URL> screenshots
+  List<URL> videos
+  List<Tag> tags
+  boolean isNSFW
+  Date dataDeLancamento
+  List<Versao> versaoHistory
+  Slug montarSlug(
+  String titulo);
+  void publicar();
       void rejeitar();
       void arquivar();
       void validarParaPublicacao();
-      void adicionarVersao(PacoteZip pacote, VersaoId versaoId, String nomeVersao, String descVersao)
-    }
-
-    ValueObject JogoId { String id }
+      void adicionarVersao(Versao versao)
+}
+ValueObject JogoId { String id }
     ValueObject Slug { String valor }
     ValueObject PacoteZip { byte[] conteudo }
 
@@ -197,18 +196,17 @@ BoundedContext Catalogo implements Catalogo {
 // Gerencia a aquisição, a biblioteca do usuário e o acesso (download).
 // ================================================================================
 BoundedContext CatalogoBiblioteca implements CatalogoBiblioteca {
-
-  Aggregate Biblioteca {
-    Entity Biblioteca {
-		aggregateRoot
-		-@ContaId jogadorId
-		List<ItemBiblioteca> itens // Essencial para o agregado, OK.
-    ItemBiblioteca buscarJogoEmBiblioteca(@JogoId jogoId)
+Aggregate Biblioteca {
+  Entity Biblioteca {
+  aggregateRoot
+  -@ContaId jogadorId
+  List<ItemBiblioteca> itens // Essencial para o agregado, OK.
+  ItemBiblioteca checaPresencaDeJogo(
+  @JogoId jogoId)
     void adicionarJogo(@ModeloDeAcesso modeloDeAcesso, @JogoId jogoId)
 	  void removerJogo(@JogoId jogoId)
-
-    }
-    Repository BibliotecaRepository {
+}
+Repository BibliotecaRepository {
       Biblioteca obterPorJogador(ContaId jogadorId);
       void salvar(Biblioteca biblioteca);
     }
@@ -227,21 +225,20 @@ BoundedContext CatalogoBiblioteca implements CatalogoBiblioteca {
   }
 }
 
-
 // ================================================================================
 // CONTEXTO: Financeiro
 // Gestão da carteira, saldos, transações e saques.
 // ================================================================================
 BoundedContext Financeiro implements Financeiro {
-  Aggregate Carteira {
-    Entity Carteira {
-		aggregateRoot
-      -ContaId contaId
-      Saldo saldo
-
-    }
-
-    Repository CarteiraRepository {
+Aggregate Carteira {
+  Entity Carteira {
+  aggregateRoot
+  -ContaId contaId
+  Saldo saldo
+  boolean contaExternaValida
+  void liberarSaldoBloqueado();
+}
+Repository CarteiraRepository {
       Carteira obterPorContaId(ContaId contaId);
       void salvar(@Carteira carteira);
     }
@@ -303,22 +300,19 @@ BoundedContext Financeiro implements Financeiro {
 // Gerencia o financiamento coletivo (Crowdfunding).
 // ================================================================================
 BoundedContext Crowdfunding implements Crowdfunding {
-  Aggregate Campanha {
-    Entity Campanha {
-      -CampanhaId id
-      -JogoId jogoId
-      -DesenvolvedoraId desenvolvedoraId
-      MetaFinanceira meta
-      double valorArrecadado
-      -Periodo periodo
-      -StatusCampanha status
-
-	  void AlterarStatusDaCampanha();
+Aggregate Campanha {
+  Entity Campanha {
+  -CampanhaId id
+  -JogoId jogoId
+  -DesenvolvedoraId desenvolvedoraId
+  MetaFinanceira meta
+  double valorArrecadado
+  -Periodo periodo
+  -StatusCampanha status
+  void AlterarStatusDaCampanha();
 	  BigDecimal ValorFaltante();
-
-    }
-
-	    Repository CampanhaRepository { 
+}
+Repository CampanhaRepository { 
 			
 			void salvarCampanha(@CampanhaId id)
 			void fecharCampanha(@CampanhaId id)
@@ -364,30 +358,27 @@ BoundedContext Crowdfunding implements Crowdfunding {
 // Interações da comunidade: posts e reviews.
 // ================================================================================
 BoundedContext Comunidade implements Comunidade {
-  Aggregate Post {
-    Entity Post {
-      aggregateRoot
-      -PostId postId
-      -JogoId jogoId
-      -ContaId autorId
-      String titulo
-      String conteudo
-      Date dataPublicacao
-	    URL Imagem
-	    -PostStatus status
-	    List<Tag> tags
-      List<Comentario> comentarios;
-      List<Curtida> curtidas;
-
-
-      void editarConteudo(String novoTitulo, String novoConteudo);
+Aggregate Post {
+  Entity Post {
+  aggregateRoot
+  -PostId postId
+  -JogoId jogoId
+  -ContaId autorId
+  String titulo
+  String conteudo
+  Date dataPublicacao
+  URL Imagem
+  -PostStatus status
+  List<Tag> tags
+  List<Comentario> comentarios;
+  List<Curtida> curtidas;
+  void editarConteudo(String novoTitulo, String novoConteudo);
       void adicionarCurtida(ContaId contaId);
       void removerCurtida(ContaId contaId);
       void adicionarComentario(Comentario comentario);
       void removerComentario(ComentarioId comentarioId, ContaId solicitanteId);
-    }
-
-	enum PostStatus{ PUBLICADO, EM_RASCUNHO, AGENDADO }
+}
+enum PostStatus{ PUBLICADO, EM_RASCUNHO, AGENDADO }
 
   ValueObject Curtida{
 		-Post PostId
@@ -477,23 +468,22 @@ BoundedContext Comunidade implements Comunidade {
 // ================================================================================
 BoundedContext OficinaDeMods implements OficinaDeMods {
   Aggregate Mod {
-    Entity Mod {
-		aggregateRoot
-		-ModId id
-		-JogoId jogoAssociado
-		-Conta autorId
-		String nome
-		String descricao
-		List<VersaoMod> versoes
-    }
-    Repository ModRepository { 
+  Entity Mod {
+    aggregateRoot
+    -ModId id
+    -JogoId jogoAssociado
+    -Conta autorId
+    String nome
+    String descricao
+    List<VersaoMod> versoes
+  }
+  Repository ModRepository { 
 		void salvar(InscricaoMod inscricao);
         void remover(InscricaoMod inscricao);
 		List<Mod> getTodosModsPorJogo(@JogoId jogoId)
+}
 
-	 }
-
-    Service ModsService { 
+Service ModsService { 
 		void PublicarMod(@ContaId contaId, @JogoId jogoId, @ModId modId)
 		void RemoverMod(@ModId modId)
 	 }
