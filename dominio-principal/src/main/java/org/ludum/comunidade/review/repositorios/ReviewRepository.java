@@ -20,4 +20,6 @@ public interface ReviewRepository {
     void remover(Review review);
 
     Optional<Review> obterPorAutorEJogo(ContaId autorId, JogoId jogoId);
+
+    List<Review> obterTodasPorJogo(JogoId jogoId);
 }

@@ -13,6 +13,7 @@ import org.ludum.comunidade.review.repositorios.ReviewRepository;
 import org.ludum.identidade.conta.entities.ContaId;
 
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 public class ReviewService {
@@ -122,6 +123,62 @@ public class ReviewService {
 
         // Salvar a review editada
         reviewRepository.salvar(review);
+    }
+
+    /**
+     * H-3: Como usuário, quero visualizar as reviews de um jogo.
+     *
+     * Critérios de Aceitação:
+     * - O sistema deve mostrar a média geral das estrelas.
+     * - O sistema deve mostrar o total de recomendações.
+     * - O sistema deve mostrar a porcentagem de recomendações.
+     */
+    
+    public List<Review> obterReviewsDoJogo(JogoId jogoId) {
+        // Validar se o jogo existe
+        Jogo jogo = jogoRepository.obterPorId(jogoId);
+        if (jogo == null) {
+            throw new IllegalArgumentException("Jogo não encontrado.");
+        }
+
+        // Retornar todas as reviews publicadas (excluindo sinalizadas)
+        List<Review> todasReviews = reviewRepository.obterTodasPorJogo(jogoId);
+        return todasReviews.stream()
+                .filter(review -> review.getStatus() != StatusReview.SINALIZADO)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    public double calcularMediaEstrelas(JogoId jogoId) {
+        List<Review> reviews = obterReviewsDoJogo(jogoId);
+        
+        if (reviews.isEmpty()) {
+            return 0.0;
+        }
+
+        int somaNotas = reviews.stream()
+                .mapToInt(Review::getNota)
+                .sum();
+
+        return (double) somaNotas / reviews.size();
+    }
+
+    public int obterTotalRecomendacoes(JogoId jogoId) {
+        List<Review> reviews = obterReviewsDoJogo(jogoId);
+        
+        return (int) reviews.stream()
+                .filter(Review::isRecomendado)
+                .count();
+    }
+
+    public double calcularPorcentagemRecomendacoes(JogoId jogoId) {
+        List<Review> reviews = obterReviewsDoJogo(jogoId);
+        
+        if (reviews.isEmpty()) {
+            return 0.0;
+        }
+
+        int totalRecomendacoes = obterTotalRecomendacoes(jogoId);
+        return (double) totalRecomendacoes / reviews.size() * 100;
     }
 
 }
