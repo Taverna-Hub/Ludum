@@ -1,11 +1,11 @@
-package org.ludum.identidade.bloqueio.entities;
+package org.ludum.comunidade.review.entidades;
 
 import java.util.Objects;
 
-public class BloqueioId {
+public class ReviewId {
     private String value;
 
-    public BloqueioId(String value) {
+    public ReviewId(String value) {
         this.value = Objects.requireNonNull(value);
     }
 

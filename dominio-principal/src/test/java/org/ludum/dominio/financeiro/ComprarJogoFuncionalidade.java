@@ -1,4 +1,4 @@
-package org.ludum.dominio.financeiro;
+package java.org.ludum.dominio.financeiro;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;

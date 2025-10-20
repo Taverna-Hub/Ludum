@@ -53,12 +53,6 @@ public class PublicacaoService {
                             ", tentativa de: " + devId);
         }
 
-        if (jogo.getStatus() != StatusPublicacao.AGUARDANDO_VALIDACAO) {
-            throw new IllegalStateException(
-                    "Jogo precisa estar aguardando validação para ser publicado. " +
-                            "Status atual: " + jogo.getStatus());
-        }
-
         boolean slugDuplicada = jogoRepository.existeSlugParaDesenvolvedora(devId, jogo.getSlug());
         if (slugDuplicada) {
             throw new IllegalStateException(
@@ -70,6 +64,12 @@ public class PublicacaoService {
             throw new IllegalStateException(
                     "Já existe outro jogo com esta slug. Por favor, escolha um título diferente. " +
                             "Slug: " + jogo.getSlug().getValor());
+        }
+
+        if (jogo.getStatus() != StatusPublicacao.AGUARDANDO_VALIDACAO) {
+            throw new IllegalStateException(
+                    "Jogo precisa estar aguardando validação para ser publicado. " +
+                            "Status atual: " + jogo.getStatus());
         }
 
         jogo.publicar();

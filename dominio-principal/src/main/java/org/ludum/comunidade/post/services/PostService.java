@@ -1,7 +1,5 @@
 package org.ludum.comunidade.post.services;
 
-import org.ludum.catalogo.jogo.entidades.JogoId;
-import org.ludum.catalogo.tag.entidades.Tag;
 import org.ludum.comunidade.post.entidades.*;
 import org.ludum.comunidade.post.enums.PostStatus;
 import org.ludum.comunidade.post.repositorios.PostRepository;
@@ -24,35 +22,17 @@ public class PostService {
     private static final long MAX_HORAS_AGENDAMENTO = 24;
 
     private final PostRepository postRepository;
-    private final MalwareScanner malwareScanner;
-    private final ImagemCompressor imagemCompressor;
-    private final ConteudoAdultoValidator conteudoAdultoValidator;
-    private final JogoInfo jogoInfo;
-    private final NotificacaoService notificacaoService;
 
     public PostService(PostRepository postRepository) {
-        this(postRepository, null, null, null, null, null);
-    }
-
-    public PostService(PostRepository postRepository,
-            MalwareScanner malwareScanner,
-            ImagemCompressor imagemCompressor,
-            ConteudoAdultoValidator conteudoAdultoValidator,
-            JogoInfo jogoInfo,
-            NotificacaoService notificacaoService) {
         this.postRepository = Objects.requireNonNull(postRepository,
                 "PostRepository não pode ser nulo");
-        this.malwareScanner = malwareScanner;
-        this.imagemCompressor = imagemCompressor;
-        this.conteudoAdultoValidator = conteudoAdultoValidator;
-        this.jogoInfo = jogoInfo;
-        this.notificacaoService = notificacaoService;
     }
 
-    public Post publicarPost(JogoId jogoId, ContaId autorId, String titulo, String conteudo,
-            URL imagem, List<Tag> tags) {
+    // TODO ADICIONAR O JOGOID
+    public Post publicarPost(ContaId autorId, String titulo, String conteudo,
+            URL imagem, List<String> tags) {
 
-        Objects.requireNonNull(jogoId, "JogoId não pode ser nulo");
+        // Validações de entrada
         Objects.requireNonNull(autorId, "AutorId não pode ser nulo");
         Objects.requireNonNull(titulo, "Título não pode ser nulo");
         Objects.requireNonNull(conteudo, "Conteúdo não pode ser nulo");
@@ -61,29 +41,37 @@ public class PostService {
             throw new IllegalArgumentException("Título não pode ser vazio");
         }
 
+        // Regra 2: Conteúdo deve ter no máximo 500 caracteres
         validarConteudo(conteudo);
+
+        // Regra 3: Tags devem ter entre 1 e 5 elementos
         validarTags(tags);
 
-        if (jogoInfo != null) {
-            validarTagsDoJogo(jogoId, tags);
-        }
+        // TODO: Integração com serviços externos (camada de aplicação/infraestrutura)
+        // - Verificar malware nas imagens (serviço externo de segurança)
+        // - Comprimir imagens se necessário (serviço de processamento)
+        // - Detectar conteúdo +18 (serviço de moderação)
+        // Exemplo:
+        // if (imagem != null) {
+        // imagemService.verificarMalware(imagem);
+        // imagemService.comprimirSeNecessario(imagem);
+        // moderacaoService.verificarConteudoInapropriado(conteudo, imagem);
+        // }
 
-        if (imagem != null) {
-            imagem = processarImagem(imagem, jogoId, autorId);
-        }
-
+        // Criar e publicar post
         PostId postId = new PostId(UUID.randomUUID().toString());
-        Post post = new Post(postId, jogoId, autorId, titulo, conteudo,
+        Post post = new Post(postId, autorId, titulo, conteudo,
                 LocalDateTime.now(), imagem, PostStatus.PUBLICADO, tags);
 
         postRepository.salvar(post);
         return post;
     }
 
-    public Post criarRascunho(JogoId jogoId, ContaId autorId, String titulo, String conteudo,
-            URL imagem, List<Tag> tags) {
+    // TODO: ADICIONAR JOGO ID
+    public Post criarRascunho(ContaId autorId, String titulo, String conteudo,
+            URL imagem, List<String> tags) {
 
-        Objects.requireNonNull(jogoId, "JogoId não pode ser nulo");
+        // Validações de entrada
         Objects.requireNonNull(autorId, "AutorId não pode ser nulo");
         Objects.requireNonNull(titulo, "Título não pode ser nulo");
         Objects.requireNonNull(conteudo, "Conteúdo não pode ser nulo");
@@ -92,15 +80,13 @@ public class PostService {
             throw new IllegalArgumentException("Título não pode ser vazio");
         }
 
+        // Validar regras de negócio
         validarConteudo(conteudo);
         validarTags(tags);
 
-        if (jogoInfo != null) {
-            validarTagsDoJogo(jogoId, tags);
-        }
-
+        // Criar rascunho
         PostId postId = new PostId(UUID.randomUUID().toString());
-        Post post = new Post(postId, jogoId, autorId, titulo, conteudo,
+        Post post = new Post(postId, autorId, titulo, conteudo,
                 null, imagem, PostStatus.EM_RASCUNHO, tags);
 
         postRepository.salvar(post);
@@ -132,7 +118,10 @@ public class PostService {
             throw new IllegalStateException("Apenas o autor pode editar o post");
         }
 
-        post.editarConteudo(novoTitulo, novoConteudo);
+        // Editar usando método do agregado (quando implementado)
+        // Temporariamente usando setters
+        post.setTitulo(novoTitulo);
+        post.setConteudo(novoConteudo);
         postRepository.salvar(post);
     }
 
@@ -145,8 +134,21 @@ public class PostService {
             throw new IllegalArgumentException("Post não encontrado");
         }
 
-        // Adicionar Curtida
-        post.adicionarCurtida(contaId);
+        // Regra 4: Verificar se já curtiu (evitar duplicatas)
+        // Compara usando equals() do Value Object Curtida
+        Curtida novaCurtida = new Curtida(postId, contaId);
+        boolean jaCurtiu = post.getCurtidas().stream()
+                .anyMatch(curtidaExistente -> curtidaExistente.getContaId().equals(contaId));
+
+        if (jaCurtiu) {
+            throw new IllegalArgumentException(
+                    "Conta " + contaId.getValue() + " já curtiu este post");
+        }
+
+        // Adicionar curtida
+        // Quando Post.adicionarCurtida() estiver implementado, use:
+        // post.adicionarCurtida(novaCurtida);
+        post.getCurtidas().add(novaCurtida);
         postRepository.salvar(post);
     }
 
@@ -159,8 +161,15 @@ public class PostService {
             throw new IllegalArgumentException("Post não encontrado");
         }
 
-        // Remover Curtida
-        post.removerCurtida(contaId);
+        // Regra 5: Verificar se curtida existe antes de remover
+        boolean removido = post.getCurtidas().removeIf(
+                curtida -> curtida.getContaId().equals(contaId));
+
+        if (!removido) {
+            throw new IllegalArgumentException(
+                    "Conta " + contaId.getValue() + " não curtiu este post");
+        }
+
         postRepository.salvar(post);
     }
 
@@ -183,7 +192,7 @@ public class PostService {
         Comentario comentario = new Comentario(comentarioId, postId, autorId,
                 texto, LocalDateTime.now());
 
-        post.adicionarComentario(comentario);
+        post.getComentarios().add(comentario);
         postRepository.salvar(post);
     }
 
@@ -199,8 +208,23 @@ public class PostService {
             throw new IllegalArgumentException("Post não encontrado");
         }
 
-        // Remoção de comentário
-        post.removerComentario(comentarioId, solicitanteId);
+        // Buscar comentário
+        Comentario comentario = post.getComentarios().stream()
+                .filter(c -> c.getId().equals(comentarioId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Comentário " + comentarioId + " não encontrado"));
+
+        // Regra 7: Verificar autorização (autor do comentário OU autor do post)
+        boolean ehAutorComentario = comentario.getAutorId().equals(solicitanteId);
+        boolean ehAutorPost = post.getAutorId().equals(solicitanteId);
+
+        if (!ehAutorComentario && !ehAutorPost) {
+            throw new IllegalArgumentException(
+                    "Apenas o autor do comentário ou do post pode remover este comentário");
+        }
+
+        post.getComentarios().remove(comentario);
         postRepository.salvar(post);
     }
 
@@ -230,29 +254,15 @@ public class PostService {
         long horasAteAgendamento = Duration.between(agora, dataAgendamento).toHours();
 
         if (horasAteAgendamento < MIN_HORAS_AGENDAMENTO) {
-            String mensagemErro = "Data de agendamento deve ser pelo menos " + MIN_HORAS_AGENDAMENTO +
-                    " hora(s) no futuro";
-            
-            // Notificar sobre falha
-            Post post = postRepository.obterPorId(postId);
-            if (post != null && notificacaoService != null) {
-                notificacaoService.notificarFalhaAgendamento(post.getAutorId(), postId, mensagemErro);
-            }
-            
-            throw new IllegalArgumentException(mensagemErro);
+            throw new IllegalArgumentException(
+                    "Data de agendamento deve ser pelo menos " + MIN_HORAS_AGENDAMENTO +
+                            " hora(s) no futuro");
         }
 
         if (horasAteAgendamento > MAX_HORAS_AGENDAMENTO) {
-            String mensagemErro = "Data de agendamento não pode ultrapassar " + MAX_HORAS_AGENDAMENTO +
-                    " horas no futuro";
-            
-            // Notificar sobre falha
-            Post post = postRepository.obterPorId(postId);
-            if (post != null && notificacaoService != null) {
-                notificacaoService.notificarFalhaAgendamento(post.getAutorId(), postId, mensagemErro);
-            }
-            
-            throw new IllegalArgumentException(mensagemErro);
+            throw new IllegalArgumentException(
+                    "Data de agendamento não pode ultrapassar " + MAX_HORAS_AGENDAMENTO +
+                            " horas no futuro");
         }
 
         Post post = postRepository.obterPorId(postId);
@@ -260,19 +270,23 @@ public class PostService {
             throw new IllegalArgumentException("Post não encontrado");
         }
 
+        // Validação de estado
+        if (post.getStatus() != PostStatus.EM_RASCUNHO) {
+            throw new IllegalStateException("Apenas posts em rascunho podem ser agendados");
+        }
+
         try {
             // Agendar post
-            post.agendarPost(dataAgendamento);
+            post.setStatus(PostStatus.AGENDADO);
+            // TODO: Adicionar campo dataAgendamento no Post.java
             postRepository.salvar(post);
 
         } catch (Exception e) {
-            // Notificar sobre falha genérica
-            if (notificacaoService != null) {
-                notificacaoService.notificarFalhaAgendamento(post.getAutorId(), postId, e.getMessage());
-            }
-            
+            // Fallback: se falhar, retorna para RASCUNHO
+            post.setStatus(PostStatus.EM_RASCUNHO);
+            postRepository.salvar(post);
             throw new IllegalStateException(
-                    "Falha ao agendar post. Motivo: " + e.getMessage(), e);
+                    "Falha ao agendar post. Retornado para rascunho. Motivo: " + e.getMessage(), e);
         }
     }
 
@@ -285,12 +299,21 @@ public class PostService {
             throw new IllegalArgumentException("Post não encontrado");
         }
 
+        // Validação de autorização
         if (!post.getAutorId().equals(autorId)) {
             throw new IllegalStateException("Apenas o autor pode publicar o post");
         }
 
+        // Regra 8: Validação de estado
+        if (post.getStatus() != PostStatus.EM_RASCUNHO &&
+                post.getStatus() != PostStatus.AGENDADO) {
+            throw new IllegalStateException(
+                    "Apenas posts em rascunho ou agendados podem ser publicados");
+        }
+
         // Publicar post
-        post.publicarPost();
+        post.setStatus(PostStatus.PUBLICADO);
+        post.setDataPublicacao(LocalDateTime.now());
         postRepository.salvar(post);
     }
 
@@ -326,7 +349,7 @@ public class PostService {
         }
     }
 
-    private void validarTags(List<Tag> tags) {
+    private void validarTags(List<String> tags) {
         if (tags == null || tags.isEmpty()) {
             throw new IllegalArgumentException(
                     "Post deve ter pelo menos " + MIN_TAGS + " tag");
@@ -336,49 +359,5 @@ public class PostService {
             throw new IllegalArgumentException(
                     "Post não pode ter mais de " + MAX_TAGS + " tags (atual: " + tags.size() + ")");
         }
-    }
-
-    private void validarTagsDoJogo(JogoId jogoId, List<Tag> tags) {
-        List<Tag> tagsDoJogo = jogoInfo.obterTagsDoJogo(jogoId);
-
-        for (Tag tag : tags) {
-            if (!tagsDoJogo.contains(tag)) {
-                throw new IllegalArgumentException(
-                        "Tag '" + tag + "' não está associada ao jogo");
-            }
-        }
-    }
-
-    private URL processarImagem(URL imagem, JogoId jogoId, ContaId autorId) {
-        // 1. Verificar malware
-        if (malwareScanner != null && malwareScanner.contemMalware(imagem)) {
-            throw new SecurityException("Falha na publicação: malware detectado na imagem");
-        }
-
-        // 2. Verificar conteúdo +18
-        if (conteudoAdultoValidator != null && jogoInfo != null) {
-            boolean jogoAdulto = jogoInfo.isJogoAdulto(jogoId);
-            boolean imagemAdulta = conteudoAdultoValidator.contemConteudoAdulto(imagem);
-
-            if (!jogoAdulto && imagemAdulta) {
-                // Criar PostId temporário para notificação
-                PostId postIdTemp = new PostId(UUID.randomUUID().toString());
-                
-                // Notificar usuário sobre bloqueio
-                if (notificacaoService != null) {
-                    notificacaoService.notificarImagemBloqueada(autorId, postIdTemp);
-                }
-                
-                throw new SecurityException(
-                        "Imagem bloqueada: conteúdo adulto não permitido em jogo não-adulto");
-            }
-        }
-
-        // 3. Compactar se necessário
-        if (imagemCompressor != null && imagemCompressor.excedeLimit(imagem)) {
-            imagem = imagemCompressor.compactar(imagem);
-        }
-
-        return imagem;
     }
 }

@@ -1,8 +1,6 @@
 package org.ludum.comunidade.post.entidades;
-
-import org.ludum.catalogo.jogo.entidades.JogoId;
-import org.ludum.catalogo.tag.entidades.Tag;
 import org.ludum.comunidade.post.enums.PostStatus;
+
 import org.ludum.identidade.conta.entities.ContaId;
 
 import java.net.URL;
@@ -13,27 +11,26 @@ import java.util.Objects;
 
 public class Post {
     private PostId id;
-    private JogoId jogoId;
+    // private JogoId jogoId; //TODO
     private ContaId autorId;
     private String titulo;
     private String conteudo;
     private LocalDateTime dataPublicacao;
-    private LocalDateTime dataAgendamento;
     private URL imagem;
     private PostStatus status;
-    private List<Tag> tags;
+    private List<String> tags;
     private List<Comentario> comentarios;
     private List<Curtida> curtidas;
 
-    public Post(PostId id, JogoId jogoId, ContaId autorId, String titulo, String conteudo,
+    public Post(PostId id, ContaId autorId, String titulo, String conteudo,
             LocalDateTime dataPublicacao, URL imagem, PostStatus status,
-            List<Tag> tags) {
+            List<String> tags) {
         this.id = Objects.requireNonNull(id);
-        this.jogoId = Objects.requireNonNull(jogoId);
+        // this.jogoId = Objects.requireNonNull(jogoId);
         this.autorId = Objects.requireNonNull(autorId);
         this.titulo = Objects.requireNonNull(titulo);
         this.conteudo = Objects.requireNonNull(conteudo);
-        this.dataPublicacao = dataPublicacao;
+        this.dataPublicacao = Objects.requireNonNull(dataPublicacao);
         this.imagem = imagem;
         this.status = Objects.requireNonNull(status);
         this.tags = tags != null ? new ArrayList<>(tags) : new ArrayList<>();
@@ -42,105 +39,32 @@ public class Post {
     }
 
     public void editarConteudo(String novoTitulo, String novoConteudo) {
-        Objects.requireNonNull(novoTitulo, "Novo título não pode ser nulo");
-        Objects.requireNonNull(novoConteudo, "Novo conteúdo não pode ser nulo");
-
-        if (novoTitulo.isBlank()) {
-            throw new IllegalArgumentException("Título não pode ser vazio");
-        }
-
-        this.titulo = novoTitulo;
-        this.conteudo = novoConteudo;
+        // TODO: Implementar lógica de edição de conteúdo
     }
 
     public void adicionarCurtida(ContaId contaId) {
-        Objects.requireNonNull(contaId, "ContaId não pode ser nulo");
-
-        // Verificar se já curtiu
-        boolean jaCurtiu = curtidas.stream()
-                .anyMatch(c -> c.getContaId().equals(contaId));
-
-        if (jaCurtiu) {
-            throw new IllegalStateException("Usuário já curtiu este post");
-        }
-
-        curtidas.add(new Curtida(this.id, contaId));
+        // TODO: Implementar lógica de adição de curtida
+        // - Validar se conta já curtiu
+        // - Adicionar curtida à lista
     }
 
     public void removerCurtida(ContaId contaId) {
-        Objects.requireNonNull(contaId, "ContaId não pode ser nulo");
-
-        boolean removido = curtidas.removeIf(c -> c.getContaId().equals(contaId));
-
-        if (!removido) {
-            throw new IllegalStateException("Usuário não curtiu este post");
-        }
+        // TODO: Implementar lógica de remoção de curtida
+        // - Validar se curtida existe
+        // - Remover curtida da lista
     }
 
     public void adicionarComentario(Comentario comentario) {
-        Objects.requireNonNull(comentario, "Comentário não pode ser nulo");
-
-        if (comentario.getTexto() == null || comentario.getTexto().isBlank()) {
-            throw new IllegalArgumentException("Texto do comentário não pode ser vazio");
-        }
-
-        comentarios.add(comentario);
+        // TODO: Implementar lógica de adição de comentário
+        // - Validar comentário
+        // - Adicionar à lista
     }
 
     public void removerComentario(ComentarioId comentarioId, ContaId solicitanteId) {
-        Objects.requireNonNull(comentarioId, "ComentarioId não pode ser nulo");
-        Objects.requireNonNull(solicitanteId, "SolicitanteId não pode ser nulo");
-
-        Comentario comentario = comentarios.stream()
-                .filter(c -> c.getId().equals(comentarioId))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Comentário não encontrado"));
-
-        // Validar autorização: autor do comentário ou autor do post
-        if (!comentario.getAutorId().equals(solicitanteId) && !this.autorId.equals(solicitanteId)) {
-            throw new IllegalStateException("Apenas o autor do comentário ou do post pode remover este comentário");
-        }
-
-        // Soft delete - oculta, não remove permanentemente
-        comentario.ocultar();
+        // TODO: Implementar lógica de remoção de comentário
+        // - Validar autorização (autor do comentário ou do post)
+        // - Remover comentário
     }
-
-    public void agendarPost(LocalDateTime dataAgendamento) {
-        Objects.requireNonNull(dataAgendamento, "Data de agendamento não pode ser nula");
-
-        if (this.status != PostStatus.EM_RASCUNHO) {
-            throw new IllegalStateException("Apenas posts em rascunho podem ser agendados");
-        }
-
-        this.dataAgendamento = dataAgendamento;
-        this.status = PostStatus.AGENDADO;
-    }
-
-    public void publicarPost() {
-        if (this.status != PostStatus.EM_RASCUNHO && this.status != PostStatus.AGENDADO) {
-            throw new IllegalStateException(
-                    "Apenas posts em rascunho ou agendados podem ser publicados");
-        }
-
-        this.status = PostStatus.PUBLICADO;
-
-        // Se tinha agendamento, usa a data agendada, senão usa agora
-        if (this.dataAgendamento != null) {
-            this.dataPublicacao = this.dataAgendamento;
-        } else {
-            this.dataPublicacao = LocalDateTime.now();
-        }
-    }
-
-    public boolean deveSerPublicadoAgora() {
-        return status == PostStatus.AGENDADO &&
-                dataAgendamento != null &&
-                LocalDateTime.now().isAfter(dataAgendamento);
-    }
-
-    // ================================================================
-    // GET AND SETTERS
-    // ================================================================
 
     public void setId(PostId id) {
         this.id = id;
@@ -148,14 +72,6 @@ public class Post {
 
     public PostId getId() {
         return id;
-    }
-
-    public void set(JogoId jogoId) {
-        this.jogoId = jogoId;
-    }
-
-    public JogoId getJogoId() {
-        return jogoId;
     }
 
     public void setAutorId(ContaId autorId) {
@@ -190,14 +106,6 @@ public class Post {
         return dataPublicacao;
     }
 
-    public void setDataAgendamento(LocalDateTime dataAgendamento) {
-        this.dataAgendamento = dataAgendamento;
-    }
-
-    public LocalDateTime getDataAgendamento() {
-        return dataAgendamento;
-    }
-
     public void setImagem(URL imagem) {
         this.imagem = imagem;
     }
@@ -214,11 +122,11 @@ public class Post {
         return status;
     }
 
-    public void setTags(List<Tag> tags) {
+    public void setTags(List<String> tags) {
         this.tags = tags;
     }
 
-    public List<Tag> getTags() {
+    public List<String> getTags() {
         return tags;
     }
 
@@ -237,4 +145,5 @@ public class Post {
     public List<Curtida> getCurtidas() {
         return curtidas;
     }
+
 }
