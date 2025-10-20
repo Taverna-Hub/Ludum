@@ -1,4 +1,4 @@
-package org.ludum.dominio.catalogo.biblioteca;
+package org.ludum.dominio.catalogo;
 
 import io.cucumber.java.en.*;
 import org.junit.jupiter.api.Assertions;
@@ -82,7 +82,7 @@ public class BaixarJogoFuncionalidade {
     @And("existe um jogo chamado {string} que é gratuito, já foi lançado e se encontra na minha biblioteca")
     public void existeUmJogoGratuitoJaLancado(String str){
         try{
-            this.jogo = new Jogo(new JogoId(UUID.randomUUID().toString()), new ContaId(UUID.randomUUID().toString()), new Slug(str).toString(), "Jogo", new URL("https://exemplo.com/capa.jpg"), List.of(new Tag(new TagId("a"), "aaa")), false, LocalDate.of(2021, 3, 15));
+            this.jogo = new Jogo(new JogoId(UUID.randomUUID().toString()), new ContaId(UUID.randomUUID().toString()), new Slug(str).toString(), "JogoJogoJogo", new URL("https://exemplo.com/capa.jpg"), List.of(new Tag(new TagId("a"), "aaa")), false, LocalDate.of(2021, 3, 15));
             this.jogo.adicionarVersao(new PacoteZip(new byte[10]), new VersaoId("1"), "jogo_1.0.0.zip", "aaaa");
             when(jogoRepository.obterPorId(this.jogo.getId())).thenReturn(this.jogo);
             when(transacaoRepository.obterPorId(this.transacao.getTransacaoId())).thenReturn(this.transacao);
@@ -143,7 +143,7 @@ public class BaixarJogoFuncionalidade {
     @And("existe um jogo chamado {string} que é gratuito, mas sua data de lançamento é futura")
     public void existeUmaJogoChamado(String str){
         try{
-            this.jogo = new Jogo(new JogoId(UUID.randomUUID().toString()), new ContaId(UUID.randomUUID().toString()), new Slug(str).toString(), "Jogo", new URL("https://exemplo.com/capa.jpg"), List.of(new Tag(new TagId("a"), "aaa")), false, LocalDate.of(2029, 3, 15));
+            this.jogo = new Jogo(new JogoId(UUID.randomUUID().toString()), new ContaId(UUID.randomUUID().toString()), new Slug(str).toString(), "JogoJogoJogo", new URL("https://exemplo.com/capa.jpg"), List.of(new Tag(new TagId("a"), "aaa")), false, LocalDate.of(2029, 3, 15));
             this.jogo.adicionarVersao(new PacoteZip(new byte[10]), new VersaoId("1"), "jogo_1.0.0.zip", "aaaa");
             when(jogoRepository.obterPorId(this.jogo.getId())).thenReturn(this.jogo);
             when(transacaoRepository.obterPorId(this.transacao.getTransacaoId())).thenReturn(this.transacao);
@@ -158,7 +158,7 @@ public class BaixarJogoFuncionalidade {
     @And("existe um jogo chamado {string} que é pago, já foi lançado e se encontra na minha biblioteca")
     public void existeUmJogoChamado(String str){
         try{
-            this.jogo = new Jogo(new JogoId(UUID.randomUUID().toString()), new ContaId(UUID.randomUUID().toString()), new Slug(str).toString(), "Jogo", new URL("https://exemplo.com/capa.jpg"), List.of(new Tag(new TagId("a"), "aaa")), false, LocalDate.of(2021, 3, 15));
+            this.jogo = new Jogo(new JogoId(UUID.randomUUID().toString()), new ContaId(UUID.randomUUID().toString()), new Slug(str).toString(), "JogoJogoJogo", new URL("https://exemplo.com/capa.jpg"), List.of(new Tag(new TagId("a"), "aaa")), false, LocalDate.of(2021, 3, 15));
             this.jogo.adicionarVersao(new PacoteZip(new byte[10]), new VersaoId("1"), "jogo_1.0.0.zip", "aaaa");
             when(jogoRepository.obterPorId(this.jogo.getId())).thenReturn(this.jogo);
             when(transacaoRepository.obterPorId(this.transacao.getTransacaoId())).thenReturn(this.transacao);
@@ -173,7 +173,7 @@ public class BaixarJogoFuncionalidade {
     @Given("que eu possuo o jogo {string} na minha biblioteca")
     public void queEuPossuoOJogoNaMinhaBiblioteca(String str){
         try{
-            this.jogo = new Jogo(new JogoId(UUID.randomUUID().toString()), new ContaId(UUID.randomUUID().toString()), str, "Jogo", new URL("https://exemplo.com/capa.jpg"), List.of(new Tag(new TagId("a"), "aaa")), false, LocalDate.of(2021, 3, 15));
+            this.jogo = new Jogo(new JogoId(UUID.randomUUID().toString()), new ContaId(UUID.randomUUID().toString()), str, "JogoJogoJogo", new URL("https://exemplo.com/capa.jpg"), List.of(new Tag(new TagId("a"), "aaa")), false, LocalDate.of(2021, 3, 15));
             this.jogo.adicionarVersao(new PacoteZip(new byte[10]), new VersaoId("1"), "jogo_1.0.0.zip", "aaaa");
             when(jogoRepository.obterPorId(this.jogo.getId())).thenReturn(this.jogo);
             when(transacaoRepository.obterPorId(this.transacao.getTransacaoId())).thenReturn(this.transacao);
