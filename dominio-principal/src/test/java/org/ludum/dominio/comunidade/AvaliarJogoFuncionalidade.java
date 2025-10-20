@@ -402,7 +402,6 @@ public class AvaliarJogoFuncionalidade {
 
     private void criarJogoPublicado() {
         try {
-git
             Tag tagAventura = new Tag(new TagId("tag-aventura"), "Aventura");
             List<Tag> tagsDoJogo = new ArrayList<>();
             tagsDoJogo.add(tagAventura);
