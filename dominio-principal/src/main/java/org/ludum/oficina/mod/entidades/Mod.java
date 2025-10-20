@@ -6,7 +6,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 import org.ludum.catalogo.jogo.entidades.JogoId;
-import org.ludum.identidade.conta.entidades.ContaId;
+import org.ludum.identidade.conta.entities.ContaId;
 import org.ludum.oficina.mod.enums.StatusMod;
 
 

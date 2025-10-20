@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.ludum.catalogo.jogo.entidades.JogoId;
-import org.ludum.identidade.conta.entidades.ContaId;
+import org.ludum.identidade.conta.entities.ContaId;
 import org.ludum.oficina.mod.entidades.Mod;
 
 public interface ModRepository {
