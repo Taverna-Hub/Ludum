@@ -42,16 +42,16 @@ Aggregate Conta {
   aggregateRoot
   -ContaId id
   String nome
-  String senhaHash // Armazenar hash, não a senha
+  String senha_hash // Armazenar hash, não a senha
   -TipoConta tipo
   -StatusConta status
-  void publicarJogo();
+  void publicarJogo(JogoId jogoId);
 }
 Repository ContaRepository {
       void salvar(Conta conta);
       Conta obterPorId(ContaId id);
     }
-    ValueObject ContaId { String value }
+    ValueObject ContaId { String id }
     enum TipoConta { JOGADOR, DESENVOLVEDORA }
     enum StatusConta { ATIVA, INATIVA }
   }
@@ -70,12 +70,12 @@ Repository ContaRepository {
     Repository SeguimentoRepository {
 		void salvar(Seguimento seguimento);
 		void remover(Seguimento seguimento);
-		Optional<Seguimento> obter(ContaId seguidorId, AlvoId seguidoId);
+		Seguimento obter(ContaId seguidorId, AlvoId seguidoId);
 		List<Seguimento> obterSeguidoresDe(AlvoId seguidoId);
 		List<Seguimento> obterSeguidosPor(ContaId seguidorId);
     }
-    ValueObject SeguimentoId { String value }
-    ValueObject AlvoId { String value }
+    ValueObject SeguimentoId { String id }
+    ValueObject AlvoId { String id }
 
     enum TipoAlvo { CONTA, JOGO, TAG, DESENVOLVEDORA }
 
@@ -312,7 +312,7 @@ Aggregate Campanha {
   void AlterarStatusDaCampanha();
 	  BigDecimal ValorFaltante();
 }
-Repository CampanhaRepository {
+Repository CampanhaRepository { 
 			
 			void salvarCampanha(@CampanhaId id)
 			void fecharCampanha(@CampanhaId id)
@@ -367,16 +367,20 @@ Aggregate Post {
   String titulo
   String conteudo
   Date dataPublicacao
+  Date dataAgendamento
   URL Imagem
   -PostStatus status
   List<Tag> tags
   List<Comentario> comentarios;
   List<Curtida> curtidas;
   void editarConteudo(String novoTitulo, String novoConteudo);
-      void adicionarCurtida(ContaId contaId);
-      void removerCurtida(ContaId contaId);
-      void adicionarComentario(Comentario comentario);
-      void removerComentario(ComentarioId comentarioId, ContaId solicitanteId);
+  void adicionarCurtida(ContaId contaId);
+  void removerCurtida(ContaId contaId);
+  void adicionarComentario(Comentario comentario);
+  void removerComentario(ComentarioId comentarioId, ContaId solicitanteId);
+  void agendarPost(Date dataAgendamento);
+  void publicarPost();
+  boolean deveSerPublicadoAgora();
 }
 enum PostStatus{ PUBLICADO, EM_RASCUNHO, AGENDADO }
 
@@ -394,8 +398,12 @@ enum PostStatus{ PUBLICADO, EM_RASCUNHO, AGENDADO }
     -ContaId autorId
     String texto
     Date data
+    boolean oculto
 
     void editarTexto(String novoTexto);
+    void ocultar();
+    boolean isOculto();
+    boolean isVisivel();
   }
 
 
@@ -410,14 +418,45 @@ enum PostStatus{ PUBLICADO, EM_RASCUNHO, AGENDADO }
     }
 
     Service PostService {
-      void publicarPost(@ContaId autorId, String titulo, String conteudo);
+      Post publicarPost(@JogoId jogoId, @ContaId autorId, String titulo, String conteudo, URL imagemOpcional, List<Tag> tags);
+      Post criarRascunho(@JogoId jogoId, @ContaId autorId, String titulo, String conteudo, URL imagemOpcional, List<Tag> tags);
       void editarPost(@PostId postId, @ContaId autorId, String novoTitulo, String novoConteudo);
       void curtirPost(@PostId postId, @ContaId contaId);
+      void descurtirPost(@PostId postId, @ContaId contaId);
       void comentarPost(@PostId postId, @ContaId autorId, String texto);
       void removerPost(@PostId postId, @ContaId solicitanteId);
-	    void agendarPost(@PostId, Date dataDeAgendamento)
-	    void criarRascunho(@Post post, @ContaId contaId)
+      void agendarPost(@PostId postId, Date dataAgendamento);
+      void publicarRascunho(@PostId postId, @ContaId autorId);
+      List<Post> buscarPostsPorTag(String tag);
+      List<Post> obterPostsPorAutor(ContaId autorId);
+      List<Post> obterPostsPorStatus(PostStatus status);
     }
+
+    Service MalwareScanner {
+      boolean contemMalware(URL imagemUrl);
+      boolean contemMalware(byte[] fileBytes, String fileName);
+    }
+
+    Service ImagemCompressor {
+      boolean excedeLimit(URL imagem);
+      URL compactar(URL imagem);
+    }
+
+    Service ConteudoAdultoValidator {
+      boolean contemConteudoAdulto(URL imagem);
+    }
+
+    Service JogoInfo {
+      List<Tag> obterTagsDoJogo(@JogoId jogoId);
+      boolean isJogoAdulto(@JogoId jogoId);
+    }
+
+    Service NotificacaoService {
+      void notificarFalhaAgendamento(@ContaId autorId, @PostId postId, String motivoErro);
+      void notificarImagemBloqueada(@ContaId autorId, @PostId postId);
+    }
+
+
 
   }
 
@@ -431,14 +470,12 @@ enum PostStatus{ PUBLICADO, EM_RASCUNHO, AGENDADO }
       String titulo    
       String texto     
       Date data        
-      Date dataUltimaEdicao
       boolean isRecomendado
       StatusReview status
 
       void editarConteudo(String novoTitulo, String novoTexto);
       void ajustarNota(int novaNota);
-      void excluir();
-      boolean isExcluida();
+      void marcarComoInapropriado();
     }
 
     Repository ReviewRepository {
@@ -447,25 +484,20 @@ enum PostStatus{ PUBLICADO, EM_RASCUNHO, AGENDADO }
       List<Review> obterPorJogo(JogoId jogoId, int pagina, int tamanhoPagina);
       List<Review> obterPorAutor(ContaId autorId, int pagina, int tamanhoPagina);
       void remover(Review review);
-      Optional<Review> obterPorAutorEJogo(ContaId autorId, JogoId jogoId);
-      List<Review> obterTodasPorJogo(JogoId jogoId);
     }
 
     Service ReviewService {
+		
       void avaliarJogo(@JogoId jogoId, @ContaId autorId, int nota, String titulo, String texto, boolean recomenda);
-      void editarAvaliacao(@ReviewId reviewId, @ContaId autorId, String novoTitulo, String novoTexto, int novaNota, boolean novaRecomendacao);
-      void removerReview(@ReviewId reviewId, @ContaId autorId);
-      List<Review> obterReviewsDoJogo(@JogoId jogoId);
-      double calcularMediaEstrelas(@JogoId jogoId);
-      int obterTotalRecomendacoes(@JogoId jogoId);
-      double calcularPorcentagemRecomendacoes(@JogoId jogoId);
-      List<Review> filtrarReviewsPorNota(@JogoId jogoId, int nota);
-      List<Review> ordenarReviewsPorData(@JogoId jogoId, boolean maisRecentesPrimeiro);
+      void editarAvaliacao(@ReviewId reviewId, @ContaId autorId, String novoTitulo, String novoTexto, int novaNota);
+      void sinalizarReview(@ReviewId reviewId, @ContaId sinalizadorId, String motivo);
+      void moderarReview(@ReviewId reviewId, @ContaId moderadorId, StatusReview novoStatus, String motivo);
     }
 
-    ValueObject ReviewId { String value }
+    ValueObject ReviewId { String id }
 
-    enum StatusReview { PUBLICADO, EDITADO, EXCLUIDO }
+
+    enum StatusReview { PUBLICADO, EDITADO, SINALIZADO }
   }
 }
 
@@ -484,13 +516,13 @@ BoundedContext OficinaDeMods implements OficinaDeMods {
     String descricao
     List<VersaoMod> versoes
   }
-  Repository ModRepository {
+  Repository ModRepository { 
 		void salvar(InscricaoMod inscricao);
         void remover(InscricaoMod inscricao);
 		List<Mod> getTodosModsPorJogo(@JogoId jogoId)
 }
 
-Service ModsService {
+Service ModsService { 
 		void PublicarMod(@ContaId contaId, @JogoId jogoId, @ModId modId)
 		void RemoverMod(@ModId modId)
 	 }
