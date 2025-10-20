@@ -343,7 +343,7 @@ public class PublicacaoJogoFuncionalidade {
                 mockJogoRepo.salvar(jogoAtual);
 
                 publicacaoService.publicarJogo(desenvolvedorId, jogoAtual.getId());
-                
+
                 jogoAtual = mockJogoRepo.obterPorId(jogoAtual.getId());
                 operacaoSucesso = true;
             } else {
@@ -361,7 +361,7 @@ public class PublicacaoJogoFuncionalidade {
         jogoAtual = null;
         operacaoSucesso = false;
         mensagemErro = null;
-        
+
         screenshots.clear();
         videos.clear();
         tags.clear();
@@ -417,7 +417,7 @@ public class PublicacaoJogoFuncionalidade {
             }
             criarJogoAtual();
         }
-        
+
         if (jogoAtual != null) {
             jogoAtual.rejeitar();
             mockJogoRepo.salvar(jogoAtual);
@@ -617,14 +617,14 @@ public class PublicacaoJogoFuncionalidade {
         assertEquals(StatusPublicacao.valueOf(status), jogoAtual.getStatus());
     }
 
-    @Then("a operação deve falhar")
-    public void a_operacao_deve_falhar() {
-        assertFalse(operacaoSucesso, "Operação deveria ter falhou");
+    @Then("a publicação deve falhar")
+    public void a_publicacao_deve_falhar() {
+        assertFalse(operacaoSucesso, "Operação de publicação deveria ter falhado");
     }
 
-    @Then("devo receber um erro informando {string}")
-    public void devo_receber_um_erro_informando(String mensagemEsperada) {
-        assertFalse(operacaoSucesso, "Operação deveria ter falhado");
+    @Then("devo receber um erro de publicação informando {string}")
+    public void devo_receber_um_erro_de_publicacao_informando(String mensagemEsperada) {
+        assertFalse(operacaoSucesso, "Operação de publicação deveria ter falhado");
         assertNotNull(mensagemErro, "Mensagem de erro não deveria ser null");
         assertTrue(mensagemErro.contains(mensagemEsperada) ||
                 mensagemErro.toLowerCase().contains(mensagemEsperada.toLowerCase()),
