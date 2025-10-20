@@ -369,16 +369,20 @@ Aggregate Post {
   String titulo
   String conteudo
   Date dataPublicacao
+  Date dataAgendamento
   URL Imagem
   -PostStatus status
   List<Tag> tags
   List<Comentario> comentarios;
   List<Curtida> curtidas;
   void editarConteudo(String novoTitulo, String novoConteudo);
-      void adicionarCurtida(ContaId contaId);
-      void removerCurtida(ContaId contaId);
-      void adicionarComentario(Comentario comentario);
-      void removerComentario(ComentarioId comentarioId, ContaId solicitanteId);
+  void adicionarCurtida(ContaId contaId);
+  void removerCurtida(ContaId contaId);
+  void adicionarComentario(Comentario comentario);
+  void removerComentario(ComentarioId comentarioId, ContaId solicitanteId);
+  void agendarPost(Date dataAgendamento);
+  void publicarPost();
+  boolean deveSerPublicadoAgora();
 }
 enum PostStatus{ PUBLICADO, EM_RASCUNHO, AGENDADO }
 
@@ -396,8 +400,12 @@ enum PostStatus{ PUBLICADO, EM_RASCUNHO, AGENDADO }
     -ContaId autorId
     String texto
     Date data
+    boolean oculto
 
     void editarTexto(String novoTexto);
+    void ocultar();
+    boolean isOculto();
+    boolean isVisivel();
   }
 
 
@@ -412,14 +420,45 @@ enum PostStatus{ PUBLICADO, EM_RASCUNHO, AGENDADO }
     }
 
     Service PostService {
-      void publicarPost(@ContaId autorId, String titulo, String conteudo);
+      Post publicarPost(@JogoId jogoId, @ContaId autorId, String titulo, String conteudo, URL imagemOpcional, List<Tag> tags);
+      Post criarRascunho(@JogoId jogoId, @ContaId autorId, String titulo, String conteudo, URL imagemOpcional, List<Tag> tags);
       void editarPost(@PostId postId, @ContaId autorId, String novoTitulo, String novoConteudo);
       void curtirPost(@PostId postId, @ContaId contaId);
+      void descurtirPost(@PostId postId, @ContaId contaId);
       void comentarPost(@PostId postId, @ContaId autorId, String texto);
       void removerPost(@PostId postId, @ContaId solicitanteId);
-	    void agendarPost(@PostId, Date dataDeAgendamento)
-	    void criarRascunho(@Post post, @ContaId contaId)
+      void agendarPost(@PostId postId, Date dataAgendamento);
+      void publicarRascunho(@PostId postId, @ContaId autorId);
+      List<Post> buscarPostsPorTag(String tag);
+      List<Post> obterPostsPorAutor(ContaId autorId);
+      List<Post> obterPostsPorStatus(PostStatus status);
     }
+
+    Service MalwareScanner {
+      boolean contemMalware(URL imagemUrl);
+      boolean contemMalware(byte[] fileBytes, String fileName);
+    }
+
+    Service ImagemCompressor {
+      boolean excedeLimit(URL imagem);
+      URL compactar(URL imagem);
+    }
+
+    Service ConteudoAdultoValidator {
+      boolean contemConteudoAdulto(URL imagem);
+    }
+
+    Service JogoInfo {
+      List<Tag> obterTagsDoJogo(@JogoId jogoId);
+      boolean isJogoAdulto(@JogoId jogoId);
+    }
+
+    Service NotificacaoService {
+      void notificarFalhaAgendamento(@ContaId autorId, @PostId postId, String motivoErro);
+      void notificarImagemBloqueada(@ContaId autorId, @PostId postId);
+    }
+
+
 
   }
 

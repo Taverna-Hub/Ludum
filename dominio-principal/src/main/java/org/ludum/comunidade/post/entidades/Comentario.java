@@ -11,6 +11,7 @@ public class Comentario {
     private ContaId autorId;
     private String texto;
     private LocalDateTime data;
+    private boolean oculto;
 
     public Comentario(ComentarioId id, PostId postId, ContaId autorId, String texto, LocalDateTime data) {
         this.id = Objects.requireNonNull(id);
@@ -18,12 +19,29 @@ public class Comentario {
         this.autorId = Objects.requireNonNull(autorId);
         this.texto = Objects.requireNonNull(texto);
         this.data = Objects.requireNonNull(data);
+        this.oculto = false;
     }
 
     public void editarTexto(String novoTexto) {
-        // TODO: Implementar lógica de edição de texto
-        // - Validar novo texto
-        // - Atualizar texto
+        Objects.requireNonNull(novoTexto, "Novo texto não pode ser nulo");
+
+        if (novoTexto.isBlank()) {
+            throw new IllegalArgumentException("Texto do comentário não pode ser vazio");
+        }
+
+        this.texto = novoTexto;
+    }
+
+    public void ocultar() {
+        this.oculto = true;
+    }
+
+    public boolean isOculto() {
+        return oculto;
+    }
+
+    public boolean isVisivel() {
+        return !oculto;
     }
 
     public ComentarioId getId() {
