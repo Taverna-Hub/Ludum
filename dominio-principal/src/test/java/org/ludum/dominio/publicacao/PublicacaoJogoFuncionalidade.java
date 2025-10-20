@@ -1,4 +1,4 @@
-package org.ludum.dominio.catalogo;
+package org.ludum.dominio.publicacao;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
