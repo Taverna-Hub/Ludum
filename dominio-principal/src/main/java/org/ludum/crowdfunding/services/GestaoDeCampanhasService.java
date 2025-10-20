@@ -3,15 +3,15 @@ package org.ludum.crowdfunding.services;
 import java.math.BigDecimal;
 import java.util.Objects;
 
-import org.ludum.catalogo.jogo.JogoRepository;
 import org.ludum.catalogo.jogo.entidades.Jogo;
 import org.ludum.catalogo.jogo.entidades.JogoId;
 import org.ludum.catalogo.jogo.enums.StatusPublicacao;
+import org.ludum.catalogo.jogo.repositorios.JogoRepository;
 import org.ludum.crowdfunding.entidades.Campanha;
 import org.ludum.crowdfunding.entidades.CampanhaId;
 import org.ludum.crowdfunding.entidades.Periodo;
 import org.ludum.crowdfunding.repositorios.CampanhaRepository;
-import org.ludum.identidade.conta.entidades.ContaId;
+import org.ludum.identidade.conta.entities.ContaId;
 
 public class GestaoDeCampanhasService {
     

@@ -5,7 +5,7 @@ import java.util.Objects;
 
 import org.ludum.catalogo.jogo.entidades.JogoId;
 import org.ludum.crowdfunding.enums.StatusCampanha;
-import org.ludum.identidade.conta.entidades.ContaId;
+import org.ludum.identidade.conta.entities.ContaId;
 
 public class Campanha {
 

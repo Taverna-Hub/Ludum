@@ -11,7 +11,7 @@ import org.ludum.crowdfunding.entidades.CampanhaId;
 import org.ludum.crowdfunding.repositorios.ApoioRepository;
 import org.ludum.crowdfunding.repositorios.CampanhaRepository;
 import org.ludum.financeiro.transacao.entidades.TransacaoId;
-import org.ludum.identidade.conta.entidades.ContaId;
+import org.ludum.identidade.conta.entities.ContaId;
 
 public class ApoioService {
 
