@@ -7,7 +7,7 @@ Feature: Financiamento Coletivo (Crowdfunding)
   Scenario: [Ação Correta] Desenvolvedora validada cria uma campanha para um jogo não publicado
     Given que sou uma "Desenvolvedora" autenticada e validada
     And possuo um projeto de jogo "A Lenda do Agreste" com status "não publicado"
-    When eu crio uma campanha de financiamento para "A Lenda do Agreste" com uma meta de "R$ 10000.00" e duração de "30 dias"
+    When eu crio uma campanha de financiamento para "A Lenda do Agreste" com uma meta de "R$ 10000.00" e duração de "30" dias
     Then a campanha deve ser criada com sucesso e associada ao jogo
 
   Scenario: [Ação Incorreta] Desenvolvedora tenta criar uma campanha para um jogo já publicado
