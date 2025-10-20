@@ -12,7 +12,7 @@ Feature: Avaliação de Jogos
   Scenario: Usuário tenta avaliar jogo inexistente
     Given um "jogo" "não existe" no sistema
     When o usuário tenta avaliar o jogo
-    Then o sistema informa que o jogo não foi encontrado
+    Then o sistema informa que o jogo avaliado não foi encontrado
 
   # Regra 2: Jogo deve estar publicado
 
@@ -26,7 +26,7 @@ Feature: Avaliação de Jogos
     Given um "jogo" "não está" publicado
     And o usuário "possui" o jogo na biblioteca
     When o usuário tenta avaliar o jogo
-    Then o sistema informa que o jogo não está publicado
+    Then o sistema informa que o jogo avaliado não está publicado
 
   # Regra 3: Usuário deve possuir o jogo na biblioteca
 
@@ -56,7 +56,7 @@ Feature: Avaliação de Jogos
     And o usuário "possui" o jogo na biblioteca
     And o usuário "já avaliou" o jogo anteriormente
     When o usuário tenta avaliar o jogo novamente
-    Then o sistema informa que o jogo já foi avaliado
+    Then o sistema informa que o jogo avaliado já foi avaliado
 
   # Regra 5: Review deve conter título válido
 
