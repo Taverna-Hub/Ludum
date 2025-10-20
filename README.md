@@ -80,8 +80,8 @@ Nossa plataforma digital conecta jogadores e desenvolvedores independentes em um
  | Crowdfunding | Luan Kato |
  | Comprar um Jogo | Sophia Gallindo |
  | Saldo | Sophia Gallindo |
- | Baixar Jogo | Matheus Araújo |
- | Upload de Jogo | Matheus Araújo |
+ | Baixar Jogo | Matheus Araujo |
+ | Upload de Jogo | Matheus Araujo |
 
 <a name="dominio"></a>
 
