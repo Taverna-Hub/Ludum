@@ -35,4 +35,24 @@ public class Slug {
         return valor;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        Slug slug = (Slug) o;
+        return Objects.equals(valor, slug.valor);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(valor);
+    }
+
+    @Override
+    public String toString() {
+        return valor;
+    }
+
 }
