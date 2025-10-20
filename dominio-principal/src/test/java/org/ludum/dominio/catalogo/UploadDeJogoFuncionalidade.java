@@ -1,4 +1,4 @@
-package org.ludum.dominio.catalogo.jogo;
+package org.ludum.dominio.catalogo;
 
 import io.cucumber.java.en.*;
 import io.cucumber.java.Before;
@@ -52,7 +52,7 @@ public class UploadDeJogoFuncionalidade {
         this.e = null;
 
         try {
-            this.jogo = new Jogo(new JogoId(UUID.randomUUID().toString()), contaId, "jogo-jogo-jogo", "Jogo", new URL("https://exemplo.com/capa.jpg"), List.of(new Tag(new TagId("a"), "aaa")), false, LocalDate.of(2021, 3, 15));
+            this.jogo = new Jogo(new JogoId(UUID.randomUUID().toString()), contaId, "jogo-jogo-jogo", "JogoJogoJogo", new URL("https://exemplo.com/capa.jpg"), List.of(new Tag(new TagId("a"), "aaa")), false, LocalDate.of(2021, 3, 15));
         } catch (MalformedURLException e) {
             throw new RuntimeException(e);
         }
@@ -135,7 +135,7 @@ public class UploadDeJogoFuncionalidade {
     @When("eu tento enviar o arquivo {string} para um jogo que não é meu")
     public void euTentoEnviarOArquivoJogoZip(String str) {
         try {
-            Jogo newJogo = new Jogo(new JogoId(UUID.randomUUID().toString()), new ContaId(UUID.randomUUID().toString()), "jogo-jogo-jogo", "Jogo", new URL("https://exemplo.com/capa.jpg"), List.of(new Tag(new TagId("a"), "aaa")), false, LocalDate.of(2021, 3, 15));
+            Jogo newJogo = new Jogo(new JogoId(UUID.randomUUID().toString()), new ContaId(UUID.randomUUID().toString()), "jogo-jogo-jogo", "JogoJogoJogo", new URL("https://exemplo.com/capa.jpg"), List.of(new Tag(new TagId("a"), "aaa")), false, LocalDate.of(2021, 3, 15));
             when(this.contaRepository.obterPorId(this.conta.getId())).thenReturn(this.conta);
             when(this.jogoRepository.obterPorId(this.jogo.getId())).thenReturn(newJogo);
             this.gestaoDeJogosService.processarUpload(this.conta.getId(), this.jogo.getId(), new PacoteZip(new byte[10]), new VersaoId(UUID.randomUUID().toString()), str, "a");
