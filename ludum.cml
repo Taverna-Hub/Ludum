@@ -151,6 +151,7 @@ ValueObject JogoId { String id }
       -PacoteZip
       String nomeVersao
       String descricaoVersao
+      LocalDateTime dataUpload
       void validarPacoteZip(@PacoteZip pacoteZip)
       void validarNomeVersao(String nomeVersao)
     }
@@ -159,7 +160,7 @@ ValueObject JogoId { String id }
 
     Service GestaoDeJogosService {
       void processarUpload(@ContaId devId, Versao versao)
-      boolean verificarMalware(PacoteZip pacote)
+      void verificarMalware(PacoteZip pacote)
     }
 
     Service PublicacaoService {
@@ -201,10 +202,11 @@ Aggregate Biblioteca {
   aggregateRoot
   -@ContaId jogadorId
   List<ItemBiblioteca> itens // Essencial para o agregado, OK.
-  ItemBiblioteca checaPresencaDeJogo(
-  @JogoId jogoId)
-    void adicionarJogo(@ModeloDeAcesso modeloDeAcesso, @JogoId jogoId)
-	  void removerJogo(@JogoId jogoId)
+  List<ItemBiblioteca> itensBaixados
+  Optional<ItemBiblioteca> checaPresencaDeJogo(@JogoId jogoId)
+  void adicionarJogo(@ModeloDeAcesso modeloDeAcesso, @JogoId jogoId)
+  void removerJogo(@JogoId jogoId)
+  void baixouJogo(ItemBiblioteca)
 }
 Repository BibliotecaRepository {
       Biblioteca obterPorJogador(ContaId jogadorId);

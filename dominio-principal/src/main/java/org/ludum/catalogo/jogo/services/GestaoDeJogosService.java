@@ -20,14 +20,18 @@ public class GestaoDeJogosService {
         this.contaRepository = contaRepository;
     }
 
-    public boolean verificarMalware(PacoteZip pacoteZip){
+    public void verificarMalware(PacoteZip pacoteZip, String str){
         // TODO: Implementação de API externa
-        return true;
+        if(!str.equals("SEGURO")){
+            throw new IllegalStateException("Malware detectado");
+        }
     }
 
     public void processarUpload(ContaId contaId, JogoId jogoId, PacoteZip pacote, VersaoId versaoId, String nomeVersao, String descVersao){
         Conta currentUser = contaRepository.obterPorId(contaId);
         Jogo currentJogo = jogoRepository.obterPorId(jogoId);
+
+        verificarMalware(pacote, "SEGURO");
 
         if(!currentUser.getTipo().equals(TipoConta.DESENVOLVEDORA)){
             throw new IllegalStateException("Funcionalidade disponível apenas para desenvolvedores");
@@ -35,10 +39,6 @@ public class GestaoDeJogosService {
 
         if(!contaId.equals(currentJogo.getDesenvolvedoraId())){
             throw new IllegalStateException("Jogo não pertence a desenvolvedora");
-        }
-
-        if(!verificarMalware(pacote)){
-            throw new IllegalStateException("Malware detectado no arquivo enviado");
         }
 
         currentJogo.adicionarVersao(pacote, versaoId, nomeVersao, descVersao);
