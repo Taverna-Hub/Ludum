@@ -32,12 +32,12 @@ public class Jogo {
 
         this.id = Objects.requireNonNull(id);
         this.desenvolvedoraId = Objects.requireNonNull(desenvolvedoraId);
-        this.titulo = Objects.requireNonNull(titulo);
-        this.descricao = Objects.requireNonNull(descricao);
-
+        
         validarTitulo(titulo);
         validarDescricao(descricao);
-
+        
+        this.titulo = titulo;
+        this.descricao = descricao;
         this.slug = Slug.criar(titulo);
         this.capaOficial = capaOficial;
         this.status = StatusPublicacao.AGUARDANDO_VALIDACAO;
@@ -55,59 +55,175 @@ public class Jogo {
     }
 
     private void validarTitulo(String titulo) {
-        // TODO: IMPLEMENTAÇÃO
+        if (titulo == null || titulo.isBlank()) {
+            throw new IllegalArgumentException("Jogo deve ter um título");
+        }
+        if (titulo.length() < 3) {
+            throw new IllegalArgumentException("Título deve ter pelo menos 3 caracteres");
+        }
+        if (titulo.length() > 100) {
+            throw new IllegalArgumentException("Título não pode exceder 100 caracteres");
+        }
     }
 
     private void validarDescricao(String descricao) {
-        // TODO: IMPLEMENTAÇÃO
+        if (descricao == null || descricao.isBlank()) {
+            throw new IllegalArgumentException("Jogo deve ter uma descrição");
+        }
+        if (descricao.length() < 10) {
+            throw new IllegalArgumentException("Descrição deve ter pelo menos 10 caracteres");
+        }
+        if (descricao.length() > 5000) {
+            throw new IllegalArgumentException("Descrição não pode exceder 5000 caracteres");
+        }
     }
 
     public void adicionarScreenshot(URL screenshot) {
-        // TODO: IMPLEMENTAÇÃO
+        Objects.requireNonNull(screenshot, "Screenshot não pode ser nulo");
+        if (this.screenshots.contains(screenshot)) {
+            throw new IllegalStateException("Screenshot já adicionado");
+        }
+        this.screenshots.add(screenshot);
     }
 
     public void removerScreenshot(URL screenshot) {
-        // TODO: IMPLEMENTAÇÃO
+        Objects.requireNonNull(screenshot, "Screenshot não pode ser nulo");
+        if (!this.screenshots.remove(screenshot)) {
+            throw new IllegalStateException("Screenshot não encontrado");
+        }
     }
 
     public void adicionarVideo(URL video) {
-        // TODO: IMPLEMENTAÇÃO
+        Objects.requireNonNull(video, "Vídeo não pode ser nulo");
+        if (this.videos.contains(video)) {
+            throw new IllegalStateException("Vídeo já adicionado");
+        }
+        this.videos.add(video);
     }
 
     public void removerVideo(URL video) {
-        // TODO: IMPLEMENTAÇÃO
+        Objects.requireNonNull(video, "Vídeo não pode ser nulo");
+        if (!this.videos.remove(video)) {
+            throw new IllegalStateException("Vídeo não encontrado");
+        }
     }
 
     public void adicionarTag(Tag tag) {
-        // TODO: IMPLEMENTAÇÃO;
+        Objects.requireNonNull(tag, "Tag não pode ser nula");
+        
+        if (this.tags.size() >= 10) {
+            throw new IllegalStateException("Jogo não pode ter mais de 10 tags");
+        }
+        
+        // Verificar se já tem essa tag
+        boolean jaTemTag = this.tags.stream()
+                .anyMatch(t -> t.getId().equals(tag.getId()));
+        
+        if (jaTemTag) {
+            throw new IllegalStateException("Tag já adicionada ao jogo");
+        }
+        
+        this.tags.add(tag);
     }
 
     public void removerTag(TagId tagId) {
-        // TODO: IMPLEMENTAÇÃO
+        Objects.requireNonNull(tagId, "TagId não pode ser nulo");
+        
+        boolean removido = this.tags.removeIf(t -> t.getId().equals(tagId));
+        
+        if (!removido) {
+            throw new IllegalStateException("Tag não encontrada no jogo");
+        }
     }
 
     public void atualizarTitulo(String novoTitulo) {
-        // TODO: IMPLEMENTAÇÃO
+        validarTitulo(novoTitulo);
+        this.titulo = novoTitulo;
+        this.slug = Slug.criar(novoTitulo);
     }
 
     public void atualizarDescricao(String novaDescricao) {
-        // TODO: IMPLEMENTAÇÃO
+        validarDescricao(novaDescricao);
+        this.descricao = novaDescricao;
     }
 
     public void publicar() {
-        // TODO: IMPLEMENTAÇÃO
+        if (this.status != StatusPublicacao.AGUARDANDO_VALIDACAO) {
+            throw new IllegalStateException(
+                "Apenas jogos aguardando validação podem ser publicados. Status atual: " + this.status);
+        }
+        
+        validarParaPublicacao();
+        
+        this.status = StatusPublicacao.PUBLICADO;
     }
 
     public void rejeitar() {
-        // TODO: IMPLEMENTAÇÃO
+        if (this.status != StatusPublicacao.AGUARDANDO_VALIDACAO) {
+            throw new IllegalStateException(
+                "Apenas jogos aguardando validação podem ser rejeitados. Status atual: " + this.status);
+        }
+        
+        this.status = StatusPublicacao.REJEITADO;
     }
 
     public void arquivar() {
-        // TODO: IMPLEMENTAÇÃO
+        if (this.status != StatusPublicacao.PUBLICADO) {
+            throw new IllegalStateException(
+                "Apenas jogos publicados podem ser arquivados. Status atual: " + this.status);
+        }
+        
+        this.status = StatusPublicacao.ARQUIVADO;
     }
 
     public void aguardarValidacao() {
-        // TODO: IMPLEMENTAÇÃO
+        if (this.status == StatusPublicacao.PUBLICADO) {
+            throw new IllegalStateException("Jogo já está publicado");
+        }
+        
+        this.status = StatusPublicacao.AGUARDANDO_VALIDACAO;
+    }
+    
+    public void validarParaPublicacao() {
+        // Validar título e descrição
+        if (this.titulo == null || this.titulo.isBlank()) {
+            throw new IllegalStateException("Jogo deve ter um título");
+        }
+        
+        if (this.descricao == null || this.descricao.isBlank()) {
+            throw new IllegalStateException("Jogo deve ter uma descrição");
+        }
+        
+        // Validar capa oficial
+        if (this.capaOficial == null) {
+            throw new IllegalStateException("Jogo deve ter uma capa oficial");
+        }
+        
+        // Validar pelo menos 1 screenshot ou vídeo
+        if (this.screenshots.isEmpty() && this.videos.isEmpty()) {
+            throw new IllegalStateException("Jogo deve ter pelo menos 1 screenshot ou vídeo");
+        }
+        
+        // Validar tags (mínimo 1, máximo 10)
+        if (this.tags.isEmpty()) {
+            throw new IllegalStateException("Jogo deve ter pelo menos 1 tag");
+        }
+        
+        if (this.tags.size() > 10) {
+            throw new IllegalStateException("Jogo não pode ter mais de 10 tags");
+        }
+        
+        // Se for NSFW, deve ter a tag +18
+        if (this.isNSFW) {
+            boolean temTag18 = this.tags.stream()
+                    .anyMatch(tag -> tag.getNome().equalsIgnoreCase("+18") || 
+                                   tag.getNome().equalsIgnoreCase("18+") ||
+                                   tag.getNome().equalsIgnoreCase("adulto"));
+            
+            if (!temTag18) {
+                throw new IllegalStateException("Jogo adulto deve ter a tag +18");
+            }
+        }
     }
 
     public void adicionarVersao(PacoteZip pacote, VersaoId versaoId, String nomeVersao, String descVersao) {
