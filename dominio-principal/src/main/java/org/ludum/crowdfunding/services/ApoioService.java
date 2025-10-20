@@ -10,7 +10,6 @@ import org.ludum.crowdfunding.entidades.Campanha;
 import org.ludum.crowdfunding.entidades.CampanhaId;
 import org.ludum.crowdfunding.repositorios.ApoioRepository;
 import org.ludum.crowdfunding.repositorios.CampanhaRepository;
-import org.ludum.financeiro.carteira.OperacoesFinanceirasService;
 import org.ludum.financeiro.transacao.entidades.TransacaoId;
 import org.ludum.identidade.conta.entidades.ContaId;
 
