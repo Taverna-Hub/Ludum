@@ -65,6 +65,16 @@ public class Campanha {
         return faltante.compareTo(BigDecimal.ZERO) > 0 ? faltante : BigDecimal.ZERO;
     }
 
+    public void removerApoio(BigDecimal valor) {
+        if (this.status != StatusCampanha.ATIVA) {
+            throw new IllegalStateException("Apoios só podem ser removidos de campanhas ativas.");
+        }
+        if (valor == null || valor.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("O valor do apoio a ser removido deve ser positivo.");
+        }
+        this.valorArrecadado = this.valorArrecadado.subtract(valor);
+    }
+
     public CampanhaId getId() {
         return id;
     }

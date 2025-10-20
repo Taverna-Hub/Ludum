@@ -3,7 +3,10 @@ package org.ludum.crowdfunding.services;
 import java.math.BigDecimal;
 import java.util.Objects;
 
+import org.ludum.catalogo.jogo.JogoRepository;
+import org.ludum.catalogo.jogo.entidades.Jogo;
 import org.ludum.catalogo.jogo.entidades.JogoId;
+import org.ludum.catalogo.jogo.enums.StatusPublicacao;
 import org.ludum.crowdfunding.entidades.Campanha;
 import org.ludum.crowdfunding.entidades.CampanhaId;
 import org.ludum.crowdfunding.entidades.Periodo;
@@ -13,13 +16,26 @@ import org.ludum.identidade.conta.entidades.ContaId;
 public class GestaoDeCampanhasService {
     
     private final CampanhaRepository campanhaRepository;
+    private final JogoRepository jogoRepository;
 
-    public GestaoDeCampanhasService(CampanhaRepository campanhaRepository) {
+    public GestaoDeCampanhasService(CampanhaRepository campanhaRepository, JogoRepository jogoRepository) {
         this.campanhaRepository = Objects.requireNonNull(campanhaRepository);
+        this.jogoRepository = Objects.requireNonNull(jogoRepository);
     }
 
     public Campanha criarCampanha(JogoId jogoId, ContaId devId, BigDecimal meta, Periodo periodo) {
-        // TODO: Adicionar validações, como verificar se o jogoId existe e pertence ao devId
+        Jogo jogo = jogoRepository.obterPorId(jogoId);
+        
+        if (jogo == null) {
+            throw new IllegalArgumentException("O jogo associado à campanha não foi encontrado.");
+        }
+        if (!jogo.getDesenvolvedoraId().equals(devId)) {
+            throw new IllegalStateException("Apenas o desenvolvedor dono do jogo pode criar uma campanha para ele.");
+        }
+        if (jogo.getStatus() == StatusPublicacao.PUBLICADO) {
+            throw new IllegalStateException("Campanhas de financiamento são permitidas apenas para jogos não publicados.");
+        }
+
         Campanha novaCampanha = new Campanha(jogoId, devId, meta, periodo);
         campanhaRepository.salvar(novaCampanha);
         return novaCampanha;
