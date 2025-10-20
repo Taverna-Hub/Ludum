@@ -26,6 +26,8 @@ A Ludum surge para resolver as dificuldades enfrentadas por desenvolvedores inde
 
 Nossa plataforma digital conecta jogadores e desenvolvedores independentes em um mesmo ecossistema, permitindo publicar, descobrir, apoiar e jogar novos títulos de forma simples e segura.
 
+---
+
 <a name="funcionalidades"></a>
 
 ### ⭐ Funcionalidades Principais
@@ -60,8 +62,7 @@ Nossa plataforma digital conecta jogadores e desenvolvedores independentes em um
 
 - Crowdfunding: Crie campanhas de arrecadação para financiar seus projetos.
 
-[!WARNING]
-As demais funcionalidades serão detalhadas com o decorrer do período.
+---
 
 <a name="tarefas"></a>
 
@@ -73,7 +74,7 @@ As demais funcionalidades serão detalhadas com o decorrer do período.
  | ----------------- | ------------ |
  | Sistema de Seguir | Gabriel Melo |
  | Sistema de Reviews e Avaliações de Jogos | Gabriel Melo
- | Criar Post | Ana Clara |
+ | Sistema de Post | Ana Clara |
  | Publicação de Jogo | Ana Clara |
  | Oficina de Mods | Luan Kato |
  | Crowdfunding | Luan Kato |
@@ -91,7 +92,7 @@ As demais funcionalidades serão detalhadas com o decorrer do período.
 1. Sistema de Seguir
 Um usuário pode seguir tags, contas, jogos e desenvolvedoras. O sistema valida se o seguidor e o alvo existem, se não há bloqueios e se a relação de seguimento já não existe. Não é permitido seguir a si próprio.
 
-2. Criar Post
+2. Sistema de Post
 Usuários podem criar posts com texto (até 500 caracteres) e imagem opcional, associados a um jogo e de 1 a 5 tags. É possível agendar a publicação. Mídias passam por verificação de malware.
 
 3. Sistema de Reviews e Avaliações
@@ -125,7 +126,7 @@ Permite adicionar e sacar saldo, com histórico de transações e regras de segu
 ### 🎨 Prototipagem
 
 #### Protótipo de Alta Fidelidade
-<img width="" height="" alt="Protótipo de Alta Fidelidade" src=""/>
+<a name="link-drive" src="https://drive.google.com/drive/folders/15hPzCVUf-mxvhpH_81T7XLTHQUBxNiiK?usp=drive_link">Link para o drive<a>
 
 #### Mapa de Histórias
 <a href="https://github.com/Taverna-Hub/Ludum/blob/main/entregaveis/mapa/mapa-usuario.svg">
@@ -135,8 +136,10 @@ Permite adicionar e sacar saldo, com histórico de transações e regras de segu
         width="100%"
     >
 
-### Links
- desc. dominio
+#### Descrição de Domínio
+
+<a name="link-dominio" src="https://docs.google.com/document/d/1WNc7_8Gb9znsVRmJXMoz-VEsKuTgRUmjb809-KLJRUM/edit?usp=sharing">Link para o docs<a>
+
 ---
 <a name="equipe"></a>
 
