@@ -1,12 +1,16 @@
 package org.ludum.catalogo.jogo.entidades;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 public class Versao {
     private final VersaoId id;
     private final JogoId jogoId;
     private final PacoteZip pacoteZip;
-    //Titulo_Versao.Versao.Versao, onde Versao é composto apenas por números inteiros(Ex: JogoDaCobrinha_2.5.9)
+    //Titulo_Versao.Versao.Versao, onde Versao é composto apenas por números inteiros(Ex: jogo-da-cobrinha_2.5.9)
     private String nomeVersao;
     private String descricaoVersao;
+    private final LocalDateTime dataUpload;
 
 
     public Versao(PacoteZip pacoteZip, JogoId jogoId, VersaoId versaoId, String nomeVersao, String descricaoVersao) {
@@ -17,6 +21,7 @@ public class Versao {
         validarNomeVersao(nomeVersao);
         this.nomeVersao = nomeVersao;
         this.descricaoVersao = descricaoVersao;
+        this.dataUpload = LocalDateTime.now();
     }
 
     private void validarPacoteZip(PacoteZip pacoteZip) {
@@ -32,16 +37,23 @@ public class Versao {
         }
         String[] list = nomeVersao.split("_");
         String[] digitos = list[1].split("\\.");
-        if(list.length != 2 || digitos.length != 3) {
+        String formato = digitos[digitos.length-1];
+
+        if(list.length != 2 || digitos.length != 4) {
             throw new IllegalArgumentException("Nome da versão não está formatado corretamente");
         }
-        for(int i = 0; i < digitos.length; i++) {
+        for(int i = 0; i < digitos.length - 1; i++) {
             try{
                 Integer.parseInt(digitos[i]);
             }catch(Exception e){
                 throw new IllegalArgumentException("Versão só pode conter números inteiros");
             }
         }
+
+        if(!formato.equals("zip")) {
+            throw new IllegalArgumentException("Arquivo com formato incorreto");
+        }
+
     }
 
     public void atualizarDescricao(String descricaoNew) {
@@ -74,6 +86,10 @@ public class Versao {
 
     public VersaoId getId() {
         return id;
+    }
+
+    public LocalDateTime getDataUpload() {
+        return dataUpload;
     }
 
     @Override

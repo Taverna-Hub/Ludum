@@ -13,10 +13,12 @@ public class Biblioteca {
 
     private final ContaId contaId;
     private List<ItemBiblioteca> itens;
+    private List<ItemBiblioteca> itensBaixados;
 
     public Biblioteca(ContaId contaId) {
         this.contaId = Objects.requireNonNull(contaId);
         this.itens = new ArrayList<ItemBiblioteca>();
+        this.itensBaixados = new ArrayList<ItemBiblioteca>();
     }
 
     public Optional<ItemBiblioteca> buscarJogoEmBiblioteca(JogoId jogoId){
@@ -46,8 +48,19 @@ public class Biblioteca {
 
     }
 
+    public void baixouJogo(ItemBiblioteca item){
+        if(!itens.contains(item)){
+            throw new IllegalStateException("Jogo não presente na  biblioteca");
+        }
+        itensBaixados.add(item);
+    }
+
     public List<ItemBiblioteca> getItens() {
         return List.copyOf(itens);
+    }
+
+    public List<ItemBiblioteca> getItensBaixados() {
+        return List.copyOf(itensBaixados);
     }
 
     public ContaId getContaId() {

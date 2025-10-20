@@ -228,12 +228,14 @@ public class Jogo {
 
     public void adicionarVersao(PacoteZip pacote, VersaoId versaoId, String nomeVersao, String descVersao) {
         Versao newVersao = new Versao(pacote, this.id, versaoId ,nomeVersao, descVersao);
-        if (this.versaoHistory.stream().anyMatch(v -> v.getId().equals(versaoId))) {
-            throw new IllegalStateException("Versão com mesmo id já existe");
-        }
+        for(int i = 0; i < this.versaoHistory.size(); i++){
+            if(this.versaoHistory.get(i).getId().equals(versaoId)){
+                throw new IllegalArgumentException("Versão com mesmo id já existente");
+            }
+            if (this.versaoHistory.get(i).getNomeVersao().equals(nomeVersao)) {
+                throw new IllegalArgumentException("Versão com mesmo nome já existente");
 
-        if(this.versaoHistory.stream().anyMatch(v -> v.getNomeVersao().equalsIgnoreCase(nomeVersao))){
-            throw new IllegalStateException("Versão com mesmo título já existe");
+            }
         }
         this.versaoHistory.add(newVersao);
     }

@@ -36,12 +36,7 @@ public class BibliotecaService {
 
     public void adicionarJogo(ModeloDeAcesso modeloDeAcesso, JogoId jogoid, ContaId contaid, TransacaoId transacaoId){
         Biblioteca currentBiblioteca = this.bibliotecaRepository.obterPorJogador(contaid);
-        Jogo currentJogo = jogoRepository.obterPorId(jogoid);
         Transacao currentTransacao = transacaoRepository.obterPorId(transacaoId);
-
-        if(currentJogo.getDataDeLancamento().isAfter(LocalDate.now())){
-            throw new IllegalStateException("Jogo ainda não lançado");
-        }
 
         if(currentTransacao.getStatus() != StatusTransacao.CONFIRMADA){
             throw new IllegalStateException("Transação cancelada ou pendente");
@@ -54,18 +49,24 @@ public class BibliotecaService {
 
     public PacoteZip processarDownload(ContaId contaId, JogoId jogoId){
         Biblioteca currentBiblioteca = this.bibliotecaRepository.obterPorJogador(contaId);
+        Jogo currentJogo = jogoRepository.obterPorId(jogoId);
         Versao currentVersao = this.jogoRepository.obterPorId(jogoId).getVersaoHistory().getLast();
-        ItemBiblioteca currentJogo = currentBiblioteca.buscarJogoEmBiblioteca(jogoId).orElse(null);
+        ItemBiblioteca currentItemBiblioteca = currentBiblioteca.buscarJogoEmBiblioteca(jogoId).orElse(null);
         Conta currentUser = contaRepository.obterPorId(contaId);
 
         if(currentUser.getStatus().equals(StatusConta.INATIVA)){
-            throw new IllegalStateException("Conta inativa");
+            throw new IllegalStateException("Usuário com conta inativa");
         }
 
-        if(currentJogo == null){
+        if(currentJogo.getDataDeLancamento().isAfter(LocalDate.now())){
+            throw new IllegalStateException("Jogo ainda não lançado");
+        }
+
+        if(currentItemBiblioteca == null){
             throw new IllegalStateException("Jogo não está presente na biblioteca");
         }
 
+        currentBiblioteca.baixouJogo(currentItemBiblioteca);
         return currentVersao.getPacoteZip();
 
     }
