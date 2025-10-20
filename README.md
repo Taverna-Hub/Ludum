@@ -13,8 +13,7 @@
 <a href="#funcionalidades">Funcionalidades</a> •
 <a href="#tarefas">Tarefas</a> •
 <a href="#dominio">Domínio</a> •
-<a href="#prototipagem">Prototipagem</a> •
-<a href="#links">Links</a>
+<a href="#entrega-1">Entrega 1</a> •
 <a href="#equipe">Equipe</a>
 </p>
 
@@ -121,12 +120,15 @@ Permite adicionar e sacar saldo, com histórico de transações e regras de segu
 
 </details>
 
-<a name="prototipagem"></a>
+---
 
-### 🎨 Prototipagem
+### Entrega 1
+<a name="entrega-1"></a>
+[Link para o drive da entrega 1](https://drive.google.com/drive/folders/1Lj0eJsWbM118a3DutaAXSB_vPFT-TwIH?usp=drive_link)
 
 #### Protótipo de Alta Fidelidade
-<a name="link-drive" src="https://drive.google.com/drive/folders/15hPzCVUf-mxvhpH_81T7XLTHQUBxNiiK?usp=drive_link">Link para o drive<a>
+<a name="link-drive"></a>
+[Link para o dive dos protótipos](https://drive.google.com/drive/folders/15hPzCVUf-mxvhpH_81T7XLTHQUBxNiiK?usp=drive_link)
 
 #### Mapa de Histórias
 <a href="https://github.com/Taverna-Hub/Ludum/blob/main/entregaveis/mapa/mapa-usuario.svg">
@@ -137,8 +139,12 @@ Permite adicionar e sacar saldo, com histórico de transações e regras de segu
     >
 
 #### Descrição de Domínio
+<a name="link-dominio"></a>
+[Link para a descrição do domínio](https://docs.google.com/document/d/1WNc7_8Gb9znsVRmJXMoz-VEsKuTgRUmjb809-KLJRUM/edit?usp=sharing)
 
-<a name="link-dominio" src="https://docs.google.com/document/d/1WNc7_8Gb9znsVRmJXMoz-VEsKuTgRUmjb809-KLJRUM/edit?usp=sharing">Link para o docs<a>
+#### Descrição das Funcionalidades
+<a name="link-funcionalidades"></a>
+[Link para as funcionalidades](https://docs.google.com/document/d/1d7saNplfoin-1gofb-_hv7pp1dXgjjqiMypVHPptEAA/edit?usp=drive_link)
 
 ---
 <a name="equipe"></a>
