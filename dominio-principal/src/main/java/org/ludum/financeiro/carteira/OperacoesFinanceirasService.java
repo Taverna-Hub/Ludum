@@ -27,21 +27,21 @@ public class OperacoesFinanceirasService {
             throw new IllegalArgumentException("Valor deve ser maior que zero");
         }
 
-        Transacao transacao = new Transacao(null, carteira.getId(), null, TipoTransacao.CREDITO, 
-            pagamentoConfirmado ? StatusTransacao.CONFIRMADA : StatusTransacao.PENDENTE, 
-            LocalDateTime.now(), valor);
+        Transacao transacao = new Transacao(null, carteira.getId(), null, TipoTransacao.CREDITO,
+                pagamentoConfirmado ? StatusTransacao.CONFIRMADA : StatusTransacao.PENDENTE,
+                LocalDateTime.now(), valor);
 
         if (pagamentoConfirmado) {
             if (valor.compareTo(new BigDecimal("100")) > 0) {
                 carteira.getSaldo().addBloqueado(valor);
-                transacao.setStatus(StatusTransacao.PENDENTE); 
+                transacao.setStatus(StatusTransacao.PENDENTE);
             } else {
                 carteira.getSaldo().addDisponivel(valor);
             }
         }
 
         transacaoRepository.salvar(transacao);
-        return true; 
+        return true;
     }
 
     public boolean comprarJogo(Carteira carteiraSaida, Carteira carteiraEntrada, BigDecimal valor) {
@@ -55,15 +55,17 @@ public class OperacoesFinanceirasService {
 
         if (carteiraSaida.getSaldo().getDisponivel().compareTo(valor) >= 0) {
             carteiraSaida.getSaldo().subtrairDisponivel(valor);
-            
+
             carteiraEntrada.getSaldo().addBloqueado(valor);
 
-            Transacao transacaoDebito = new Transacao(null, carteiraSaida.getId(), carteiraEntrada.getId(), TipoTransacao.DEBITO,
-                StatusTransacao.CONFIRMADA, LocalDateTime.now(), valor);
+            Transacao transacaoDebito = new Transacao(null, carteiraSaida.getId(), carteiraEntrada.getId(),
+                    TipoTransacao.DEBITO,
+                    StatusTransacao.CONFIRMADA, LocalDateTime.now(), valor);
             transacaoRepository.salvar(transacaoDebito);
 
-            Transacao transacaoCredito = new Transacao(null, carteiraSaida.getId(), carteiraEntrada.getId(), TipoTransacao.CREDITO,
-                StatusTransacao.PENDENTE, LocalDateTime.now(), valor); 
+            Transacao transacaoCredito = new Transacao(null, carteiraSaida.getId(), carteiraEntrada.getId(),
+                    TipoTransacao.CREDITO,
+                    StatusTransacao.PENDENTE, LocalDateTime.now(), valor);
             transacaoRepository.salvar(transacaoCredito);
 
             return true;
@@ -76,11 +78,11 @@ public class OperacoesFinanceirasService {
         long diferencaMillis = new Date().getTime() - dataTransacao.getTime();
         long diferencaHoras = TimeUnit.MILLISECONDS.toHours(diferencaMillis);
 
-        if (diferencaHoras >= 0 && diferencaHoras <= 24) { 
+        if (diferencaHoras >= 0 && diferencaHoras <= 24) {
             carteira.getSaldo().addDisponivel(valor);
 
             Transacao transacao = new Transacao(null, null, carteira.getId(), TipoTransacao.CREDITO,
-                StatusTransacao.CONFIRMADA, LocalDateTime.now(), valor);
+                    StatusTransacao.CONFIRMADA, LocalDateTime.now(), valor);
 
             transacaoRepository.salvar(transacao);
             return true;
@@ -89,8 +91,8 @@ public class OperacoesFinanceirasService {
         }
     }
 
-    public boolean solicitarSaque(Carteira carteira, BigDecimal valor, 
-        Date dataVenda, boolean isCrowdfunding, boolean metaAtingida) {
+    public boolean solicitarSaque(Carteira carteira, BigDecimal valor,
+            Date dataVenda, boolean isCrowdfunding, boolean metaAtingida) {
 
         if (!carteira.isContaExternaValida()) {
             return false;
@@ -107,14 +109,14 @@ public class OperacoesFinanceirasService {
                 return false;
             }
         } else if (diferencaHoras < 24) {
-            return false; 
+            return false;
         }
 
         if (carteira.getSaldo().getDisponivel().compareTo(valor) >= 0) {
             carteira.getSaldo().subtrairDisponivel(valor);
 
             Transacao transacao = new Transacao(null, carteira.getId(), null, TipoTransacao.SAQUE,
-                StatusTransacao.CONFIRMADA, LocalDateTime.now(), valor);
+                    StatusTransacao.CONFIRMADA, LocalDateTime.now(), valor);
 
             transacaoRepository.salvar(transacao);
             return true;
