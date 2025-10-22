@@ -5,5 +5,5 @@ public enum StatusCampanha {
     ATIVA,
     FINANCIADA,
     NAO_FINANCIADA,
-    FECHADA
+    ENCERRADA
 }
