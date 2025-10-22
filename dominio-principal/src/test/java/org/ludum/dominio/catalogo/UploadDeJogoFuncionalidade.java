@@ -4,6 +4,7 @@ import io.cucumber.java.en.*;
 import io.cucumber.java.Before;
 
 import org.ludum.catalogo.jogo.entidades.*;
+import org.ludum.catalogo.jogo.enums.StatusPublicacao;
 import org.ludum.catalogo.jogo.repositorios.JogoRepository;
 import org.ludum.catalogo.jogo.services.GestaoDeJogosService;
 import org.ludum.catalogo.tag.entidades.Tag;
@@ -17,42 +18,114 @@ import org.ludum.identidade.conta.repositories.ContaRepository;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class UploadDeJogoFuncionalidade {
 
     private GestaoDeJogosService gestaoDeJogosService;
 
-    private JogoRepository jogoRepository;
-    private ContaRepository contaRepository;
+    private MockJogoRepository jogoRepository;
+    private MockContaRepository contaRepository;
 
 
-    private Jogo jogo;
-    private ContaId contaId = new ContaId(UUID.randomUUID().toString());
-    private Conta conta;
+    private JogoId jogoId;
+    private VersaoId versaoId;
+    private ContaId contaId;
     private Versao versao;
-    private String arquivoNome;
 
     private boolean passou = false;
     private Exception e;
 
+    private static class MockJogoRepository implements JogoRepository {
+        private final List<Jogo> jogos;
+
+        public MockJogoRepository() {
+            this.jogos = new ArrayList<>();
+        }
+
+        @Override
+        public void salvar(Jogo jogo) {
+            jogos.removeIf(j -> j.getId().equals(jogo.getId()));
+            jogos.add(jogo);
+        }
+
+        @Override
+        public Jogo obterPorId(JogoId id) {
+            return jogos.stream()
+                    .filter(j -> j.getId().equals(id))
+                    .findFirst()
+                    .orElse(null);
+        }
+
+        @Override
+        public Jogo obterPorSlug(Slug slug) {
+            return jogos.stream()
+                    .filter(j -> j.getSlug().equals(slug))
+                    .findFirst()
+                    .orElse(null);
+        }
+
+        @Override
+        public boolean existeSlugParaDesenvolvedora(ContaId devId, Slug slug) {
+            // Verifica se existe jogo PUBLICADO com a mesma slug para este desenvolvedor
+            // Ignora jogos com status AGUARDANDO_VALIDACAO (o jogo atual antes de publicar)
+            return jogos.stream()
+                    .filter(j -> j.getDesenvolvedoraId().equals(devId))
+                    .filter(j -> j.getSlug().equals(slug))
+                    .filter(j -> j.getStatus() == StatusPublicacao.PUBLICADO)
+                    .findAny()
+                    .isPresent();
+        }
+
+        @Override
+        public List<Jogo> obterJogosPorTag(TagId tagId) {
+            return jogos.stream()
+                    .filter(j -> j.getTags().stream()
+                            .anyMatch(t -> t.getId().equals(tagId)))
+                    .toList();
+        }
+    }
+
+    private static class MockContaRepository implements ContaRepository {
+        public List<Conta> contas = new ArrayList<>();
+
+        @Override
+        public void salvar(Conta conta) {
+            contas.add(conta);
+        }
+
+        @Override
+        public Conta obterPorId(ContaId id) {
+            return contas.stream()
+                    .filter(c -> c.getId().getValue().equals(id.getValue()))
+                    .findFirst()
+                    .orElse(null);
+        }
+
+        public void adicionarConta(Conta conta) {
+            contas.add(conta);
+        }
+    }
+
     @Before
     public void setup() {
 
-        this.jogoRepository = mock(JogoRepository.class);
-        this.contaRepository = mock(ContaRepository.class);
+        this.jogoRepository = new MockJogoRepository();
+        this.contaRepository = new MockContaRepository();
 
+        this.jogoId = new JogoId(UUID.randomUUID().toString());
+        this.contaId = new ContaId(UUID.randomUUID().toString());
+        this.versaoId = new VersaoId(UUID.randomUUID().toString());
 
         this.gestaoDeJogosService = new GestaoDeJogosService(this.jogoRepository, this.contaRepository);
 
         this.e = null;
 
         try {
-            this.jogo = new Jogo(new JogoId(UUID.randomUUID().toString()), contaId, "jogo-jogo-jogo", "JogoJogoJogo", new URL("https://exemplo.com/capa.jpg"), List.of(new Tag(new TagId("a"), "aaa")), false, LocalDate.of(2021, 3, 15));
+            this.jogoRepository.salvar(new Jogo(this.jogoId, this.contaId, "jogo-jogo-jogo", "JogoJogoJogo", new URL("https://exemplo.com/capa.jpg"), List.of(new Tag(new TagId("a"), "aaa")), false, LocalDate.of(2021, 3, 15)));
         } catch (MalformedURLException e) {
             throw new RuntimeException(e);
         }
@@ -61,7 +134,7 @@ public class UploadDeJogoFuncionalidade {
 
     @Given("que eu sou um usuário logado com o perfil de {string}")
     public void queEuSouUmUsuarioLogadoComOPerfilDe(String str) {
-        this.conta = new Conta(contaId, "abc", "123", TipoConta.valueOf(str), StatusConta.ATIVA);
+        this.contaRepository.salvar(new Conta(this.contaId, "abc", "123", TipoConta.valueOf(str), StatusConta.ATIVA));
 
     }
 
@@ -69,26 +142,9 @@ public class UploadDeJogoFuncionalidade {
     public void oPadraoDeNome(String str) {
 
         try {
-            String[] list = str.split("_");
-            String[] digitos = list[1].split("\\.");
-            String formato = digitos[digitos.length - 1];
-
-            if (list.length != 2 || digitos.length != 4) {
-                throw new IllegalArgumentException("Nome da versão não está formatado corretamente");
-            }
-            for (int i = 0; i < digitos.length - 1; i++) {
-                try {
-                    Integer.parseInt(digitos[i]);
-                } catch (Exception e) {
-                    throw new IllegalArgumentException("Versão só pode conter números inteiros");
-                }
-            }
-
-            if (!formato.equals("zip")) {
-                throw new IllegalArgumentException("Arquivo com formato incorreto");
-            }
-        } catch (ArrayIndexOutOfBoundsException e) {
-            this.e = new IllegalArgumentException("Arquivo com nome formatado errado");
+            this.versao = new Versao(new PacoteZip(new byte[10]), this.jogoId, this.versaoId, str, "a");
+        } catch (IllegalArgumentException e) {
+            e.printStackTrace();
         }
         if (str.isEmpty()) {
             throw new IllegalArgumentException("Nome da versão vazio");
@@ -98,10 +154,7 @@ public class UploadDeJogoFuncionalidade {
     @When("eu tento enviar o arquivo {string}")
     public void oPadraoDeNomeDeArquivoDefinidoE(String str) {
         try {
-            when(this.contaRepository.obterPorId(this.conta.getId())).thenReturn(this.conta);
-            when(this.jogoRepository.obterPorId(this.jogo.getId())).thenReturn(this.jogo);
-            this.gestaoDeJogosService.processarUpload(this.conta.getId(), this.jogo.getId(), new PacoteZip(new byte[10]), new VersaoId(UUID.randomUUID().toString()), str, "a");
-            this.arquivoNome = str;
+            this.gestaoDeJogosService.processarUpload(this.contaId, this.jogoId, new PacoteZip(new byte[10]), new VersaoId(UUID.randomUUID().toString()), str, "a");
             this.passou = true;
         } catch (IllegalStateException | IllegalArgumentException e) {
             this.passou = false;
@@ -135,10 +188,9 @@ public class UploadDeJogoFuncionalidade {
     @When("eu tento enviar o arquivo {string} para um jogo que não é meu")
     public void euTentoEnviarOArquivoJogoZip(String str) {
         try {
-            Jogo newJogo = new Jogo(new JogoId(UUID.randomUUID().toString()), new ContaId(UUID.randomUUID().toString()), "jogo-jogo-jogo", "JogoJogoJogo", new URL("https://exemplo.com/capa.jpg"), List.of(new Tag(new TagId("a"), "aaa")), false, LocalDate.of(2021, 3, 15));
-            when(this.contaRepository.obterPorId(this.conta.getId())).thenReturn(this.conta);
-            when(this.jogoRepository.obterPorId(this.jogo.getId())).thenReturn(newJogo);
-            this.gestaoDeJogosService.processarUpload(this.conta.getId(), this.jogo.getId(), new PacoteZip(new byte[10]), new VersaoId(UUID.randomUUID().toString()), str, "a");
+            JogoId newJogoId = new JogoId(UUID.randomUUID().toString());
+            this.jogoRepository.salvar(new Jogo(newJogoId, new ContaId(UUID.randomUUID().toString()), "jogo-jogo-jogo", "JogoJogoJogo", new URL("https://exemplo.com/capa.jpg"), List.of(new Tag(new TagId("a"), "aaa")), false, LocalDate.of(2021, 3, 15)));
+            this.gestaoDeJogosService.processarUpload(this.contaId, newJogoId, new PacoteZip(new byte[10]), new VersaoId(UUID.randomUUID().toString()), str, "a");
             this.passou = true;
         } catch (IllegalStateException e) {
             this.e = e;
@@ -155,17 +207,16 @@ public class UploadDeJogoFuncionalidade {
     }
 
     @Given("que um desenvolvedor enviou um arquivo .zip para a plataforma")
-    public void queUmDesenvolvedorEnviou(){
-        this.conta = new Conta(contaId, "abc", "123", TipoConta.DESENVOLVEDORA, StatusConta.ATIVA);
-        this.versao = new Versao(new PacoteZip(new byte[10]), this.jogo.getId(), new VersaoId(UUID.randomUUID().toString()), "jogo-jogo-jogo_1.0.0.zip", "a");
+    public void queUmDesenvolvedorEnviou() {
+        this.versao = new Versao(new PacoteZip(new byte[10]), this.jogoId, new VersaoId(UUID.randomUUID().toString()), "jogo-jogo-jogo_1.0.0.zip", "a");
     }
 
     @When("o sistema de verificação de segurança analisa o arquivo {string}")
-    public void  oSistemaDeverificacaoAnalisaOArquivo(String str) {
+    public void oSistemaDeverificacaoAnalisaOArquivo(String str) {
         try {
             this.gestaoDeJogosService.verificarMalware(this.versao.getPacoteZip(), str);
             this.passou = true;
-        }catch (IllegalStateException e){
+        } catch (IllegalStateException e) {
             this.passou = false;
             this.e = e;
         }
@@ -190,39 +241,31 @@ public class UploadDeJogoFuncionalidade {
         this.versao = null;
     }
 
-    @And("o arquivo passou na validação de nome e formato")
+    @And("o arquivo passou nas validações de nome e formato e na verificação de malware")
     public void oArquivoPassouNomeEFormato() {
-        if(!this.passou){
-            throw new IllegalStateException("Não passou na nome e formato");
+        if (!this.passou) {
+            throw new IllegalStateException("Não passou na verificação nome e formato ou na verificação de malware");
         }
-    }
-
-    @And("o arquivo passou na verificação de malware")
-    public void oArquivoPassouNaVerificacaoDeMalware() {
-        if(!this.passou){
-            throw new IllegalStateException("Não passou na nome e formato");
-        }
-        this.versao = this.jogo.getVersaoHistory().getLast();
     }
 
     @Then("o arquivo {string} deve ser salvo no banco de dados")
     public void oArquivoSalvoNoBancoDeDados(String str) {
-        when(this.jogoRepository.obterPorId(this.jogo.getId())).thenReturn(this.jogo);
-        Jogo currentJogo = this.jogoRepository.obterPorId(this.jogo.getId());
+        Jogo currentJogo = this.jogoRepository.obterPorId(jogoId);
+        this.versao = currentJogo.getVersaoHistory().getLast();
 
-        if (!currentJogo.getVersaoHistory().getLast().equals(this.versao)) {
+        if (!this.versao.getNomeVersao().equals(str)) {
             throw new IllegalStateException("Não salvo no banco de dados");
         }
 
     }
+
     @And("metadados como ID da versao e data do upload devem ser armazenados")
     public void metadadosComoIDDoDesenvolvedorEDataDoUpload() {
-        when(this.jogoRepository.obterPorId(this.jogo.getId())).thenReturn(this.jogo);
-        Jogo currentJogo = this.jogoRepository.obterPorId(this.jogo.getId());
+        Jogo currentJogo = this.jogoRepository.obterPorId(jogoId);
 
         Versao currentVersao = currentJogo.getVersaoHistory().getLast();
 
-        if(currentVersao.getDataUpload() != this.versao.getDataUpload() || currentVersao.getId() != this.versao.getId()){
+        if (currentVersao.getDataUpload() != this.versao.getDataUpload() || currentVersao.getId() != this.versao.getId()) {
             throw new IllegalStateException("Metadados não salvos");
         }
 

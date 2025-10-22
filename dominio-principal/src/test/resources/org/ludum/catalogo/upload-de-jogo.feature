@@ -50,7 +50,6 @@ Feature: Upload e Validação de Jogos
   Scenario: Jogo passa em todas as validações e é salvo com sucesso
     Given que eu sou um usuário logado com o perfil de "DESENVOLVEDORA"
     When eu tento enviar o arquivo "jogo-jogo-jogo_1.0.0.zip"
-    And o arquivo passou na validação de nome e formato
-    And o arquivo passou na verificação de malware
+    And o arquivo passou nas validações de nome e formato e na verificação de malware
     Then o arquivo "jogo-jogo-jogo_1.0.0.zip" deve ser salvo no banco de dados
     And metadados como ID da versao e data do upload devem ser armazenados

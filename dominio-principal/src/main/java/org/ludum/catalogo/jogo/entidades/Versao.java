@@ -35,23 +35,27 @@ public class Versao {
         if (nomeVersao.isEmpty()) {
             throw new IllegalArgumentException("Nome da versão vazio");
         }
-        String[] list = nomeVersao.split("_");
-        String[] digitos = list[1].split("\\.");
-        String formato = digitos[digitos.length-1];
+        try{
+            String[] list = nomeVersao.split("_");
+            String[] digitos = list[1].split("\\.");
+            String formato = digitos[digitos.length-1];
 
-        if(list.length != 2 || digitos.length != 4) {
-            throw new IllegalArgumentException("Nome da versão não está formatado corretamente");
-        }
-        for(int i = 0; i < digitos.length - 1; i++) {
-            try{
-                Integer.parseInt(digitos[i]);
-            }catch(Exception e){
-                throw new IllegalArgumentException("Versão só pode conter números inteiros");
+            if(list.length != 2 || digitos.length != 4) {
+                throw new IllegalArgumentException("Nome da versão não está formatado corretamente");
             }
-        }
+            for(int i = 0; i < digitos.length - 1; i++) {
+                try{
+                    Integer.parseInt(digitos[i]);
+                }catch(Exception e){
+                    throw new IllegalArgumentException("Versão só pode conter números inteiros");
+                }
+            }
 
-        if(!formato.equals("zip")) {
-            throw new IllegalArgumentException("Arquivo com formato incorreto");
+            if(!formato.equals("zip")) {
+                throw new IllegalArgumentException("Arquivo com formato incorreto");
+            }
+        }catch(ArrayIndexOutOfBoundsException e){
+            throw new IllegalArgumentException("Nome em formato incorreto");
         }
 
     }
