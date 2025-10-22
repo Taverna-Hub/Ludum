@@ -128,7 +128,7 @@ Permite adicionar e sacar saldo, com histórico de transações e regras de segu
 
 #### Protótipo de Alta Fidelidade
 <a name="link-drive"></a>
-[Link para o dive dos protótipos](https://drive.google.com/drive/folders/15hPzCVUf-mxvhpH_81T7XLTHQUBxNiiK?usp=drive_link)
+[Link para o drive dos protótipos](https://drive.google.com/drive/folders/15hPzCVUf-mxvhpH_81T7XLTHQUBxNiiK?usp=drive_link)
 
 #### Mapa de Histórias
 <a href="https://github.com/Taverna-Hub/Ludum/blob/main/entregaveis/mapa/mapa-usuario.svg">
