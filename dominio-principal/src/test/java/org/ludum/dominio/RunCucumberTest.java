@@ -15,12 +15,10 @@ import org.junit.platform.suite.api.Suite;
 @ConfigurationParameter(key = PLUGIN_PROPERTY_NAME, value = "pretty")
 @ConfigurationParameter(key = GLUE_PROPERTY_NAME, value = "org.ludum.dominio.financeiro," +
                                                           "org.ludum.dominio.comunidade," +
-                                                          "org.ludum.dominio.publicacao," +
                                                           "org.ludum.dominio.identidade," +
                                                           "org.ludum.dominio.catalogo")
 @ConfigurationParameter(key = FEATURES_PROPERTY_NAME, value = "src/test/resources/org/ludum/financeiro," +
                                                               "src/test/resources/org/ludum/comunidade," +
-                                                              "src/test/resources/org/ludum/publicacao," +
                                                               "src/test/resources/org/ludum/identidade," +
                                                               "src/test/resources/org/ludum/catalogo")
 public class RunCucumberTest {
