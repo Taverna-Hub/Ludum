@@ -38,8 +38,10 @@ public class BibliotecaService {
         Biblioteca currentBiblioteca = this.bibliotecaRepository.obterPorJogador(contaid);
         Transacao currentTransacao = transacaoRepository.obterPorId(transacaoId);
 
-        if(currentTransacao.getStatus() != StatusTransacao.CONFIRMADA){
-            throw new IllegalStateException("Transação cancelada ou pendente");
+        if(modeloDeAcesso.equals(ModeloDeAcesso.PAGO)){
+            if(currentTransacao.getStatus() != StatusTransacao.CONFIRMADA){
+                throw new IllegalStateException("Transação cancelada ou pendente");
+            }
         }
 
         currentBiblioteca.adicionarJogo(modeloDeAcesso, jogoid);
