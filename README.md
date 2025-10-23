@@ -146,6 +146,11 @@ Permite adicionar e sacar saldo, com histórico de transações e regras de segu
 <a name="link-funcionalidades"></a>
 [Link para as funcionalidades](https://docs.google.com/document/d/1d7saNplfoin-1gofb-_hv7pp1dXgjjqiMypVHPptEAA/edit?usp=drive_link)
 
+#### Slides da Apresentação
+<a name="link-slides"></a>
+[Link para os slides](https://docs.google.com/presentation/d/108jzwCXjBGDnZY1lyQCgPkDwfALC3CyzPrONbUwXROE/edit?usp=sharing)
+
+
 ---
 <a name="equipe"></a>
 
