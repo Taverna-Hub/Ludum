@@ -5,6 +5,7 @@
 <p>
 <img src="https://img.shields.io/badge/STATUS-EM%20DESENVOLVIMENTO-green?style=for-the-badge" alt="Status do Projeto"/>
 <img src="https://img.shields.io/badge/LICENSE-MIT-blue?style=for-the-badge" alt="Licença"/>
+
 </p>
 </div>
 
@@ -129,6 +130,8 @@ Permite adicionar e sacar saldo, com histórico de transações e regras de segu
 #### Protótipo de Alta Fidelidade
 <a name="link-drive"></a>
 [Link para o drive dos protótipos](https://drive.google.com/drive/folders/15hPzCVUf-mxvhpH_81T7XLTHQUBxNiiK?usp=drive_link)
+</br>
+[Link para o lovable](https://preview--ludumverse-hub.lovable.app/)
 
 #### Mapa de Histórias
 <a href="https://github.com/Taverna-Hub/Ludum/blob/main/entregaveis/mapa/mapa-usuario.svg">
@@ -138,7 +141,8 @@ Permite adicionar e sacar saldo, com histórico de transações e regras de segu
         width="100%"
     >
 
-#### Descrição de Domínio
+
+#### Descrição do Domínio
 <a name="link-dominio"></a>
 [Link para a descrição do domínio](https://docs.google.com/document/d/1WNc7_8Gb9znsVRmJXMoz-VEsKuTgRUmjb809-KLJRUM/edit?usp=sharing)
 
