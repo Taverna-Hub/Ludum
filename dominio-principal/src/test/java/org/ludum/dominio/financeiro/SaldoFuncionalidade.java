@@ -10,16 +10,16 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.ludum.financeiro.carteira.CarteiraRepository;
-import org.ludum.financeiro.carteira.OperacoesFinanceirasService;
-import org.ludum.financeiro.carteira.entidades.Carteira;
-import org.ludum.financeiro.carteira.entidades.Saldo;
-import org.ludum.financeiro.transacao.TransacaoRepository;
-import org.ludum.financeiro.transacao.entidades.Transacao;
-import org.ludum.financeiro.transacao.entidades.TransacaoId;
-import org.ludum.financeiro.transacao.enums.StatusTransacao;
-import org.ludum.identidade.conta.entities.ContaId;
-import org.ludum.financeiro.transacao.entidades.Recibo;
+import org.ludum.dominio.financeiro.carteira.CarteiraRepository;
+import org.ludum.dominio.financeiro.carteira.OperacoesFinanceirasService;
+import org.ludum.dominio.financeiro.carteira.entidades.Carteira;
+import org.ludum.dominio.financeiro.carteira.entidades.Saldo;
+import org.ludum.dominio.financeiro.transacao.TransacaoRepository;
+import org.ludum.dominio.financeiro.transacao.entidades.Transacao;
+import org.ludum.dominio.financeiro.transacao.entidades.TransacaoId;
+import org.ludum.dominio.financeiro.transacao.enums.StatusTransacao;
+import org.ludum.dominio.identidade.conta.entities.ContaId;
+import org.ludum.dominio.financeiro.transacao.entidades.Recibo;
 
 import io.cucumber.java.Before;
 import io.cucumber.java.en.And;

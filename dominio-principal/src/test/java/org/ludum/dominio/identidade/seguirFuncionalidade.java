@@ -9,27 +9,27 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import org.ludum.catalogo.jogo.entidades.Jogo;
-import org.ludum.catalogo.jogo.entidades.JogoId;
-import org.ludum.catalogo.jogo.entidades.Slug;
-import org.ludum.catalogo.jogo.repositorios.JogoRepository;
-import org.ludum.catalogo.tag.TagRepository;
-import org.ludum.catalogo.tag.entidades.Tag;
-import org.ludum.catalogo.tag.entidades.TagId;
-import org.ludum.identidade.bloqueio.entities.Bloqueio;
-import org.ludum.identidade.bloqueio.entities.BloqueioId;
-import org.ludum.identidade.bloqueio.repositories.BloqueioRepository;
-import org.ludum.identidade.conta.entities.Conta;
-import org.ludum.identidade.conta.entities.ContaId;
-import org.ludum.identidade.conta.enums.StatusConta;
-import org.ludum.identidade.conta.enums.TipoConta;
-import org.ludum.identidade.conta.repositories.ContaRepository;
-import org.ludum.identidade.seguimento.entities.AlvoId;
-import org.ludum.identidade.seguimento.entities.Seguimento;
-import org.ludum.identidade.seguimento.entities.SeguimentoId;
-import org.ludum.identidade.seguimento.enums.TipoAlvo;
-import org.ludum.identidade.seguimento.repositories.SeguimentoRepository;
-import org.ludum.identidade.seguimento.services.RelacionamentoService;
+import org.ludum.dominio.catalogo.jogo.entidades.Jogo;
+import org.ludum.dominio.catalogo.jogo.entidades.JogoId;
+import org.ludum.dominio.catalogo.jogo.entidades.Slug;
+import org.ludum.dominio.catalogo.jogo.repositorios.JogoRepository;
+import org.ludum.dominio.catalogo.tag.TagRepository;
+import org.ludum.dominio.catalogo.tag.entidades.Tag;
+import org.ludum.dominio.catalogo.tag.entidades.TagId;
+import org.ludum.dominio.identidade.bloqueio.entities.Bloqueio;
+import org.ludum.dominio.identidade.bloqueio.entities.BloqueioId;
+import org.ludum.dominio.identidade.bloqueio.repositories.BloqueioRepository;
+import org.ludum.dominio.identidade.conta.entities.Conta;
+import org.ludum.dominio.identidade.conta.entities.ContaId;
+import org.ludum.dominio.identidade.conta.enums.StatusConta;
+import org.ludum.dominio.identidade.conta.enums.TipoConta;
+import org.ludum.dominio.identidade.conta.repositories.ContaRepository;
+import org.ludum.dominio.identidade.seguimento.entities.AlvoId;
+import org.ludum.dominio.identidade.seguimento.entities.Seguimento;
+import org.ludum.dominio.identidade.seguimento.entities.SeguimentoId;
+import org.ludum.dominio.identidade.seguimento.enums.TipoAlvo;
+import org.ludum.dominio.identidade.seguimento.repositories.SeguimentoRepository;
+import org.ludum.dominio.identidade.seguimento.services.RelacionamentoService;
 
 import io.cucumber.java.Before;
 import io.cucumber.java.en.And;
@@ -160,7 +160,7 @@ public class seguirFuncionalidade {
         }
 
         @Override
-        public Jogo obterPorSlug(org.ludum.catalogo.jogo.entidades.Slug slug) {
+        public Jogo obterPorSlug(Slug slug) {
             return null;
         }
 
