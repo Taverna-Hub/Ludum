@@ -18,17 +18,17 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import org.ludum.catalogo.jogo.entidades.JogoId;
-import org.ludum.crowdfunding.entidades.Apoio;
-import org.ludum.crowdfunding.entidades.Campanha;
-import org.ludum.crowdfunding.entidades.CampanhaId;
-import org.ludum.crowdfunding.entidades.Periodo;
-import org.ludum.crowdfunding.enums.StatusCampanha;
-import org.ludum.crowdfunding.repositorios.ApoioRepository;
-import org.ludum.crowdfunding.repositorios.CampanhaRepository;
-import org.ludum.crowdfunding.services.ApoioService;
-import org.ludum.financeiro.transacao.entidades.TransacaoId;
-import org.ludum.identidade.conta.entities.ContaId;
+import org.ludum.dominio.catalogo.jogo.entidades.JogoId;
+import org.ludum.dominio.crowdfunding.entidades.Apoio;
+import org.ludum.dominio.crowdfunding.entidades.Campanha;
+import org.ludum.dominio.crowdfunding.entidades.CampanhaId;
+import org.ludum.dominio.crowdfunding.entidades.Periodo;
+import org.ludum.dominio.crowdfunding.enums.StatusCampanha;
+import org.ludum.dominio.crowdfunding.repositorios.ApoioRepository;
+import org.ludum.dominio.crowdfunding.repositorios.CampanhaRepository;
+import org.ludum.dominio.crowdfunding.services.ApoioService;
+import org.ludum.dominio.financeiro.transacao.entidades.TransacaoId;
+import org.ludum.dominio.identidade.conta.entities.ContaId;
 
 import io.cucumber.java.Before;
 import io.cucumber.java.en.And;

@@ -3,17 +3,17 @@ package org.ludum.dominio.catalogo;
 import io.cucumber.java.en.*;
 import io.cucumber.java.Before;
 
-import org.ludum.catalogo.jogo.entidades.*;
-import org.ludum.catalogo.jogo.enums.StatusPublicacao;
-import org.ludum.catalogo.jogo.repositorios.JogoRepository;
-import org.ludum.catalogo.jogo.services.GestaoDeJogosService;
-import org.ludum.catalogo.tag.entidades.Tag;
-import org.ludum.catalogo.tag.entidades.TagId;
-import org.ludum.identidade.conta.entities.Conta;
-import org.ludum.identidade.conta.entities.ContaId;
-import org.ludum.identidade.conta.enums.StatusConta;
-import org.ludum.identidade.conta.enums.TipoConta;
-import org.ludum.identidade.conta.repositories.ContaRepository;
+import org.ludum.dominio.catalogo.jogo.entidades.*;
+import org.ludum.dominio.catalogo.jogo.enums.StatusPublicacao;
+import org.ludum.dominio.catalogo.jogo.repositorios.JogoRepository;
+import org.ludum.dominio.catalogo.jogo.services.GestaoDeJogosService;
+import org.ludum.dominio.catalogo.tag.entidades.Tag;
+import org.ludum.dominio.catalogo.tag.entidades.TagId;
+import org.ludum.dominio.identidade.conta.entities.Conta;
+import org.ludum.dominio.identidade.conta.entities.ContaId;
+import org.ludum.dominio.identidade.conta.enums.StatusConta;
+import org.ludum.dominio.identidade.conta.enums.TipoConta;
+import org.ludum.dominio.identidade.conta.repositories.ContaRepository;
 
 import java.net.MalformedURLException;
 import java.net.URL;

@@ -16,16 +16,16 @@ import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.fail;
-import org.ludum.catalogo.jogo.entidades.Jogo;
-import org.ludum.catalogo.jogo.entidades.JogoId;
-import org.ludum.identidade.conta.entities.Conta;
-import org.ludum.identidade.conta.entities.ContaId;
-import org.ludum.identidade.conta.enums.StatusConta;
-import org.ludum.identidade.conta.enums.TipoConta;
-import org.ludum.oficina.mod.entidades.Mod;
-import org.ludum.oficina.mod.enums.StatusMod;
-import org.ludum.oficina.mod.repositorios.ModRepository;
-import org.ludum.oficina.mod.services.ModsService;
+import org.ludum.dominio.catalogo.jogo.entidades.Jogo;
+import org.ludum.dominio.catalogo.jogo.entidades.JogoId;
+import org.ludum.dominio.identidade.conta.entities.Conta;
+import org.ludum.dominio.identidade.conta.entities.ContaId;
+import org.ludum.dominio.identidade.conta.enums.StatusConta;
+import org.ludum.dominio.identidade.conta.enums.TipoConta;
+import org.ludum.dominio.oficina.mod.entidades.Mod;
+import org.ludum.dominio.oficina.mod.enums.StatusMod;
+import org.ludum.dominio.oficina.mod.repositorios.ModRepository;
+import org.ludum.dominio.oficina.mod.services.ModsService;
 
 import io.cucumber.java.Before;
 import io.cucumber.java.en.And;
