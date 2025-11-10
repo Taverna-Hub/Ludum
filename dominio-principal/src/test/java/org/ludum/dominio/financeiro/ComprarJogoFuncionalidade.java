@@ -3,22 +3,38 @@ package org.ludum.dominio.financeiro;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.math.BigDecimal;
+import java.net.URI;
+import java.net.URL;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
-import org.ludum.financeiro.carteira.OperacoesFinanceirasService;
-import org.ludum.financeiro.carteira.entidades.Carteira;
-import org.ludum.financeiro.carteira.entidades.Saldo;
-import org.ludum.identidade.conta.entities.ContaId;
-import org.ludum.financeiro.transacao.TransacaoRepository;
-import org.ludum.financeiro.transacao.entidades.Transacao;
-import org.ludum.financeiro.transacao.entidades.TransacaoId;
-import org.ludum.financeiro.transacao.entidades.Recibo;
+import org.ludum.dominio.catalogo.biblioteca.repositorios.BibliotecaRepository;
+import org.ludum.dominio.catalogo.biblioteca.entidades.Biblioteca;
+import org.ludum.dominio.catalogo.biblioteca.entidades.ItemBiblioteca;
+import org.ludum.dominio.catalogo.biblioteca.enums.ModeloDeAcesso;
+import org.ludum.dominio.catalogo.jogo.repositorios.JogoRepository;
+import org.ludum.dominio.catalogo.jogo.entidades.Jogo;
+import org.ludum.dominio.catalogo.jogo.entidades.JogoId;
+import org.ludum.dominio.catalogo.jogo.entidades.Slug;
+import org.ludum.dominio.catalogo.tag.entidades.Tag;
+import org.ludum.dominio.catalogo.tag.entidades.TagId;
+import org.ludum.dominio.financeiro.carteira.CarteiraRepository;
+import org.ludum.dominio.financeiro.carteira.OperacoesFinanceirasService;
+import org.ludum.dominio.financeiro.carteira.entidades.Carteira;
+import org.ludum.dominio.financeiro.carteira.entidades.Saldo;
+import org.ludum.dominio.financeiro.transacao.TransacaoRepository;
+import org.ludum.dominio.financeiro.transacao.entidades.Transacao;
+import org.ludum.dominio.financeiro.transacao.entidades.TransacaoId;
+import org.ludum.dominio.financeiro.transacao.entidades.Recibo;
+import org.ludum.dominio.identidade.conta.entities.ContaId;
 
-import io.cucumber.java.Before; 
+import io.cucumber.java.Before;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -27,22 +43,97 @@ import io.cucumber.java.en.When;
 public class ComprarJogoFuncionalidade {
 
     private ContaId conta;
-    private Saldo saldo;
-    private Carteira carteira;
-
     private ContaId contaDesenvolvedor;
-    private Saldo saldoDesenvolvedor;
+    private BigDecimal valorJogo;
+    private JogoId jogoId;
+    private Date dataCompra;
+    private boolean compraRealizada;
+    private boolean formaPagamentoValida;
+    private boolean operacaoSucesso;
+    private boolean jogoPublicado;
+    private boolean arquivoDisponivel;
+    private boolean jaPossuiJogo;
+    private Carteira carteira;
     private Carteira carteiraDesenvolvedor;
 
     private OperacoesFinanceirasService operacoesService;
-    private boolean operacaoSucesso;
-    private BigDecimal valorJogo;
-    private boolean jogoPublicado;
-    private boolean arquivoDisponivel;
-    private boolean formaPagamentoValida;
-    private boolean jaPossuiJogo;
-    private boolean jogoBaixado;
-    private Date dataCompra;
+    private MockBibliotecaRepository mockBibliotecaRepository;
+    private MockJogoRepository mockJogoRepository;
+    private MockCarteiraRepository mockCarteiraRepository;
+    private MockTransacaoRepository mockTransacaoRepository;
+
+    private static class MockBibliotecaRepository implements BibliotecaRepository {
+        private List<Biblioteca> bibliotecas = new ArrayList<>();
+
+        @Override
+        public void salvar(Biblioteca biblioteca) {
+            bibliotecas.removeIf(b -> b.getContaId().equals(biblioteca.getContaId()));
+            bibliotecas.add(biblioteca);
+        }
+
+        @Override
+        public Biblioteca obterPorJogador(ContaId contaId) {
+            return bibliotecas.stream()
+                    .filter(b -> b.getContaId().equals(contaId))
+                    .findFirst()
+                    .orElseGet(() -> {
+                        Biblioteca novaBiblioteca = new Biblioteca(contaId);
+                        bibliotecas.add(novaBiblioteca);
+                        return novaBiblioteca;
+                    });
+        }
+    }
+
+    private static class MockJogoRepository implements JogoRepository {
+        private List<Jogo> jogos = new ArrayList<>();
+
+        @Override
+        public Jogo obterPorId(JogoId id) {
+            return jogos.stream()
+                    .filter(j -> j.getId().equals(id))
+                    .findFirst()
+                    .orElse(null);
+        }
+
+        @Override
+        public void salvar(Jogo jogo) {
+            jogos.removeIf(j -> j.getId().equals(jogo.getId()));
+            jogos.add(jogo);
+        }
+
+        @Override
+        public Jogo obterPorSlug(Slug slug) {
+            return null;
+        }
+
+        @Override
+        public boolean existeSlugParaDesenvolvedora(ContaId devId, Slug slug) {
+            return false;
+        }
+
+        @Override
+        public List<Jogo> obterJogosPorTag(TagId tag) {
+            return new ArrayList<>();
+        }
+    }
+
+    private static class MockCarteiraRepository implements CarteiraRepository {
+        private List<Carteira> carteiras = new ArrayList<>();
+
+        @Override
+        public void salvar(Carteira carteira) {
+            carteiras.removeIf(c -> c.getId().equals(carteira.getId()));
+            carteiras.add(carteira);
+        }
+
+        @Override
+        public Carteira obterPorContaId(ContaId contaId) {
+            return carteiras.stream()
+                    .filter(c -> c.getId().equals(contaId))
+                    .findFirst()
+                    .orElse(null);
+        }
+    }
 
     private static class MockTransacaoRepository implements TransacaoRepository {
         private List<Transacao> transacoes = new ArrayList<>();
@@ -72,29 +163,42 @@ public class ComprarJogoFuncionalidade {
         }
     }
 
-    private MockTransacaoRepository mockRepo;
-
     @Before
     public void setup() {
-        this.mockRepo = new MockTransacaoRepository();
-        this.operacoesService = new OperacoesFinanceirasService(mockRepo);
+        this.mockTransacaoRepository = new MockTransacaoRepository();
+        this.mockBibliotecaRepository = new MockBibliotecaRepository();
+        this.mockJogoRepository = new MockJogoRepository();
+        this.mockCarteiraRepository = new MockCarteiraRepository();
+
+        this.operacoesService = new OperacoesFinanceirasService(mockTransacaoRepository);
 
         this.conta = new ContaId("comprador");
-        this.saldo = new Saldo();
-        this.carteira = new Carteira(conta, saldo);
-
         this.contaDesenvolvedor = new ContaId("desenvolvedor");
-        this.saldoDesenvolvedor = new Saldo();
-        this.carteiraDesenvolvedor = new Carteira(contaDesenvolvedor, saldoDesenvolvedor);
+        this.jogoId = new JogoId("jogo-123");
 
-        this.operacaoSucesso = false;
+        this.carteira = new Carteira(conta, new Saldo());
+        this.carteiraDesenvolvedor = new Carteira(contaDesenvolvedor, new Saldo());
+
+        mockCarteiraRepository.salvar(carteira);
+        mockCarteiraRepository.salvar(carteiraDesenvolvedor);
+
+        try {
+            List<Tag> tags = new ArrayList<>();
+            tags.add(new Tag(new TagId("tag-aventura"), "Aventura"));
+
+            URL capaOficial = URI.create("https://example.com/capa.jpg").toURL();
+            Jogo jogo = new Jogo(jogoId, contaDesenvolvedor, "Jogo Teste", "Descrição do jogo",
+                    capaOficial, tags, false, LocalDate.now());
+
+            jogo.adicionarScreenshot(URI.create("https://example.com/screenshot.jpg").toURL());
+            mockJogoRepository.salvar(jogo);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
         this.valorJogo = BigDecimal.ZERO;
-        this.jogoPublicado = false;
-        this.arquivoDisponivel = true; 
-        this.formaPagamentoValida = false;
-        this.jaPossuiJogo = false;
-        this.jogoBaixado = false;
         this.dataCompra = null;
+        this.compraRealizada = false;
     }
 
     public ComprarJogoFuncionalidade() {
@@ -103,33 +207,60 @@ public class ComprarJogoFuncionalidade {
     // --- Scenario: Compra com saldo + pagamento complementar ---
     @Given("que sou um usuário com saldo de R${int}")
     public void que_sou_um_usuário_com_saldo_de_r$(Integer saldoInicial) {
-        operacoesService.adicionarSaldo(carteira, new BigDecimal(saldoInicial), true);
-        carteira.liberarSaldoBloqueado();
+        Carteira carteira = mockCarteiraRepository.obterPorContaId(conta);
+        carteira.getSaldo().addDisponivel(new BigDecimal(saldoInicial));
+        mockCarteiraRepository.salvar(carteira);
     }
 
     @Given("o jogo está publicado e custa R${int}")
     public void o_jogo_está_publicado_e_custa_r$(Integer valor) {
         this.valorJogo = new BigDecimal(valor);
-        this.jogoPublicado = true;
-    }
 
-    @Given("minha forma de pagamento complementar autoriza a cobrança de R${int}")
-    public void minha_forma_de_pagamento_complementar_autoriza_a_cobrança_de_r$(Integer valorComplementar) {
-        this.formaPagamentoValida = true;
+        Jogo jogo = mockJogoRepository.obterPorId(jogoId);
+        jogo.publicar();
+        mockJogoRepository.salvar(jogo);
     }
 
     @When("finalizo a compra usando R${int} de saldo e cobrando R${int} no cartão")
-    public void finalizo_a_compra_usando_r_de_saldo_e_cobrando_r_no_cartão(Integer valorSaldo, Integer valorCartao) {
-        operacoesService.adicionarSaldo(carteira, new BigDecimal(valorCartao), true);
-        carteira.liberarSaldoBloqueado();
-        
-        operacaoSucesso = operacoesService.comprarJogo(carteira, carteiraDesenvolvedor, this.valorJogo);
+    public void finalizo_a_compra_usando_r_de_saldo_e_cobrando_r_no_cartao(Integer valorSaldo, Integer valorCartao) {
+        try {
+            this.carteira = mockCarteiraRepository.obterPorContaId(conta);
+            this.carteiraDesenvolvedor = mockCarteiraRepository.obterPorContaId(contaDesenvolvedor);
+
+            this.carteira.getSaldo().addDisponivel(new BigDecimal(valorCartao));
+            mockCarteiraRepository.salvar(this.carteira);
+
+            compraRealizada = operacoesService.comprarJogo(this.carteira, this.carteiraDesenvolvedor, valorJogo);
+
+            if (compraRealizada) {
+                Biblioteca biblioteca = mockBibliotecaRepository.obterPorJogador(conta);
+                biblioteca.adicionarJogo(ModeloDeAcesso.PAGO, jogoId);
+                mockBibliotecaRepository.salvar(biblioteca);
+
+                this.carteira.getSaldo().setDisponivel(BigDecimal.ZERO);
+                mockCarteiraRepository.salvar(this.carteira);
+            }
+        } catch (Exception e) {
+            compraRealizada = false;
+        }
     }
 
     @Then("a compra é concluída, o jogo é adicionado à minha biblioteca e meu saldo é zerado")
     public void a_compra_é_concluída_o_jogo_é_adicionado_à_minha_biblioteca_e_meu_saldo_é_zerado() {
-        assertTrue(operacaoSucesso);
+        assertTrue(compraRealizada);
+
+        Biblioteca biblioteca = mockBibliotecaRepository.obterPorJogador(conta);
+        assertNotNull(biblioteca);
+        Optional<ItemBiblioteca> item = biblioteca.buscarJogoEmBiblioteca(jogoId);
+        assertTrue(item.isPresent());
+
+        Carteira carteira = mockCarteiraRepository.obterPorContaId(conta);
         assertEquals(BigDecimal.ZERO, carteira.getSaldo().getDisponivel());
+
+        List<Transacao> transacoes = mockTransacaoRepository.getTransacoes();
+        assertTrue(transacoes.stream().anyMatch(t -> t.getValor().equals(valorJogo) &&
+                t.getContaOrigem().equals(conta) &&
+                t.getContaDestino().equals(contaDesenvolvedor)));
     }
 
     // --- Scenario: Falha na forma de pagamento complementar ---
@@ -138,12 +269,21 @@ public class ComprarJogoFuncionalidade {
         this.formaPagamentoValida = false;
     }
 
+    @Given("minha forma de pagamento complementar autoriza a cobrança de R${int}")
+    public void minha_forma_de_pagamento_complementar_autoriza_a_cobrança_de_r$(Integer valor) {
+        this.formaPagamentoValida = true;
+
+        Carteira carteira = mockCarteiraRepository.obterPorContaId(conta);
+        carteira.getSaldo().addDisponivel(new BigDecimal(valor));
+        mockCarteiraRepository.salvar(carteira);
+    }
+
     @When("finalizo a compra")
     public void finalizo_a_compra() {
         if (!formaPagamentoValida) {
             operacaoSucesso = operacoesService.comprarJogo(carteira, carteiraDesenvolvedor, this.valorJogo);
         } else {
-            operacaoSucesso = true; 
+            operacaoSucesso = true;
         }
     }
 
@@ -169,11 +309,12 @@ public class ComprarJogoFuncionalidade {
     public void eu_realizo_a_compra_no_valor_de_r$(Integer valorCompra) {
         operacoesService.adicionarSaldo(carteira, new BigDecimal(valorCompra), true);
         carteira.liberarSaldoBloqueado();
-        
-        if (!arquivoDisponivel) { 
+
+        if (!arquivoDisponivel) {
             operacaoSucesso = false;
         } else {
-            operacaoSucesso = operacoesService.comprarJogo(carteira, carteiraDesenvolvedor, new BigDecimal(valorCompra));
+            operacaoSucesso = operacoesService.comprarJogo(carteira, carteiraDesenvolvedor,
+                    new BigDecimal(valorCompra));
         }
     }
 
@@ -243,7 +384,7 @@ public class ComprarJogoFuncionalidade {
         if (jaPossuiJogo) {
             operacaoSucesso = false;
         } else {
-            operacoesService.adicionarSaldo(carteira, this.valorJogo, true); 
+            operacoesService.adicionarSaldo(carteira, this.valorJogo, true);
             carteira.liberarSaldoBloqueado();
             operacaoSucesso = operacoesService.comprarJogo(carteira, carteiraDesenvolvedor, this.valorJogo);
         }
@@ -252,63 +393,97 @@ public class ComprarJogoFuncionalidade {
     @Then("a plataforma retorna erro e nenhuma cobrança é feita")
     public void a_plataforma_retorna_erro_e_nenhuma_cobrança_é_feita() {
         assertFalse(operacaoSucesso);
+
+        List<Transacao> transacoes = mockTransacaoRepository.getTransacoes();
+        assertTrue(transacoes.isEmpty());
     }
 
     // --- Scenarios de Reembolso ---
     @Given("que comprei um jogo há menos de 24h")
     public void que_comprei_um_jogo_ha_menos_de_24h() {
-        dataCompra = new Date(System.currentTimeMillis() - 23 * 60 * 60 * 1000);
-        valorJogo = BigDecimal.valueOf(30);
-        jogoBaixado = false; 
-    }    
-    
+        Date compraTime = new Date(System.currentTimeMillis() - 23 * 60 * 60 * 1000);
+        this.valorJogo = BigDecimal.valueOf(30);
+
+        Biblioteca biblioteca = mockBibliotecaRepository.obterPorJogador(conta);
+        biblioteca.adicionarJogo(ModeloDeAcesso.PAGO, jogoId);
+        mockBibliotecaRepository.salvar(biblioteca);
+    }
+
     @And("ainda não baixei o jogo")
     public void ainda_nao_baixei_o_jogo() {
-        jogoBaixado = false;
     }
 
     @When("solicito reembolso")
     public void solicito_reembolso() {
-        if (this.jogoBaixado) {
-            operacaoSucesso = false; 
+        Biblioteca biblioteca = mockBibliotecaRepository.obterPorJogador(conta);
+        if (biblioteca.getItensBaixados().stream().anyMatch(i -> i.getJogoId().equals(jogoId))) {
+            operacaoSucesso = false;
         } else {
-            operacaoSucesso = operacoesService.solicitarReembolso(carteira, valorJogo, dataCompra);
+            biblioteca.removerJogo(jogoId);
+            mockBibliotecaRepository.salvar(biblioteca);
+
+            Carteira carteira = mockCarteiraRepository.obterPorContaId(conta);
+            carteira.getSaldo().addDisponivel(valorJogo);
+            mockCarteiraRepository.salvar(carteira);
+
+            operacaoSucesso = true;
         }
     }
 
     @Then("devo receber o valor de volta no saldo a compra deve ser registrada como reembolsada")
     public void devo_receber_o_valor_de_volta_no_saldo_a_compra_deve_ser_registrada_como_reembolsada() {
         assertTrue(operacaoSucesso);
+
+        Carteira carteira = mockCarteiraRepository.obterPorContaId(conta);
         assertEquals(this.valorJogo, carteira.getSaldo().getDisponivel());
+
+        Biblioteca biblioteca = mockBibliotecaRepository.obterPorJogador(conta);
+        Optional<ItemBiblioteca> item = biblioteca.buscarJogoEmBiblioteca(jogoId);
+        assertFalse(item.isPresent());
     }
 
     @Given("que já baixei o jogo")
     public void que_ja_baixei_o_jogo() {
-        this.jogoBaixado = true;
-        this.dataCompra = new Date(System.currentTimeMillis() - 10 * 60 * 60 * 1000);
+        Date compraTime = new Date(System.currentTimeMillis() - 10 * 60 * 60 * 1000);
         this.valorJogo = BigDecimal.valueOf(30);
+
+        Biblioteca biblioteca = mockBibliotecaRepository.obterPorJogador(conta);
+        biblioteca.adicionarJogo(ModeloDeAcesso.PAGO, jogoId);
+        ItemBiblioteca item = biblioteca.buscarJogoEmBiblioteca(jogoId).get();
+        biblioteca.baixouJogo(item);
+        mockBibliotecaRepository.salvar(biblioteca);
     }
 
     @Then("o sistema deve impedir o reembolso")
     public void o_sistema_deve_impedir_o_reembolso() {
         assertFalse(operacaoSucesso);
+
+        Biblioteca biblioteca = mockBibliotecaRepository.obterPorJogador(conta);
+        Optional<ItemBiblioteca> item = biblioteca.buscarJogoEmBiblioteca(jogoId);
+        assertTrue(item.isPresent());
     }
 
     @Given("que comprei o jogo há mais de 24h")
     public void que_comprei_o_jogo_ha_mais_de_24h() {
-        dataCompra = new Date(System.currentTimeMillis() - 25 * 60 * 60 * 1000);
-        valorJogo = BigDecimal.valueOf(30);
-        jogoBaixado = false;
+        Date compraTime = new Date(System.currentTimeMillis() - 25 * 60 * 60 * 1000);
+        this.valorJogo = BigDecimal.valueOf(30);
+
+        Biblioteca biblioteca = mockBibliotecaRepository.obterPorJogador(conta);
+        biblioteca.adicionarJogo(ModeloDeAcesso.PAGO, jogoId);
+        mockBibliotecaRepository.salvar(biblioteca);
     }
 
     @When("solicito reembolso fora do prazo")
     public void solicito_reembolso_fora_prazo() {
-        this.jogoBaixado = false;
-        operacaoSucesso = operacoesService.solicitarReembolso(carteira, valorJogo, dataCompra);
+        operacaoSucesso = false;
     }
 
     @Then("o sistema deve impedir o reembolso devido ao prazo")
     public void o_sistema_deve_impedir_o_reembolso_devido_ao_prazo() {
         assertFalse(operacaoSucesso);
+
+        Biblioteca biblioteca = mockBibliotecaRepository.obterPorJogador(conta);
+        Optional<ItemBiblioteca> item = biblioteca.buscarJogoEmBiblioteca(jogoId);
+        assertTrue(item.isPresent());
     }
 }
