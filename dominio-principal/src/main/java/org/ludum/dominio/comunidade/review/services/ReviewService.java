@@ -11,7 +11,9 @@ import org.ludum.dominio.comunidade.review.entidades.ReviewId;
 import org.ludum.dominio.comunidade.review.enums.StatusReview;
 import org.ludum.dominio.comunidade.review.repositorios.ReviewRepository;
 import org.ludum.dominio.identidade.conta.entities.ContaId;
+import org.ludum.dominio.comunidade.review.observer.ReviewObserver;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -21,12 +23,23 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final JogoRepository jogoRepository;
     private final BibliotecaRepository bibliotecaRepository;
+    private final List<ReviewObserver> observadores = new ArrayList<>();
 
     public ReviewService(ReviewRepository reviewRepository, JogoRepository jogoRepository,
             BibliotecaRepository bibliotecaRepository) {
         this.reviewRepository = reviewRepository;
         this.jogoRepository = jogoRepository;
         this.bibliotecaRepository = bibliotecaRepository;
+    }
+
+    public void adicionarObservador(ReviewObserver observer) {
+        this.observadores.add(observer);
+    }
+
+    private void notificarObservadores(Review review) {
+        for (ReviewObserver observer : observadores) {
+            observer.quandoNovaReviewCriada(review);
+        }
     }
 
     /**
@@ -81,6 +94,7 @@ public class ReviewService {
                 StatusReview.PUBLICADO);
 
         reviewRepository.salvar(novaReview);
+        notificarObservadores(novaReview);
     }
 
     /**
@@ -121,7 +135,6 @@ public class ReviewService {
 
     /**
      * H-3: Como usuário, quero visualizar as reviews de um jogo.
-     *
      * Critérios de Aceitação:
      * - O sistema deve mostrar a média geral das estrelas.
      * - O sistema deve mostrar o total de recomendações.

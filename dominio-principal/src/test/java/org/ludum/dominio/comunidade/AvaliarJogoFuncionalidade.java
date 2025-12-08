@@ -24,6 +24,7 @@ import org.ludum.dominio.comunidade.review.entidades.ReviewId;
 import org.ludum.dominio.comunidade.review.enums.StatusReview;
 import org.ludum.dominio.comunidade.review.repositorios.ReviewRepository;
 import org.ludum.dominio.comunidade.review.services.ReviewService;
+import org.ludum.dominio.comunidade.review.observer.NotificacaoDesenvolvedorObserver;
 import org.ludum.dominio.identidade.conta.entities.ContaId;
 
 import io.cucumber.java.Before;
@@ -166,6 +167,8 @@ public class AvaliarJogoFuncionalidade {
                 mockJogoRepository,
                 mockBibliotecaRepository
         );
+        
+        this.reviewService.adicionarObservador(new NotificacaoDesenvolvedorObserver());
 
         this.usuarioId = new ContaId("usuario-123");
         this.jogoId = new JogoId("jogo-456");
