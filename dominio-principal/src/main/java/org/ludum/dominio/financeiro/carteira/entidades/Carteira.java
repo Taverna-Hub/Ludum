@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 
 import org.ludum.dominio.identidade.conta.entities.ContaId;
 
-
 public class Carteira {
   private ContaId id;
   private Saldo saldo;
@@ -42,10 +41,10 @@ public class Carteira {
 
   public void liberarSaldoBloqueado() {
     BigDecimal valorBloqueado = this.saldo.getBloqueado();
-    
+
     if (valorBloqueado.compareTo(BigDecimal.ZERO) > 0) {
-        this.saldo.setDisponivel( this.saldo.getDisponivel().add(valorBloqueado) );
-        this.saldo.setBloqueado(BigDecimal.ZERO); 
+      this.saldo.setDisponivel(this.saldo.getDisponivel().add(valorBloqueado));
+      this.saldo.setBloqueado(BigDecimal.ZERO);
     }
   }
 }
