@@ -145,24 +145,89 @@ public class OperacoesFinanceirasService {
                     "Processador de pagamento não configurado. Use setProcessadorPagamento() primeiro.");
         }
 
-        ResultadoPagamento resultado = processadorPagamento.processar(contaId, valor, moeda,
-                descricao);
+        ResultadoPagamento resultado = processadorPagamento.processar(contaId, valor, moeda, descricao);
 
         if (resultado.isSucesso()) {
             try {
                 Carteira carteira = carteiraRepository.obterPorContaId(contaId);
-
                 adicionarSaldo(carteira, valor, true);
-
                 carteiraRepository.salvar(carteira);
-
-                System.out.println("✓ Saldo adicionado com sucesso na carteira");
-
+                System.out.println("Saldo adicionado com sucesso na carteira");
             } catch (Exception e) {
                 System.err.println("Erro ao adicionar saldo após pagamento confirmado: " + e.getMessage());
             }
         }
 
         return resultado;
+    }
+
+    public boolean solicitarSaqueComPayout(
+            Carteira carteira,
+            String recipientId,
+            BigDecimal valor,
+            Date dataVenda,
+            boolean isCrowdfunding,
+            boolean metaAtingida) {
+
+        if (!carteira.isContaExternaValida()) {
+            System.err.println("Erro: Conta externa não configurada");
+            return false;
+        }
+
+        if (recipientId == null || recipientId.isBlank()) {
+            System.err.println("Erro: RecipientId não configurado");
+            return false;
+        }
+
+        long diferencaMillis = new Date().getTime() - dataVenda.getTime();
+        long diferencaHoras = TimeUnit.MILLISECONDS.toHours(diferencaMillis);
+
+        if (isCrowdfunding) {
+            if (!metaAtingida) {
+                System.err.println("Erro: Meta de crowdfunding não atingida");
+                return false;
+            }
+            if (diferencaHoras < 24) {
+                System.err.println("Erro: Deve aguardar 24h após atingir a meta");
+                return false;
+            }
+        } else if (diferencaHoras < 24) {
+            System.err.println("Erro: Deve aguardar 24h após a venda");
+            return false;
+        }
+
+        if (carteira.getSaldo().getDisponivel().compareTo(valor) < 0) {
+            System.err.println("Erro: Saldo insuficiente");
+            return false;
+        }
+
+        if (processadorPagamento == null) {
+            System.err.println("Erro: Processador de pagamento não configurado");
+            return false;
+        }
+
+        try {
+            String transferId = processadorPagamento.executarPayout(recipientId, valor, "Saque de vendas - Ludum");
+
+            carteira.getSaldo().subtrairDisponivel(valor);
+
+            Transacao transacao = new Transacao(
+                    null,
+                    carteira.getId(),
+                    null,
+                    TipoTransacao.SAQUE,
+                    StatusTransacao.CONFIRMADA,
+                    LocalDateTime.now(),
+                    valor);
+            transacaoRepository.salvar(transacao);
+            carteiraRepository.salvar(carteira);
+
+            System.out.println("Saque realizado com sucesso - Transfer ID: " + transferId);
+            return true;
+
+        } catch (Exception e) {
+            System.err.println("Erro ao executar payout: " + e.getMessage());
+            return false;
+        }
     }
 }
