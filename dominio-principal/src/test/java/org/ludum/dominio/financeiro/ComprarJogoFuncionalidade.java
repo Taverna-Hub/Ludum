@@ -46,10 +46,12 @@ public class ComprarJogoFuncionalidade {
     private ContaId contaDesenvolvedor;
     private BigDecimal valorJogo;
     private JogoId jogoId;
+    @SuppressWarnings("unused")
     private Date dataCompra;
     private boolean compraRealizada;
     private boolean formaPagamentoValida;
     private boolean operacaoSucesso;
+    @SuppressWarnings("unused")
     private boolean jogoPublicado;
     private boolean arquivoDisponivel;
     private boolean jaPossuiJogo;
@@ -158,6 +160,7 @@ public class ComprarJogoFuncionalidade {
             return new ArrayList<>(transacoes);
         }
 
+        @SuppressWarnings("unused")
         public List<Recibo> getRecibos() {
             return new ArrayList<>(recibos);
         }
@@ -170,7 +173,7 @@ public class ComprarJogoFuncionalidade {
         this.mockJogoRepository = new MockJogoRepository();
         this.mockCarteiraRepository = new MockCarteiraRepository();
 
-        this.operacoesService = new OperacoesFinanceirasService(mockTransacaoRepository);
+        this.operacoesService = new OperacoesFinanceirasService(mockTransacaoRepository, mockCarteiraRepository);
 
         this.conta = new ContaId("comprador");
         this.contaDesenvolvedor = new ContaId("desenvolvedor");
@@ -401,6 +404,7 @@ public class ComprarJogoFuncionalidade {
     // --- Scenarios de Reembolso ---
     @Given("que comprei um jogo há menos de 24h")
     public void que_comprei_um_jogo_ha_menos_de_24h() {
+        @SuppressWarnings("unused")
         Date compraTime = new Date(System.currentTimeMillis() - 23 * 60 * 60 * 1000);
         this.valorJogo = BigDecimal.valueOf(30);
 
@@ -444,6 +448,7 @@ public class ComprarJogoFuncionalidade {
 
     @Given("que já baixei o jogo")
     public void que_ja_baixei_o_jogo() {
+        @SuppressWarnings("unused")
         Date compraTime = new Date(System.currentTimeMillis() - 10 * 60 * 60 * 1000);
         this.valorJogo = BigDecimal.valueOf(30);
 
@@ -465,6 +470,7 @@ public class ComprarJogoFuncionalidade {
 
     @Given("que comprei o jogo há mais de 24h")
     public void que_comprei_o_jogo_ha_mais_de_24h() {
+        @SuppressWarnings("unused")
         Date compraTime = new Date(System.currentTimeMillis() - 25 * 60 * 60 * 1000);
         this.valorJogo = BigDecimal.valueOf(30);
 
