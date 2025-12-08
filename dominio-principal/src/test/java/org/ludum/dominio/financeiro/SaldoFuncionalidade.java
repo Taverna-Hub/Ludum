@@ -101,7 +101,7 @@ public class SaldoFuncionalidade {
     public void setup() {
         this.mockTransacaoRepo = new MockTransacaoRepository();
         this.mockCarteiraRepo = new MockCarteiraRepository();
-        this.operacoesService = new OperacoesFinanceirasService(mockTransacaoRepo);
+        this.operacoesService = new OperacoesFinanceirasService(mockTransacaoRepo, mockCarteiraRepo);
 
         this.conta = new ContaId("comprador");
         this.saldo = new Saldo();

@@ -6,17 +6,26 @@ import java.util.Date;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
+import org.ludum.dominio.financeiro.carteira.ProcessadorPagamentoExterno.ResultadoPagamento;
 import org.ludum.dominio.financeiro.carteira.entidades.Carteira;
 import org.ludum.dominio.financeiro.transacao.TransacaoRepository;
 import org.ludum.dominio.financeiro.transacao.entidades.Transacao;
 import org.ludum.dominio.financeiro.transacao.enums.StatusTransacao;
 import org.ludum.dominio.financeiro.transacao.enums.TipoTransacao;
+import org.ludum.dominio.identidade.conta.entities.ContaId;
 
 public class OperacoesFinanceirasService {
     private final TransacaoRepository transacaoRepository;
+    private final CarteiraRepository carteiraRepository;
+    private ProcessadorPagamentoExterno processadorPagamento;
 
-    public OperacoesFinanceirasService(TransacaoRepository transacaoRepository) {
+    public OperacoesFinanceirasService(TransacaoRepository transacaoRepository, CarteiraRepository carteiraRepository) {
         this.transacaoRepository = transacaoRepository;
+        this.carteiraRepository = carteiraRepository;
+    }
+
+    public void setProcessadorPagamento(ProcessadorPagamentoExterno processadorPagamento) {
+        this.processadorPagamento = processadorPagamento;
     }
 
     public boolean adicionarSaldo(Carteira carteira, BigDecimal valor, boolean pagamentoConfirmado) {
@@ -123,5 +132,37 @@ public class OperacoesFinanceirasService {
         } else {
             return false;
         }
+    }
+
+    public ResultadoPagamento adicionarSaldoComPagamentoExterno(
+            ContaId contaId,
+            BigDecimal valor,
+            String moeda,
+            String descricao) {
+
+        if (processadorPagamento == null) {
+            throw new IllegalStateException(
+                    "Processador de pagamento não configurado. Use setProcessadorPagamento() primeiro.");
+        }
+
+        ResultadoPagamento resultado = processadorPagamento.processar(contaId, valor, moeda,
+                descricao);
+
+        if (resultado.isSucesso()) {
+            try {
+                Carteira carteira = carteiraRepository.obterPorContaId(contaId);
+
+                adicionarSaldo(carteira, valor, true);
+
+                carteiraRepository.salvar(carteira);
+
+                System.out.println("✓ Saldo adicionado com sucesso na carteira");
+
+            } catch (Exception e) {
+                System.err.println("Erro ao adicionar saldo após pagamento confirmado: " + e.getMessage());
+            }
+        }
+
+        return resultado;
     }
 }
