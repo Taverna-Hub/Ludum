@@ -23,6 +23,8 @@ class CarteiraJpa {
 	BigDecimal bloqueado;
 
 	boolean contaExternaValida;
+
+	String contaExterna; // Chave PIX
 }
 
 interface CarteiraJpaRepository extends JpaRepository<CarteiraJpa, String> {
