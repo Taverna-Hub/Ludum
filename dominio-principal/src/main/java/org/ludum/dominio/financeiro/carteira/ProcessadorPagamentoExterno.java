@@ -40,7 +40,7 @@ public abstract class ProcessadorPagamentoExterno {
 
   protected abstract String executarPagamentoNoGateway(Object dadosGateway, BigDecimal valor) throws Exception;
 
-  public abstract String executarPayout(String recipientId, BigDecimal valor, String descricao) throws Exception;
+  public abstract String executarPayout(ContaId contaId, BigDecimal valor, String descricao) throws Exception;
 
   protected void registrarResultado(String transacaoId, String idGateway, boolean sucesso) {
     System.out.println(String.format(

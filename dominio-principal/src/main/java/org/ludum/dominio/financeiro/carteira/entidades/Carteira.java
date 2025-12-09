@@ -8,11 +8,13 @@ public class Carteira {
   private ContaId id;
   private Saldo saldo;
   private boolean contaExternaValida;
+  private String contaExterna;
 
   public Carteira(ContaId id, Saldo saldo) {
     this.id = id;
     this.saldo = saldo;
     this.contaExternaValida = false;
+    this.contaExterna = null;
   }
 
   public ContaId getId() {
@@ -37,6 +39,19 @@ public class Carteira {
 
   public void setContaExternaValida(boolean contaExternaValida) {
     this.contaExternaValida = contaExternaValida;
+  }
+
+  public String getContaExterna() {
+    return contaExterna;
+  }
+
+  public void setContaExterna(String contaExterna) {
+    this.contaExterna = contaExterna;
+    if (contaExterna != null && !contaExterna.isBlank()) {
+      this.contaExternaValida = true;
+    } else {
+      this.contaExternaValida = false;
+    }
   }
 
   public void liberarSaldoBloqueado() {

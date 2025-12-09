@@ -207,7 +207,7 @@ public class OperacoesFinanceirasService {
         }
 
         try {
-            String transferId = processadorPagamento.executarPayout(recipientId, valor, "Saque de vendas - Ludum");
+            String transferId = processadorPagamento.executarPayout(carteira.getId(), valor, "Saque de vendas - Ludum");
 
             carteira.getSaldo().subtrairDisponivel(valor);
 
