@@ -7,7 +7,15 @@ import org.ludum.dominio.financeiro.transacao.entidades.TransacaoId;
 import org.ludum.dominio.identidade.conta.entities.ContaId;
 import org.ludum.dominio.comunidade.review.entidades.Review;
 import org.ludum.dominio.comunidade.review.entidades.ReviewId;
+import org.ludum.dominio.catalogo.jogo.entidades.Jogo;
 import org.ludum.dominio.catalogo.jogo.entidades.JogoId;
+import org.ludum.dominio.catalogo.jogo.enums.StatusPublicacao;
+import org.ludum.dominio.catalogo.tag.entidades.Tag;
+import org.ludum.dominio.catalogo.tag.entidades.TagId;
+import org.ludum.dominio.comunidade.post.entidades.Post;
+import org.ludum.dominio.comunidade.post.entidades.PostId;
+import org.ludum.dominio.comunidade.post.entidades.Comentario;
+import org.ludum.dominio.comunidade.post.entidades.ComentarioId;
 import org.ludum.dominio.identidade.seguimento.entities.Seguimento;
 import org.ludum.dominio.identidade.seguimento.entities.SeguimentoId;
 import org.ludum.dominio.identidade.seguimento.entities.AlvoId;
@@ -15,6 +23,11 @@ import org.modelmapper.AbstractConverter;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.config.Configuration.AccessLevel;
 import org.springframework.stereotype.Component;
+
+import java.net.URI;
+import java.net.URL;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 public class JpaMapeador extends ModelMapper {
@@ -94,6 +107,192 @@ public class JpaMapeador extends ModelMapper {
 
     // }
     // });
+
+    addConverter(new AbstractConverter<TagJpa, Tag>() {
+      @Override
+      protected Tag convert(TagJpa source) {
+        return new Tag(
+          new TagId(source.id),
+          source.nome
+        );
+      }
+    });
+
+    addConverter(new AbstractConverter<Tag, TagJpa>() {
+      @Override
+      protected TagJpa convert(Tag source) {
+        TagJpa jpa = new TagJpa();
+        jpa.id = source.getId().getValue();
+        jpa.nome = source.getNome();
+        return jpa;
+      }
+    });
+
+    addConverter(new AbstractConverter<JogoJpa, Jogo>() {
+      @Override
+      protected Jogo convert(JogoJpa source) {
+        try {
+          List<Tag> tags = source.tagIds.stream()
+            .map(tagId -> new Tag(new TagId(tagId), "Tag-" + tagId.substring(0, Math.min(5, tagId.length()))))
+            .collect(Collectors.toList());
+
+          URL capaOficial = source.capaOficial != null ? URI.create(source.capaOficial).toURL() : null;
+
+          Jogo jogo = new Jogo(
+            new JogoId(source.id),
+            new ContaId(source.desenvolvedoraId),
+            source.titulo,
+            source.descricao,
+            capaOficial,
+            tags,
+            source.isNSFW,
+            source.dataDeLancamento
+          );
+
+          for (String screenshotUrl : source.screenshots) {
+            jogo.adicionarScreenshot(URI.create(screenshotUrl).toURL());
+          }
+
+          for (String videoUrl : source.videos) {
+            jogo.adicionarVideo(URI.create(videoUrl).toURL());
+          }
+
+          if (source.status == StatusPublicacao.PUBLICADO && jogo.getStatus() == StatusPublicacao.AGUARDANDO_VALIDACAO) {
+            jogo.publicar();
+          } else if (source.status == StatusPublicacao.REJEITADO && jogo.getStatus() == StatusPublicacao.AGUARDANDO_VALIDACAO) {
+            jogo.rejeitar();
+          } else if (source.status == StatusPublicacao.ARQUIVADO) {
+            if (jogo.getStatus() == StatusPublicacao.AGUARDANDO_VALIDACAO) {
+              jogo.publicar();
+            }
+            jogo.arquivar();
+          }
+
+          return jogo;
+        } catch (Exception e) {
+          throw new RuntimeException("Erro ao converter JogoJpa para Jogo", e);
+        }
+      }
+    });
+
+    addConverter(new AbstractConverter<Jogo, JogoJpa>() {
+      @Override
+      protected JogoJpa convert(Jogo source) {
+        JogoJpa jpa = new JogoJpa();
+        jpa.id = source.getId().getValue();
+        jpa.desenvolvedoraId = source.getDesenvolvedoraId().getValue();
+        jpa.slug = source.getSlug().getValor();
+        jpa.capaOficial = source.getCapaOficial() != null ? source.getCapaOficial().toString() : null;
+        jpa.status = source.getStatus();
+        jpa.titulo = source.getTitulo();
+        jpa.descricao = source.getDescricao();
+        jpa.screenshots = source.getScreenshots().stream()
+          .map(URL::toString)
+          .collect(Collectors.toList());
+        jpa.videos = source.getVideos().stream()
+          .map(URL::toString)
+          .collect(Collectors.toList());
+        jpa.tagIds = source.getTags().stream()
+          .map(tag -> tag.getId().getValue())
+          .collect(Collectors.toList());
+        jpa.isNSFW = source.isNSFW();
+        jpa.dataDeLancamento = source.getDataDeLancamento();
+        return jpa;
+      }
+    });
+
+    addConverter(new AbstractConverter<PostJpa, Post>() {
+      @Override
+      protected Post convert(PostJpa source) {
+        try {
+          List<Tag> tags = source.tagIds.stream()
+            .map(tagId -> new Tag(new TagId(tagId), "Tag-" + tagId.substring(0, Math.min(5, tagId.length()))))
+            .collect(Collectors.toList());
+
+          URL imagem = source.imagem != null ? URI.create(source.imagem).toURL() : null;
+
+          Post post = new Post(
+            new PostId(source.id),
+            new JogoId(source.jogoId),
+            new ContaId(source.autorId),
+            source.titulo,
+            source.conteudo,
+            source.dataPublicacao,
+            imagem,
+            source.status,
+            tags
+          );
+
+          post.setDataAgendamento(source.dataAgendamento);
+
+          for (ComentarioJpa comentarioJpa : source.comentarios) {
+            Comentario comentario = new Comentario(
+              new ComentarioId(comentarioJpa.id),
+              new PostId(comentarioJpa.postId),
+              new ContaId(comentarioJpa.autorId),
+              comentarioJpa.texto,
+              comentarioJpa.data
+            );
+            if (comentarioJpa.oculto) {
+              comentario.ocultar();
+            }
+            post.adicionarComentario(comentario);
+          }
+
+          for (CurtidaJpa curtidaJpa : source.curtidas) {
+            post.adicionarCurtida(new ContaId(curtidaJpa.contaId));
+          }
+
+          return post;
+        } catch (Exception e) {
+          throw new RuntimeException("Erro ao converter PostJpa para Post", e);
+        }
+      }
+    });
+
+    addConverter(new AbstractConverter<Post, PostJpa>() {
+      @Override
+      protected PostJpa convert(Post source) {
+        PostJpa jpa = new PostJpa();
+        jpa.id = source.getId().getId();
+        jpa.jogoId = source.getJogoId().getValue();
+        jpa.autorId = source.getAutorId().getValue();
+        jpa.titulo = source.getTitulo();
+        jpa.conteudo = source.getConteudo();
+        jpa.dataPublicacao = source.getDataPublicacao();
+        jpa.dataAgendamento = source.getDataAgendamento();
+        jpa.imagem = source.getImagem() != null ? source.getImagem().toString() : null;
+        jpa.status = source.getStatus();
+
+        jpa.tagIds = source.getTags().stream()
+          .map(tag -> tag.getId().getValue())
+          .collect(Collectors.toList());
+
+        jpa.comentarios = source.getComentarios().stream()
+          .map(comentario -> {
+            ComentarioJpa cJpa = new ComentarioJpa();
+            cJpa.id = comentario.getId().getId();
+            cJpa.postId = comentario.getPostId().getId();
+            cJpa.autorId = comentario.getAutorId().getValue();
+            cJpa.texto = comentario.getTexto();
+            cJpa.data = comentario.getData();
+            cJpa.oculto = comentario.isOculto();
+            return cJpa;
+          })
+          .collect(Collectors.toList());
+
+        jpa.curtidas = source.getCurtidas().stream()
+          .map(curtida -> {
+            CurtidaJpa cJpa = new CurtidaJpa();
+            cJpa.postId = curtida.getPostId().getId();
+            cJpa.contaId = curtida.getContaId().getValue();
+            return cJpa;
+          })
+          .collect(Collectors.toList());
+
+        return jpa;
+      }
+    });
   }
 
   @Override
