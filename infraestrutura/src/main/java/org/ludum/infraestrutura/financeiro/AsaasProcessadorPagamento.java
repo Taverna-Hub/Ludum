@@ -21,6 +21,9 @@ public class AsaasProcessadorPagamento extends ProcessadorPagamentoExterno {
   private final Gson gson;
   private final CarteiraRepository carteiraRepository;
 
+  // ThreadLocal para armazenar o customerId durante a transação
+  private final ThreadLocal<String> currentCustomerId = new ThreadLocal<>();
+
   private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
 
   public AsaasProcessadorPagamento(String apiKey, CarteiraRepository carteiraRepository) {
@@ -60,7 +63,12 @@ public class AsaasProcessadorPagamento extends ProcessadorPagamentoExterno {
   protected Object prepararDadosGateway(ContaId contaId, BigDecimal valor, String moeda, String descricao) {
     Map<String, Object> paymentData = new HashMap<>();
 
-    paymentData.put("customer", contaId.getValue());
+    // Usar o customerId definido ou o contaId como fallback
+    String customerId = currentCustomerId.get();
+    if (customerId == null || customerId.isBlank()) {
+      customerId = contaId.getValue();
+    }
+    paymentData.put("customer", customerId);
 
     paymentData.put("value", valor);
     paymentData.put("description", descricao != null ? descricao : "Adicionar saldo Ludum");
@@ -281,5 +289,13 @@ public class AsaasProcessadorPagamento extends ProcessadorPagamentoExterno {
     } catch (IOException e) {
       System.err.println("✗ Erro ao validar credenciais Asaas: " + e.getMessage());
     }
+  }
+
+  public void setCustomerId(String customerId) {
+    currentCustomerId.set(customerId);
+  }
+
+  public void clearCustomerId() {
+    currentCustomerId.remove();
   }
 }

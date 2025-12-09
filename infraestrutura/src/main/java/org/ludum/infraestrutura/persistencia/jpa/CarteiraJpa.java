@@ -24,7 +24,7 @@ class CarteiraJpa {
 
 	boolean contaExternaValida;
 
-	String contaExterna; // Chave PIX
+	String contaExterna;
 }
 
 interface CarteiraJpaRepository extends JpaRepository<CarteiraJpa, String> {
