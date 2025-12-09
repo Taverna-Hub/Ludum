@@ -18,14 +18,14 @@ Feature: Financiamento Coletivo (Crowdfunding)
 
   # --- Contribuição de Jogadores ---
   Scenario: [Ação Correta] Jogador contribui para uma campanha ativa
-    Given que sou um "Jogador" autenticado
+    Given que sou uma "Jogador" autenticado
     And existe uma campanha de financiamento ativa para o jogo "A Lenda do Agreste"
     When eu contribuo com "R$ 50.00" para a campanha
     Then a minha contribuição deve ser processada com sucesso
     And o valor total arrecadado da campanha deve ser incrementado em "R$ 50.00"
 
   Scenario: [Ação Incorreta] Jogador tenta contribuir para uma campanha já encerrada
-    Given que sou um "Jogador" autenticado
+    Given que sou uma "Jogador" autenticado
     And a campanha de financiamento para o jogo "A Lenda do Agreste" já foi encerrada
     When eu tento contribuir com "R$ 50.00" para a campanha
     Then o sistema deve rejeitar a contribuição e informar que a campanha não está mais ativa

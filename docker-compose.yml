@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:13
+    container_name: ludum-postgres
+    environment:
+      POSTGRES_DB: ludum
+      POSTGRES_USER: ludum
+      POSTGRES_PASSWORD: ludum
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ludum-network
+
+volumes:
+  postgres_data:
+
+networks:
+  ludum-network:
+    driver: bridge

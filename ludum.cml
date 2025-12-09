@@ -203,7 +203,9 @@ Aggregate Biblioteca {
   -@ContaId jogadorId
   List<ItemBiblioteca> itens // Essencial para o agregado, OK.
   List<ItemBiblioteca> itensBaixados
-  Optional<ItemBiblioteca> checaPresencaDeJogo(@JogoId jogoId)
+  Optional<ItemBiblioteca>
+  checaPresencaDeJogo(
+  @JogoId jogoId)
   void adicionarJogo(@ModeloDeAcesso modeloDeAcesso, @JogoId jogoId)
   void removerJogo(@JogoId jogoId)
   void baixouJogo(ItemBiblioteca)
@@ -238,6 +240,7 @@ Aggregate Carteira {
   -ContaId contaId
   Saldo saldo
   boolean contaExternaValida
+  String contaExterna
   void liberarSaldoBloqueado();
 }
 Repository CarteiraRepository {

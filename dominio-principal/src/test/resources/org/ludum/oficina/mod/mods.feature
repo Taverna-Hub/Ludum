@@ -52,14 +52,14 @@ Feature: Oficina de Mods
 
   Scenario: Jogador tenta interagir com um mod que foi removido
     Given que sou um "Jogador" autenticado
-    And o mod com ID "12345" foi removido pela moderação
+    And o mod com ID "12345" foi removido pela desenvolvedora
     When eu tento acessar a página do mod com ID "12345"
     Then o sistema deve exibir uma página de erro informando que o conteúdo não está disponível
 
   # --- Avaliação de Mods ---
   Scenario: Jogador avalia um mod que já baixou
     Given que sou um "Jogador" autenticado e já baixei o mod "Texturas Realistas"
-    When eu envio uma avaliação de “gostei”
+    When eu envio uma avaliação de gostei
     Then minha avaliação deve ser registrada com sucesso na página do mod
 
   Scenario: Jogador tenta avaliar um mod que nunca baixou
@@ -68,14 +68,14 @@ Feature: Oficina de Mods
     Then o sistema deve bloquear a ação e me informar que preciso baixar o mod antes de avaliar
 
   # --- Moderação de Conteúdo ---
-  Scenario: Administrador remove um mod que viola as diretrizes
-    Given que sou um "Administrador" autenticado
+  Scenario: Desenvolvedora remove um mod que viola as diretrizes
+    Given que sou um "Desenvolvedor" autenticado
     And existe um mod "Mod Inapropriado" que foi reportado
     When eu uso o painel de moderação para remover o "Mod Inapropriado"
     Then o mod não deve mais ser visível publicamente na oficina
 
   Scenario: Jogador comum tenta remover um mod
-    Given que sou um "Jogador" autenticado sem privilégios de administrador
+    Given que sou um "Jogador" autenticado sem privilégios de desenvolvedor
     And estou na página do mod "Mod Inapropriado"
     When eu tento executar uma ação de moderação para remover o mod
     Then o sistema deve negar a ação por falta de permissão

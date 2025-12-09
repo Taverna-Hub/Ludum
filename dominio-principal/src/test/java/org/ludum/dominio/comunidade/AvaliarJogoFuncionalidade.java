@@ -10,22 +10,22 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import org.ludum.catalogo.biblioteca.entidades.Biblioteca;
-import org.ludum.catalogo.biblioteca.entidades.ItemBiblioteca;
-import org.ludum.catalogo.biblioteca.enums.ModeloDeAcesso;
-import org.ludum.catalogo.biblioteca.repositorios.BibliotecaRepository;
-import org.ludum.catalogo.jogo.entidades.Jogo;
-import org.ludum.catalogo.jogo.entidades.JogoId;
-import org.ludum.catalogo.jogo.entidades.Slug;
-import org.ludum.catalogo.jogo.enums.StatusPublicacao;
-import org.ludum.catalogo.jogo.repositorios.JogoRepository;
-import org.ludum.catalogo.tag.entidades.Tag;
-import org.ludum.catalogo.tag.entidades.TagId;
-import org.ludum.comunidade.review.entidades.Review;
-import org.ludum.comunidade.review.entidades.ReviewId;
-import org.ludum.comunidade.review.repositorios.ReviewRepository;
-import org.ludum.comunidade.review.services.ReviewService;
-import org.ludum.identidade.conta.entities.ContaId;
+import org.ludum.dominio.catalogo.biblioteca.entidades.Biblioteca;
+import org.ludum.dominio.catalogo.biblioteca.enums.ModeloDeAcesso;
+import org.ludum.dominio.catalogo.biblioteca.repositorios.BibliotecaRepository;
+import org.ludum.dominio.catalogo.jogo.entidades.Jogo;
+import org.ludum.dominio.catalogo.jogo.entidades.JogoId;
+import org.ludum.dominio.catalogo.jogo.entidades.Slug;
+import org.ludum.dominio.catalogo.jogo.repositorios.JogoRepository;
+import org.ludum.dominio.catalogo.tag.entidades.Tag;
+import org.ludum.dominio.catalogo.tag.entidades.TagId;
+import org.ludum.dominio.comunidade.review.entidades.Review;
+import org.ludum.dominio.comunidade.review.entidades.ReviewId;
+import org.ludum.dominio.comunidade.review.enums.StatusReview;
+import org.ludum.dominio.comunidade.review.repositorios.ReviewRepository;
+import org.ludum.dominio.comunidade.review.services.ReviewService;
+import org.ludum.dominio.comunidade.review.observer.NotificacaoDesenvolvedorObserver;
+import org.ludum.dominio.identidade.conta.entities.ContaId;
 
 import io.cucumber.java.Before;
 import io.cucumber.java.en.And;
@@ -70,7 +70,7 @@ public class AvaliarJogoFuncionalidade {
 
         // Métodos não utilizados mas necessários pela interface
         @Override
-        public Jogo obterPorSlug(org.ludum.catalogo.jogo.entidades.Slug slug) {
+        public Jogo obterPorSlug(Slug slug) {
             return null;
         }
 
@@ -80,7 +80,7 @@ public class AvaliarJogoFuncionalidade {
         }
 
         @Override
-        public List<Jogo> obterJogosPorTag(org.ludum.catalogo.tag.entidades.TagId tag) {
+        public List<Jogo> obterJogosPorTag(TagId tag) {
             return new ArrayList<>();
         }
     }
@@ -167,6 +167,8 @@ public class AvaliarJogoFuncionalidade {
                 mockJogoRepository,
                 mockBibliotecaRepository
         );
+        
+        this.reviewService.adicionarObservador(new NotificacaoDesenvolvedorObserver());
 
         this.usuarioId = new ContaId("usuario-123");
         this.jogoId = new JogoId("jogo-456");
@@ -293,7 +295,7 @@ public class AvaliarJogoFuncionalidade {
                     "Já avaliei antes",
                     new java.util.Date(),
                     true,
-                    org.ludum.comunidade.review.enums.StatusReview.PUBLICADO
+                    StatusReview.PUBLICADO
             );
             mockReviewRepository.salvar(reviewAnterior);
         }
