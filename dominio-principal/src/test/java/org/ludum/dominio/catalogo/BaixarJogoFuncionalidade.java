@@ -1,7 +1,7 @@
 package org.ludum.dominio.catalogo;
 
 import io.cucumber.java.en.*;
-import org.junit.jupiter.api.Assertions;
+import static org.junit.jupiter.api.Assertions.*;
 import org.ludum.dominio.catalogo.biblioteca.entidades.Biblioteca;
 import org.ludum.dominio.catalogo.biblioteca.entidades.ItemBiblioteca;
 import org.ludum.dominio.catalogo.biblioteca.estruturas.IteratorBiblioteca;
@@ -247,7 +247,7 @@ public class BaixarJogoFuncionalidade {
             Slug currentSlug = new Slug(str);
             ItemBiblioteca currentItemBiblioteca = new ItemBiblioteca(this.modeloDeAcesso,
                     this.jogoRepository.obterPorSlug(currentSlug).getId());
-            Assertions.assertTrue(this.biblioteca.getItensBaixados().contains(currentItemBiblioteca));
+            assertTrue(this.biblioteca.getItensBaixados().contains(currentItemBiblioteca));
         }
     }
 
@@ -264,7 +264,7 @@ public class BaixarJogoFuncionalidade {
 
     @And("deve exibir a mensagem de erro adequada")
     public void deveExibirUmaMensagem() {
-        Assertions.assertNotNull(this.e, "Deveria ter sido lançada uma exceção contendo a mensagem de erro.");
+        assertNotNull(this.e, "Deveria ter sido lançada uma exceção contendo a mensagem de erro.");
     }
 
     @And("existe um jogo chamado {string} que é gratuito, mas sua data de lançamento é futura")
@@ -348,7 +348,7 @@ public class BaixarJogoFuncionalidade {
 
         if (currentItemBiblioteca.isPresent()) {
             biblioteca.baixouJogo(currentItemBiblioteca.get());
-            Assertions.assertTrue(this.biblioteca.getItensBaixados().contains(currentItemBiblioteca.get()));
+            assertTrue(this.biblioteca.getItensBaixados().contains(currentItemBiblioteca.get()));
         }
 
     }

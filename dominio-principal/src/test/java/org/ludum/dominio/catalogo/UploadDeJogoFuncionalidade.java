@@ -2,6 +2,7 @@ package org.ludum.dominio.catalogo;
 
 import io.cucumber.java.en.*;
 import io.cucumber.java.Before;
+import static org.junit.jupiter.api.Assertions.*;
 
 import org.ludum.dominio.catalogo.jogo.entidades.*;
 import org.ludum.dominio.catalogo.jogo.enums.StatusPublicacao;
@@ -182,7 +183,7 @@ public class UploadDeJogoFuncionalidade {
     @And("deve exibir uma mensagem informando o erro")
     public void deveExibirMensagemInformandoOErro() {
         if (!this.passou) {
-            org.junit.jupiter.api.Assertions.assertNotNull(this.e, "Uma exceção deveria ter sido capturada.");
+            assertNotNull(this.e, "Uma exceção foi capturada.");
         }
     }
 
