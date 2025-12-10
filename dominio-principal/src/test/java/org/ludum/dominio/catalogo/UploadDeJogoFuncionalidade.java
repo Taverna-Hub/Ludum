@@ -2,6 +2,7 @@ package org.ludum.dominio.catalogo;
 
 import io.cucumber.java.en.*;
 import io.cucumber.java.Before;
+import static org.junit.jupiter.api.Assertions.*;
 
 import org.ludum.dominio.catalogo.jogo.entidades.*;
 import org.ludum.dominio.catalogo.jogo.enums.StatusPublicacao;
@@ -22,14 +23,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-
 public class UploadDeJogoFuncionalidade {
 
     private GestaoDeJogosService gestaoDeJogosService;
 
     private MockJogoRepository jogoRepository;
     private MockContaRepository contaRepository;
-
 
     private JogoId jogoId;
     private VersaoId versaoId;
@@ -125,7 +124,9 @@ public class UploadDeJogoFuncionalidade {
         this.e = null;
 
         try {
-            this.jogoRepository.salvar(new Jogo(this.jogoId, this.contaId, "jogo-jogo-jogo", "JogoJogoJogo", new URL("https://exemplo.com/capa.jpg"), List.of(new Tag(new TagId("a"), "aaa")), false, LocalDate.of(2021, 3, 15)));
+            this.jogoRepository.salvar(new Jogo(this.jogoId, this.contaId, "jogo-jogo-jogo", "JogoJogoJogo",
+                    new URL("https://exemplo.com/capa.jpg"), List.of(new Tag(new TagId("a"), "aaa")), false,
+                    LocalDate.of(2021, 3, 15)));
         } catch (MalformedURLException e) {
             throw new RuntimeException(e);
         }
@@ -154,7 +155,8 @@ public class UploadDeJogoFuncionalidade {
     @When("eu tento enviar o arquivo {string}")
     public void oPadraoDeNomeDeArquivoDefinidoE(String str) {
         try {
-            this.gestaoDeJogosService.processarUpload(this.contaId, this.jogoId, new PacoteZip(new byte[10]), new VersaoId(UUID.randomUUID().toString()), str, "a");
+            this.gestaoDeJogosService.processarUpload(this.contaId, this.jogoId, new PacoteZip(new byte[10]),
+                    new VersaoId(UUID.randomUUID().toString()), str, "a");
             this.passou = true;
         } catch (IllegalStateException | IllegalArgumentException e) {
             this.passou = false;
@@ -181,7 +183,7 @@ public class UploadDeJogoFuncionalidade {
     @And("deve exibir uma mensagem informando o erro")
     public void deveExibirMensagemInformandoOErro() {
         if (!this.passou) {
-            this.e.printStackTrace();
+            assertNotNull(this.e, "Uma exceção foi capturada.");
         }
     }
 
@@ -189,8 +191,11 @@ public class UploadDeJogoFuncionalidade {
     public void euTentoEnviarOArquivoJogoZip(String str) {
         try {
             JogoId newJogoId = new JogoId(UUID.randomUUID().toString());
-            this.jogoRepository.salvar(new Jogo(newJogoId, new ContaId(UUID.randomUUID().toString()), "jogo-jogo-jogo", "JogoJogoJogo", new URL("https://exemplo.com/capa.jpg"), List.of(new Tag(new TagId("a"), "aaa")), false, LocalDate.of(2021, 3, 15)));
-            this.gestaoDeJogosService.processarUpload(this.contaId, newJogoId, new PacoteZip(new byte[10]), new VersaoId(UUID.randomUUID().toString()), str, "a");
+            this.jogoRepository.salvar(new Jogo(newJogoId, new ContaId(UUID.randomUUID().toString()), "jogo-jogo-jogo",
+                    "JogoJogoJogo", new URL("https://exemplo.com/capa.jpg"), List.of(new Tag(new TagId("a"), "aaa")),
+                    false, LocalDate.of(2021, 3, 15)));
+            this.gestaoDeJogosService.processarUpload(this.contaId, newJogoId, new PacoteZip(new byte[10]),
+                    new VersaoId(UUID.randomUUID().toString()), str, "a");
             this.passou = true;
         } catch (IllegalStateException e) {
             this.e = e;
@@ -208,7 +213,8 @@ public class UploadDeJogoFuncionalidade {
 
     @Given("que um desenvolvedor enviou um arquivo .zip para a plataforma")
     public void queUmDesenvolvedorEnviou() {
-        this.versao = new Versao(new PacoteZip(new byte[10]), this.jogoId, new VersaoId(UUID.randomUUID().toString()), "jogo-jogo-jogo_1.0.0.zip", "a");
+        this.versao = new Versao(new PacoteZip(new byte[10]), this.jogoId, new VersaoId(UUID.randomUUID().toString()),
+                "jogo-jogo-jogo_1.0.0.zip", "a");
     }
 
     @When("o sistema de verificação de segurança analisa o arquivo {string}")
@@ -265,7 +271,8 @@ public class UploadDeJogoFuncionalidade {
 
         Versao currentVersao = currentJogo.getVersaoHistory().getLast();
 
-        if (currentVersao.getDataUpload() != this.versao.getDataUpload() || currentVersao.getId() != this.versao.getId()) {
+        if (currentVersao.getDataUpload() != this.versao.getDataUpload()
+                || currentVersao.getId() != this.versao.getId()) {
             throw new IllegalStateException("Metadados não salvos");
         }
 
