@@ -1,6 +1,8 @@
 package org.ludum.dominio.catalogo.biblioteca.entidades;
 
 import org.ludum.dominio.catalogo.biblioteca.enums.ModeloDeAcesso;
+import org.ludum.dominio.catalogo.biblioteca.estruturas.Celula;
+import org.ludum.dominio.catalogo.biblioteca.estruturas.IteratorBiblioteca;
 import org.ludum.dominio.catalogo.jogo.entidades.JogoId;
 import org.ludum.dominio.identidade.conta.entities.ContaId;
 
@@ -12,51 +14,85 @@ import java.util.Optional;
 public class Biblioteca {
 
     private final ContaId contaId;
-    private List<ItemBiblioteca> itens;
+    private Celula<ItemBiblioteca> primeira;
     private List<ItemBiblioteca> itensBaixados;
 
     public Biblioteca(ContaId contaId) {
         this.contaId = Objects.requireNonNull(contaId);
-        this.itens = new ArrayList<ItemBiblioteca>();
-        this.itensBaixados = new ArrayList<ItemBiblioteca>();
+        this.primeira = null;
+        this.itensBaixados = new ArrayList<>();
     }
 
-    public Optional<ItemBiblioteca> buscarJogoEmBiblioteca(JogoId jogoId){
-        for(int i = 0; i < this.itens.size(); i++){
-            if(itens.get(i).getJogoId().equals(jogoId)){
-                return Optional.ofNullable(itens.get(i));
+    public IteratorBiblioteca<ItemBiblioteca> criarIterator() {
+        return new IteratorBiblioteca<>(this.primeira, novaCabeca -> this.primeira = novaCabeca);
+    }
+
+    public Optional<ItemBiblioteca> buscarJogoEmBiblioteca(JogoId jogoId) {
+        IteratorBiblioteca<ItemBiblioteca> iterator = criarIterator();
+        while (iterator.existeProximo()) {
+            ItemBiblioteca item = iterator.proximo();
+            if (item.getJogoId().equals(jogoId)) {
+                return Optional.of(item);
             }
         }
         return Optional.empty();
     }
 
-    public void adicionarJogo(ModeloDeAcesso modeloDeAcesso, JogoId jogoId){
-        if(buscarJogoEmBiblioteca(jogoId).orElse(null) != null){
+    public void adicionarJogo(ModeloDeAcesso modeloDeAcesso, JogoId jogoId) {
+        if (buscarJogoEmBiblioteca(jogoId).isPresent()) {
             throw new IllegalArgumentException("Jogo já está presente na biblioteca");
         }
-        itens.add(new ItemBiblioteca(modeloDeAcesso, jogoId));
-
+        ItemBiblioteca novoItem = new ItemBiblioteca(modeloDeAcesso, jogoId);
+        if (this.primeira == null) {
+            this.primeira = new Celula<>(novoItem);
+        } else {
+            Celula<ItemBiblioteca> atual = this.primeira;
+            while (atual.getProxima() != null) {
+                atual = atual.getProxima();
+            }
+            atual.setProxima(new Celula<>(novoItem));
+        }
     }
 
-    public void removerJogo(JogoId jogoId){
-        ItemBiblioteca item = buscarJogoEmBiblioteca(jogoId).orElse(null);
-        if(item == null){
+    public void removerJogo(JogoId jogoId) {
+        if (this.primeira == null) {
             throw new IllegalArgumentException("Jogo não está na biblioteca");
         }
 
-        itens.remove(item);
+        if (this.primeira.getConteudo().getJogoId().equals(jogoId)) {
+            this.primeira = this.primeira.getProxima();
+            return;
+        }
 
+        Celula<ItemBiblioteca> anterior = this.primeira;
+        Celula<ItemBiblioteca> atual = this.primeira.getProxima();
+
+        while (atual != null) {
+            if (atual.getConteudo().getJogoId().equals(jogoId)) {
+                anterior.setProxima(atual.getProxima());
+                return;
+            }
+            anterior = atual;
+            atual = atual.getProxima();
+        }
+
+        throw new IllegalArgumentException("Jogo não está na biblioteca");
     }
 
-    public void baixouJogo(ItemBiblioteca item){
-        if(!itens.contains(item)){
-            throw new IllegalStateException("Jogo não presente na  biblioteca");
+    public void baixouJogo(ItemBiblioteca item) {
+        if (buscarJogoEmBiblioteca(item.getJogoId()).isEmpty()) {
+            throw new IllegalStateException("Jogo não presente na biblioteca");
         }
         itensBaixados.add(item);
     }
 
     public List<ItemBiblioteca> getItens() {
-        return List.copyOf(itens);
+        List<ItemBiblioteca> lista = new ArrayList<>();
+        IteratorBiblioteca<ItemBiblioteca> iterator = criarIterator();
+        while (iterator.existeProximo()) {
+            lista.add(iterator.proximo());
+        }
+        return lista;
     }
 
     public List<ItemBiblioteca> getItensBaixados() {
