@@ -15,8 +15,22 @@ services:
     networks:
       - ludum-network
 
+  frontend:
+    image: oven/bun:latest
+    container_name: ludum-frontend
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+    ports:
+      - "5173:8080"
+    command: sh -c "bun install && bun run dev --host 0.0.0.0"
+    networks:
+      - ludum-network
+
 volumes:
   postgres_data:
+  frontend_node_modules:
 
 networks:
   ludum-network:
