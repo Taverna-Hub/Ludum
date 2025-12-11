@@ -28,7 +28,10 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ludum
       SPRING_DATASOURCE_USERNAME: ludum
       SPRING_DATASOURCE_PASSWORD: ludum
-    command: mvn -pl backend -am spring-boot:run -Dspring-boot.run.jvmArguments="-Dspring.datasource.url=jdbc:postgresql://postgres:5432/ludum"
+      SPRING_DEVTOOLS_RESTART_ENABLED: "true"
+      SPRING_DEVTOOLS_RESTART_POLL_INTERVAL: "2s"
+      SPRING_DEVTOOLS_RESTART_QUIET_PERIOD: "1s"
+    command: mvn -pl backend -am spring-boot:run -Dspring-boot.run.jvmArguments="-Dspring.devtools.restart.enabled=true"
     depends_on:
       - postgres
     networks:
