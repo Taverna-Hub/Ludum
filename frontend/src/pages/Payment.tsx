@@ -119,12 +119,12 @@ const Payment = () => {
 
       console.log(
         'Enviando para:',
-        `${apiUrl}/api/carteira/${contaId}/adicionar-saldo`,
+        `${apiUrl}/carteira/${contaId}/adicionar-saldo`,
       );
       console.log('Payload:', payload);
 
       const response = await fetch(
-        `${apiUrl}/api/carteira/${contaId}/adicionar-saldo`,
+        `${apiUrl}/carteira/${contaId}/adicionar-saldo`,
         {
           method: 'POST',
           headers: {

@@ -1,7 +1,17 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { 
-  Gamepad2, User, Wallet, ShoppingBag, Library, Heart, 
-  Code, Upload, Megaphone, LogOut, ChevronLeft, ChevronRight 
+import {
+  Gamepad2,
+  User,
+  Wallet,
+  ShoppingBag,
+  Library,
+  Heart,
+  Code,
+  Upload,
+  Megaphone,
+  LogOut,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuthContext } from '@/contexts/AuthContext';
@@ -25,7 +35,11 @@ export const DashboardSidebar = () => {
   const developerLinks = [
     { label: 'Painel Dev', href: '/painel/desenvolvedor', icon: Code },
     { label: 'Upload de Jogo', href: '/desenvolvedor/upload', icon: Upload },
-    { label: 'Criar Campanha', href: '/desenvolvedor/criar-campanha', icon: Megaphone },
+    {
+      label: 'Criar Campanha',
+      href: '/desenvolvedor/criar-campanha',
+      icon: Megaphone,
+    },
   ];
 
   const handleLogout = () => {
@@ -33,17 +47,25 @@ export const DashboardSidebar = () => {
     navigate('/');
   };
 
-  const NavLink = ({ href, icon: Icon, label }: { href: string; icon: React.ElementType; label: string }) => {
+  const NavLink = ({
+    href,
+    icon: Icon,
+    label,
+  }: {
+    href: string;
+    icon: React.ElementType;
+    label: string;
+  }) => {
     const isActive = location.pathname === href;
-    
+
     return (
       <Link
         to={href}
         className={cn(
           'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all',
-          isActive 
-            ? 'bg-primary/20 text-primary-glow' 
-            : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+          isActive
+            ? 'bg-primary/20 text-primary-glow'
+            : 'text-muted-foreground hover:text-foreground hover:bg-muted/50',
         )}
       >
         <Icon className="w-5 h-5 flex-shrink-0" />
@@ -56,7 +78,7 @@ export const DashboardSidebar = () => {
     <aside
       className={cn(
         'fixed left-0 top-0 h-full bg-card border-r border-border/50 flex flex-col transition-all duration-300 z-40',
-        collapsed ? 'w-16' : 'w-64'
+        collapsed ? 'w-16' : 'w-64',
       )}
     >
       {/* Header */}
@@ -90,7 +112,12 @@ export const DashboardSidebar = () => {
 
         {user?.accountType === 'developer' && (
           <>
-            <div className={cn('my-4 border-t border-border/50', collapsed && 'mx-2')} />
+            <div
+              className={cn(
+                'my-4 border-t border-border/50',
+                collapsed && 'mx-2',
+              )}
+            />
             {!collapsed && (
               <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
                 Desenvolvedor
@@ -111,13 +138,20 @@ export const DashboardSidebar = () => {
           onClick={() => setCollapsed(!collapsed)}
           className="w-full justify-center"
         >
-          {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+          {collapsed ? (
+            <ChevronRight className="w-4 h-4" />
+          ) : (
+            <ChevronLeft className="w-4 h-4" />
+          )}
         </Button>
         <Button
           variant="ghost"
           size="sm"
           onClick={handleLogout}
-          className={cn('w-full text-destructive hover:text-destructive hover:bg-destructive/10', collapsed ? 'justify-center' : 'justify-start')}
+          className={cn(
+            'w-full text-destructive hover:text-destructive hover:bg-destructive/10',
+            collapsed ? 'justify-center' : 'justify-start',
+          )}
         >
           <LogOut className="w-4 h-4" />
           {!collapsed && <span className="ml-2">Sair</span>}
