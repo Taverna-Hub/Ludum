@@ -6,6 +6,7 @@ import okhttp3.*;
 import org.ludum.dominio.financeiro.carteira.CarteiraRepository;
 import org.ludum.dominio.financeiro.carteira.ProcessadorPagamentoExterno;
 import org.ludum.dominio.financeiro.carteira.entidades.Carteira;
+import org.ludum.dominio.financeiro.transacao.TransacaoRepository;
 import org.ludum.dominio.identidade.conta.entities.ContaId;
 
 import java.io.IOException;
@@ -21,17 +22,31 @@ public class AsaasProcessadorPagamento extends ProcessadorPagamentoExterno {
   private final Gson gson;
   private final CarteiraRepository carteiraRepository;
 
-  // ThreadLocal para armazenar o customerId durante a transação
   private final ThreadLocal<String> currentCustomerId = new ThreadLocal<>();
 
   private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
 
-  public AsaasProcessadorPagamento(String apiKey, CarteiraRepository carteiraRepository) {
+  public AsaasProcessadorPagamento(String apiKey, CarteiraRepository carteiraRepository,
+      TransacaoRepository transacaoRepository) {
+    super(transacaoRepository);
     this.apiKey = apiKey;
     this.apiUrl = "https://sandbox.asaas.com/api/v3";
     this.httpClient = new OkHttpClient();
     this.gson = new Gson();
     this.carteiraRepository = carteiraRepository;
+  }
+
+  @Override
+  protected void registrarResultado(String transacaoId, String idGateway, boolean sucesso,
+      ContaId contaId, BigDecimal valor) {
+    super.registrarResultado(transacaoId, idGateway, sucesso, contaId, valor);
+
+    System.out.println(String.format(
+        "[Asaas] Pagamento %s - Transação: %s, Gateway ID: %s, Valor: R$ %s",
+        sucesso ? "SUCESSO" : "FALHA",
+        transacaoId,
+        idGateway != null ? idGateway : "N/A",
+        valor));
   }
 
   @Override
@@ -63,7 +78,6 @@ public class AsaasProcessadorPagamento extends ProcessadorPagamentoExterno {
   protected Object prepararDadosGateway(ContaId contaId, BigDecimal valor, String moeda, String descricao) {
     Map<String, Object> paymentData = new HashMap<>();
 
-    // Usar o customerId definido ou o contaId como fallback
     String customerId = currentCustomerId.get();
     if (customerId == null || customerId.isBlank()) {
       customerId = contaId.getValue();

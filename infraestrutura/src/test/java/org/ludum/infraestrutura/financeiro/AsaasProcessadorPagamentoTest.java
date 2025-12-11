@@ -6,11 +6,17 @@ import org.ludum.dominio.financeiro.carteira.CarteiraRepository;
 import org.ludum.dominio.financeiro.carteira.ProcessadorPagamentoExterno.ResultadoPagamento;
 import org.ludum.dominio.financeiro.carteira.entidades.Carteira;
 import org.ludum.dominio.financeiro.carteira.entidades.Saldo;
+import org.ludum.dominio.financeiro.transacao.TransacaoRepository;
+import org.ludum.dominio.financeiro.transacao.entidades.Recibo;
+import org.ludum.dominio.financeiro.transacao.entidades.Transacao;
+import org.ludum.dominio.financeiro.transacao.entidades.TransacaoId;
 import org.ludum.dominio.identidade.conta.entities.ContaId;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -20,6 +26,40 @@ class AsaasProcessadorPagamentoTest {
   private AsaasProcessadorPagamento processador;
   private static String API_KEY;
   private CarteiraRepository mockCarteiraRepository;
+  private MockTransacaoRepository mockTransacaoRepository;
+
+  // Mock do TransacaoRepository para capturar as transações salvas
+  private static class MockTransacaoRepository implements TransacaoRepository {
+    private List<Transacao> transacoes = new ArrayList<>();
+    private List<Recibo> recibos = new ArrayList<>();
+
+    @Override
+    public Transacao obterPorId(TransacaoId id) {
+      return transacoes.stream()
+          .filter(t -> t.getTransacaoId().equals(id))
+          .findFirst()
+          .orElse(null);
+    }
+
+    @Override
+    public void salvarRecibo(Recibo recibo) {
+      recibos.add(recibo);
+    }
+
+    @Override
+    public void salvar(Transacao transacao) {
+      transacoes.add(transacao);
+    }
+
+    public List<Transacao> getTransacoes() {
+      return new ArrayList<>(transacoes);
+    }
+
+    public void clear() {
+      transacoes.clear();
+      recibos.clear();
+    }
+  }
 
   @BeforeEach
   void setUp() {
@@ -55,7 +95,9 @@ class AsaasProcessadorPagamentoTest {
       }
     };
 
-    processador = new AsaasProcessadorPagamento(API_KEY, mockCarteiraRepository);
+    mockTransacaoRepository = new MockTransacaoRepository();
+
+    processador = new AsaasProcessadorPagamento(API_KEY, mockCarteiraRepository, mockTransacaoRepository);
   }
 
   @Test

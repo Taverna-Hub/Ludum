@@ -1,4 +1,4 @@
-package org.ludum.aplicacao.financeiro.dto;
+package org.ludum.backend.apresentacao.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -6,7 +6,6 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 
-// TODO: change cvv to cvc
 public class AdicionarSaldoRequest {
 
   @NotNull(message = "Valor é obrigatório")
@@ -28,9 +27,9 @@ public class AdicionarSaldoRequest {
   @Pattern(regexp = "\\d{2}", message = "Ano deve conter 2 dígitos")
   private String anoValidade;
 
-  @NotBlank(message = "CVV é obrigatório")
-  @Pattern(regexp = "\\d{3}", message = "CVV deve conter 3 dígitos")
-  private String cvv;
+  @NotBlank(message = "CVC é obrigatório")
+  @Pattern(regexp = "\\d{3}", message = "CVC deve conter 3 dígitos")
+  private String cvc;
 
   @NotBlank(message = "CPF/CNPJ é obrigatório")
   @Pattern(regexp = "\\d{11}|\\d{14}", message = "CPF deve ter 11 dígitos ou CNPJ 14 dígitos")
@@ -91,12 +90,12 @@ public class AdicionarSaldoRequest {
     this.anoValidade = anoValidade;
   }
 
-  public String getCvv() {
-    return cvv;
+  public String getCvc() {
+    return cvc;
   }
 
-  public void setCvv(String cvv) {
-    this.cvv = cvv;
+  public void setCvc(String cvc) {
+    this.cvc = cvc;
   }
 
   public String getCpfCnpj() {

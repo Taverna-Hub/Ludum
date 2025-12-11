@@ -1,4 +1,4 @@
-package org.ludum.aplicacao.financeiro.exception;
+package org.ludum.backend.apresentacao.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

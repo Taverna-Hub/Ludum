@@ -15,6 +15,25 @@ services:
     networks:
       - ludum-network
 
+  backend:
+    image: maven:3.9-eclipse-temurin-21
+    container_name: ludum-backend
+    working_dir: /app
+    volumes:
+      - ./:/app
+      - maven_repo:/root/.m2
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ludum
+      SPRING_DATASOURCE_USERNAME: ludum
+      SPRING_DATASOURCE_PASSWORD: ludum
+    command: mvn -pl backend -am spring-boot:run -Dspring-boot.run.jvmArguments="-Dspring.datasource.url=jdbc:postgresql://postgres:5432/ludum"
+    depends_on:
+      - postgres
+    networks:
+      - ludum-network
+
   frontend:
     image: oven/bun:latest
     container_name: ludum-frontend
@@ -25,12 +44,15 @@ services:
     ports:
       - "5173:8080"
     command: sh -c "bun install && bun run dev --host 0.0.0.0"
+    depends_on:
+      - backend
     networks:
       - ludum-network
 
 volumes:
   postgres_data:
   frontend_node_modules:
+  maven_repo:
 
 networks:
   ludum-network:

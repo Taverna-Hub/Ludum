@@ -1,4 +1,4 @@
-package org.ludum.aplicacao.financeiro.dto;
+package org.ludum.backend.apresentacao.dto;
 
 import java.math.BigDecimal;
 

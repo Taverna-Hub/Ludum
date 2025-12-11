@@ -1,4 +1,4 @@
-package org.ludum.aplicacao.financeiro.controller;
+package org.ludum.backend.apresentacao.controllers;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/pagamento")
+@RequestMapping("/pagamento")
 public class PagamentoController {
 
   @GetMapping("/status/{transacaoId}")
