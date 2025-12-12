@@ -15,9 +15,11 @@ public class Mod {
     private final String id;
     private final JogoId jogoId;
     private final ContaId autorId;
+
     private String nome;
     private String descricao;
     private StatusMod status;
+
     private final List<VersaoMod> versoes;
 
     public Mod(JogoId jogoId, ContaId autorId, String nome, String descricao) {
@@ -28,6 +30,20 @@ public class Mod {
         this.descricao = Objects.requireNonNull(descricao, "A descrição não pode ser nula.");
         this.status = StatusMod.ATIVO;
         this.versoes = new ArrayList<>();
+    }
+
+    public Mod(
+        String id, JogoId jogoId, ContaId autorId,
+        String nome, String descricao, StatusMod status,
+        List<VersaoMod> versoes
+    ) {
+        this.id = Objects.requireNonNull(id);
+        this.jogoId = Objects.requireNonNull(jogoId);
+        this.autorId = Objects.requireNonNull(autorId);
+        this.nome = Objects.requireNonNull(nome);
+        this.descricao = Objects.requireNonNull(descricao);
+        this.status = Objects.requireNonNull(status);
+        this.versoes = new ArrayList<>(Objects.requireNonNull(versoes));
     }
 
     public void adicionarNovaVersao(String notas, byte[] arquivo) {

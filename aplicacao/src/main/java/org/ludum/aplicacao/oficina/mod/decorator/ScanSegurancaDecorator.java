@@ -1,25 +1,32 @@
 package org.ludum.aplicacao.oficina.mod.decorator;
 
 import java.util.List;
-import java.util.Objects;
 
 import org.ludum.aplicacao.oficina.mod.ModResumo;
 import org.ludum.aplicacao.oficina.mod.ModServicoAplicacao;
-import org.ludum.aplicacao.oficina.mod.porta.MalwareScanner;
+import org.ludum.aplicacao.oficina.mod.porta.ModMalwareScanner;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Primary;
+import org.springframework.stereotype.Service;
 
+@Service
+@Primary
 public class ScanSegurancaDecorator implements ModServicoAplicacao {
 
     private final ModServicoAplicacao decorado;
-    private final MalwareScanner scanner;
+    private final ModMalwareScanner scanner;
 
-    public ScanSegurancaDecorator(ModServicoAplicacao decorado, MalwareScanner scanner) {
-        this.decorado = Objects.requireNonNull(decorado, "O serviço decorado não pode ser nulo.");
-        this.scanner = Objects.requireNonNull(scanner, "O scanner não pode ser nulo.");
+    public ScanSegurancaDecorator(
+        @Qualifier("modServicoAplicacaoBase") ModServicoAplicacao decorado, 
+        ModMalwareScanner scanner
+    ) {
+        this.decorado = decorado;
+        this.scanner = scanner;
     }
 
     @Override
     public void publicarNovoMod(String jogoId, String autorId, String nome, String descricao, String notas, byte[] arquivo) {
-        validarArquivo(arquivo); // Validação Centralizada
+        validarArquivo(arquivo);
         decorado.publicarNovoMod(jogoId, autorId, nome, descricao, notas, arquivo);
     }
 

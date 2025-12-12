@@ -15,6 +15,12 @@ public class VersaoMod {
         this.dataDeEnvio = LocalDateTime.now();
     }
 
+    public VersaoMod(String notasDeAtualizacao, byte[] arquivo, LocalDateTime dataDeEnvio) {
+        this.notasDeAtualizacao = Objects.requireNonNull(notasDeAtualizacao);
+        this.arquivo = Objects.requireNonNull(arquivo);
+        this.dataDeEnvio = Objects.requireNonNull(dataDeEnvio);
+    }
+
     public String getNotasDeAtualizacao() {
         return notasDeAtualizacao;
     }

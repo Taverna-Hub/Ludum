@@ -22,10 +22,11 @@ import org.ludum.dominio.comunidade.post.entidades.Comentario;
 import org.ludum.dominio.comunidade.post.entidades.ComentarioId;
 import org.ludum.dominio.identidade.seguimento.entities.Seguimento;
 import org.ludum.dominio.identidade.seguimento.entities.SeguimentoId;
+import org.ludum.infraestrutura.config.AsaasConfig;
 import org.ludum.dominio.identidade.seguimento.entities.AlvoId;
 import org.ludum.dominio.catalogo.biblioteca.entidades.Biblioteca;
 import org.ludum.dominio.catalogo.biblioteca.entidades.ItemBiblioteca;
-import org.ludum.dominio.catalogo.biblioteca.estruturas.IteratorBiblioteca;
+import org.ludum.dominio.catalogo.biblioteca.estruturas.IteratorBiblioteca; 
 
 import org.modelmapper.AbstractConverter;
 import org.modelmapper.ModelMapper;
@@ -37,6 +38,10 @@ import java.net.URI;
 import java.net.URL;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import org.ludum.dominio.oficina.mod.entidades.Mod;
+import org.ludum.dominio.oficina.mod.entidades.VersaoMod;
+import org.ludum.dominio.oficina.mod.enums.StatusMod;
 
 @Component
 public class JpaMapeador extends ModelMapper {
@@ -418,6 +423,57 @@ public class JpaMapeador extends ModelMapper {
       }
     });
 
+    addConverter(new AbstractConverter<ModJpa, Mod>() {
+      @Override
+      protected Mod convert(ModJpa source) {
+        try {
+          List<VersaoMod> versoes = source.versoes.stream()
+              .map(v -> new VersaoMod(
+                v.getNotasDeAtualizacao(),
+                v.getArquivo(),
+                v.getDataDeEnvio()))
+              .collect(Collectors.toList());
+          
+          return new Mod(
+            source.getId(),
+            new JogoId(source.getJogoId()),
+            new ContaId(source.getAutorId()),
+            source.getNome(),
+            source.getDescricao(),
+            StatusMod.valueOf(source.getStatus()),
+            versoes
+          );
+        } catch (Exception e) {
+          throw new RuntimeException("Erro ao converter ModJpa para Mod", e);
+        }
+      }
+    });
+
+    addConverter(new AbstractConverter<Mod, ModJpa>() {
+      @Override
+      protected ModJpa convert(Mod source) {
+        try {
+          ModJpa jpa = new ModJpa();
+          jpa.id = source.getId();
+          jpa.jogoId = source.getJogoId().getValue();
+          jpa.autorId = source.getAutorId().getValue();
+          jpa.nome = source.getNome();
+          jpa.descricao = source.getDescricao();
+          jpa.status = source.getStatus().name();
+
+          jpa.versoes = source.getVersoes().stream()
+              .map(v -> new VersaoModJpa(
+                v.getNotasDeAtualizacao(),
+                v.getArquivo(),
+                v.getDataDeEnvio()))
+              .collect(Collectors.toList());
+          
+          return jpa;
+        } catch (Exception e) {
+          throw new RuntimeException("Erro ao converter Mod para ModJpa", e);
+        }
+      }
+    });
   }
 
   @Override

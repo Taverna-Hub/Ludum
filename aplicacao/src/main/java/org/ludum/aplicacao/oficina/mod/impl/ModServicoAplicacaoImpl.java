@@ -9,7 +9,9 @@ import org.ludum.aplicacao.oficina.mod.ModServicoAplicacao;
 import org.ludum.dominio.catalogo.jogo.entidades.JogoId;
 import org.ludum.dominio.identidade.conta.entities.ContaId;
 import org.ludum.dominio.oficina.mod.services.ModsService;
+import org.springframework.stereotype.Service;
 
+@Service("modServicoAplicacaoBase")
 public class ModServicoAplicacaoImpl implements ModServicoAplicacao {
     
     private final ModRepositorioAplicacao repositorioAplicacao;
