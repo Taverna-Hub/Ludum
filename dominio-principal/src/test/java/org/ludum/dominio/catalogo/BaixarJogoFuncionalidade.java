@@ -196,7 +196,7 @@ public class BaixarJogoFuncionalidade {
 
         this.transacaoRepository
                 .salvar(new Transacao(this.transacaoId, this.contaId, new ContaId(UUID.randomUUID().toString()),
-                        TipoTransacao.PIX, StatusTransacao.CONFIRMADA, LocalDateTime.now(), BigDecimal.valueOf(10000)));
+                        TipoTransacao.CREDITO, StatusTransacao.CONFIRMADA, LocalDateTime.now(), BigDecimal.valueOf(10000)));
     }
 
     @Given("que eu sou um usuário com uma conta no status {string}")

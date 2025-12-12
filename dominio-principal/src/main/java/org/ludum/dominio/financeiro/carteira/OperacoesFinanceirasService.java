@@ -111,6 +111,10 @@ public class OperacoesFinanceirasService {
             carteiraSaida.getSaldo().subtrairDisponivel(valor);
             carteiraEntrada.getSaldo().addBloqueado(valor);
 
+            // Salvar carteiras atualizadas
+            carteiraRepository.salvar(carteiraSaida);
+            carteiraRepository.salvar(carteiraEntrada);
+
             Transacao transacaoDebito = new Transacao(null, carteiraSaida.getId(), carteiraEntrada.getId(),
                     TipoTransacao.DEBITO, StatusTransacao.CONFIRMADA, LocalDateTime.now(), valor);
             transacaoRepository.salvar(transacaoDebito);

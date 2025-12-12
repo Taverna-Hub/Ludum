@@ -100,8 +100,6 @@ const Wallet = () => {
         return <ArrowDownToLine className="w-5 h-5 text-primary" />;
       case 'DEBITO':
         return <TrendingDown className="w-5 h-5 text-destructive" />;
-      case 'PIX':
-        return <TrendingUp className="w-5 h-5 text-secondary" />;
       default:
         return <DollarSign className="w-5 h-5" />;
     }

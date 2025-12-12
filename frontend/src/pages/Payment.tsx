@@ -4,14 +4,11 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   CreditCard,
-  QrCode,
   ArrowLeft,
   Lock,
   CheckCircle,
-  Copy,
   User,
 } from 'lucide-react';
 import { DashboardLayout } from '@/layouts/DashboardLayout';
@@ -22,9 +19,9 @@ const Payment = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const amount = parseFloat(searchParams.get('amount') || '0');
+  const returnTo = searchParams.get('returnTo');
   const { user } = useAuthContext();
 
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'pix'>('pix');
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentCompleted, setPaymentCompleted] = useState(false);
 
@@ -59,14 +56,6 @@ const Payment = () => {
       }));
     }
   }, [user]);
-
-  const pixCode = 'ludum_' + Math.random().toString(36).substring(7);
-  const pixQRCode = `00020126580014br.gov.bcb.pix0136${pixCode}5204000053039865802BR5913Ludum Games6008Sao Paulo62070503***6304`;
-
-  const handleCopyPix = () => {
-    navigator.clipboard.writeText(pixQRCode);
-    toast.success('Código PIX copiado!');
-  };
 
   const formatCardNumber = (value: string) => {
     return value
@@ -183,17 +172,6 @@ const Payment = () => {
     }
   };
 
-  const handlePixConfirm = async () => {
-    setIsProcessing(true);
-
-    // Simulate PIX verification
-    await new Promise((resolve) => setTimeout(resolve, 3000));
-
-    setIsProcessing(false);
-    setPaymentCompleted(true);
-    toast.success('Pagamento PIX confirmado!');
-  };
-
   if (!amount || amount <= 0) {
     return (
       <DashboardLayout>
@@ -226,9 +204,19 @@ const Payment = () => {
               {amount > 100 &&
                 ' O valor ficará bloqueado por 24h (trava antifraude).'}
             </p>
-            <Button onClick={() => navigate('/painel/carteira')}>
-              Voltar para Carteira
-            </Button>
+            <div className="flex flex-col gap-2">
+              {returnTo && (
+                <Button onClick={() => navigate(returnTo)} variant="default">
+                  Continuar com a compra
+                </Button>
+              )}
+              <Button 
+                onClick={() => navigate('/painel/carteira')} 
+                variant={returnTo ? "outline" : "default"}
+              >
+                Voltar para Carteira
+              </Button>
+            </div>
           </Card>
         </div>
       </DashboardLayout>
@@ -262,100 +250,8 @@ const Payment = () => {
         </div>
 
         <div className="max-w-2xl">
-          {/* Payment Method Selection */}
-          <Card className="p-6 bg-card/50 backdrop-blur-sm border-border/50 mb-6">
-            <h2 className="font-bold text-lg mb-4">Forma de Pagamento</h2>
-            <RadioGroup
-              value={paymentMethod}
-              onValueChange={(v) => setPaymentMethod(v as 'card' | 'pix')}
-              className="grid grid-cols-2 gap-4"
-            >
-              <Label
-                htmlFor="pix"
-                className={`flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition-all ${
-                  paymentMethod === 'pix'
-                    ? 'border-primary bg-primary/10'
-                    : 'border-border hover:border-primary/50'
-                }`}
-              >
-                <RadioGroupItem value="pix" id="pix" />
-                <QrCode className="w-6 h-6 text-secondary" />
-                <div>
-                  <p className="font-medium">PIX</p>
-                  <p className="text-xs text-muted-foreground">
-                    Aprovação instantânea
-                  </p>
-                </div>
-              </Label>
-
-              <Label
-                htmlFor="card"
-                className={`flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition-all ${
-                  paymentMethod === 'card'
-                    ? 'border-primary bg-primary/10'
-                    : 'border-border hover:border-primary/50'
-                }`}
-              >
-                <RadioGroupItem value="card" id="card" />
-                <CreditCard className="w-6 h-6 text-primary" />
-                <div>
-                  <p className="font-medium">Cartão</p>
-                  <p className="text-xs text-muted-foreground">
-                    Crédito ou Débito
-                  </p>
-                </div>
-              </Label>
-            </RadioGroup>
-          </Card>
-
-          {/* Payment Form */}
-          {paymentMethod === 'pix' ? (
-            <Card className="p-6 bg-card/50 backdrop-blur-sm border-border/50">
-              <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
-                <QrCode className="w-5 h-5 text-secondary" />
-                Pague com PIX
-              </h2>
-
-              {/* QR Code Placeholder */}
-              <div className="flex flex-col items-center py-8">
-                <div className="w-48 h-48 bg-foreground rounded-lg flex items-center justify-center mb-4">
-                  <div className="w-44 h-44 bg-background flex items-center justify-center">
-                    <QrCode className="w-32 h-32 text-muted-foreground" />
-                  </div>
-                </div>
-                <p className="text-sm text-muted-foreground mb-4 text-center">
-                  Escaneie o QR Code ou copie o código abaixo
-                </p>
-
-                {/* PIX Code */}
-                <div className="w-full max-w-md">
-                  <div className="flex gap-2">
-                    <Input
-                      value={pixQRCode}
-                      readOnly
-                      className="font-mono text-xs"
-                    />
-                    <Button variant="outline" onClick={handleCopyPix}>
-                      <Copy className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-
-                <p className="text-xs text-muted-foreground mt-4">
-                  O código expira em 30 minutos
-                </p>
-              </div>
-
-              <Button
-                className="w-full"
-                onClick={handlePixConfirm}
-                disabled={isProcessing}
-              >
-                {isProcessing ? 'Verificando pagamento...' : 'Já paguei'}
-              </Button>
-            </Card>
-          ) : (
-            <Card className="p-6 bg-card/50 backdrop-blur-sm border-border/50">
+          {/* Payment Form - Cartão de Crédito */}
+          <Card className="p-6 bg-card/50 backdrop-blur-sm border-border/50">
               <form onSubmit={handleCardSubmit} className="space-y-6">
                 {/* Dados do Cliente (Comprador) */}
                 <div className="space-y-4">
@@ -620,7 +516,6 @@ const Payment = () => {
                 </Button>
               </form>
             </Card>
-          )}
         </div>
       </div>
     </DashboardLayout>

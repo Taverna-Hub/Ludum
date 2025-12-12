@@ -296,7 +296,7 @@ Repository CarteiraRepository {
 	ValueObject ReciboId { String id }
   ValueObject TransacaoId { String id }
 
-	 enum TipoTransacao { CREDITO, DEBITO, SAQUE, PIX }
+	 enum TipoTransacao { CREDITO, DEBITO, SAQUE }
    enum StatusTransacao { PENDENTE, CONFIRMADA, CANCELADA }
 
     }

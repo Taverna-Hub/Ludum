@@ -7,6 +7,7 @@ import org.ludum.dominio.financeiro.carteira.CarteiraRepository;
 import org.ludum.dominio.financeiro.carteira.ProcessadorPagamentoExterno;
 import org.ludum.dominio.financeiro.carteira.entidades.Carteira;
 import org.ludum.dominio.financeiro.transacao.TransacaoRepository;
+import org.ludum.dominio.financeiro.transacao.entidades.Transacao;
 import org.ludum.dominio.identidade.conta.entities.ContaId;
 
 import java.io.IOException;
@@ -37,16 +38,18 @@ public class AsaasProcessadorPagamento extends ProcessadorPagamentoExterno {
   }
 
   @Override
-  protected void registrarResultado(String transacaoId, String idGateway, boolean sucesso,
+  protected Transacao registrarResultado(String idGateway, boolean sucesso,
       ContaId contaId, BigDecimal valor) {
-    super.registrarResultado(transacaoId, idGateway, sucesso, contaId, valor);
+    Transacao transacao = super.registrarResultado(idGateway, sucesso, contaId, valor);
 
     System.out.println(String.format(
         "[Asaas] Pagamento %s - Transação: %s, Gateway ID: %s, Valor: R$ %s",
         sucesso ? "SUCESSO" : "FALHA",
-        transacaoId,
+        transacao.getTransacaoId().getValue(),
         idGateway != null ? idGateway : "N/A",
         valor));
+    
+    return transacao;
   }
 
   @Override
@@ -88,11 +91,7 @@ public class AsaasProcessadorPagamento extends ProcessadorPagamentoExterno {
     paymentData.put("description", descricao != null ? descricao : "Adicionar saldo Ludum");
     paymentData.put("dueDate", java.time.LocalDate.now().plusDays(7).toString());
 
-    paymentData.put("billingType", "UNDEFINED");
-
-    Map<String, Object> pixConfig = new HashMap<>();
-    pixConfig.put("expirationDate", java.time.LocalDate.now().plusDays(1).toString());
-    paymentData.put("pix", pixConfig);
+    paymentData.put("billingType", "CREDIT_CARD");
 
     paymentData.put("externalReference", contaId.getValue());
 
