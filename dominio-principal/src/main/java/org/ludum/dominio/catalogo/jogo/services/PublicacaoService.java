@@ -45,115 +45,86 @@ public class PublicacaoService {
         }
     }
 
-    public ResultadoPublicacao publicarJogoComStrategy(ContaId devId, JogoId jogoId) {
+    public Jogo publicarJogo(ContaId devId, String titulo, String descricao, 
+                            java.net.URL capaOficial, List<org.ludum.dominio.catalogo.tag.entidades.Tag> tags,
+                            List<java.net.URL> screenshots, List<java.net.URL> videos,
+                            boolean isNSFW, java.time.LocalDate dataDeLancamento) {
+        
         Objects.requireNonNull(devId, "ContaId não pode ser nulo");
-        Objects.requireNonNull(jogoId, "JogoId não pode ser nulo");
+        Objects.requireNonNull(titulo, "Título não pode ser nulo");
+        Objects.requireNonNull(descricao, "Descrição não pode ser nula");
 
         Conta conta = contaRepository.obterPorId(devId);
         if (conta == null) {
-            return ResultadoPublicacao.erro("Conta não encontrada: " + devId);
+            throw new IllegalArgumentException("Conta não encontrada: " + devId);
         }
 
         if (conta.getTipo() != TipoConta.DESENVOLVEDORA) {
-            return ResultadoPublicacao.erro(
+            throw new IllegalStateException(
                 "Apenas contas de desenvolvedores podem publicar jogos. Tipo atual: " + conta.getTipo()
             );
         }
 
         if (conta.getStatus() != StatusConta.ATIVA) {
-            return ResultadoPublicacao.erro(
+            throw new IllegalStateException(
                 "Apenas contas ativas podem publicar jogos. Status atual: " + conta.getStatus()
             );
         }
 
-        Jogo jogo = jogoRepository.obterPorId(jogoId);
-        if (jogo == null) {
-            return ResultadoPublicacao.erro("Jogo não encontrado: " + jogoId);
-        }
-
-        if (!jogo.getDesenvolvedoraId().equals(devId)) {
-            return ResultadoPublicacao.erro(
-                "Apenas o desenvolvedor dono pode publicar o jogo. " +
-                "Jogo pertence a: " + jogo.getDesenvolvedoraId() +
-                ", tentativa de: " + devId
-            );
-        }
-
-        StatusPublicacao statusAnterior = jogo.getStatus();
-        EstrategiaPublicacao estrategia = estrategias.get(statusAnterior);
+        // Gerar ID do jogo
+        JogoId jogoId = new JogoId(java.util.UUID.randomUUID().toString());
         
-        if (estrategia == null) {
-            return ResultadoPublicacao.erro(
-                "Não há estratégia de publicação definida para o status: " + statusAnterior
-            );
-        }
+        // Criar jogo com status inicial EM_UPLOAD
+        Jogo jogo = new Jogo(
+            jogoId,
+            devId,
+            titulo,
+            descricao,
+            capaOficial,
+            tags,
+            isNSFW,
+            dataDeLancamento
+        );
         
-        List<String> erros = estrategia.validar(jogo);
-        if (!erros.isEmpty()) {
-            return ResultadoPublicacao.comErros(erros);
-        }
-        
-        estrategia.executar(jogo);
-        
-        jogoRepository.salvar(jogo);
-        
-        String mensagem = obterMensagemSucesso(statusAnterior, jogo.getStatus());
-        return ResultadoPublicacao.sucesso(mensagem);
-    }
-    
-    public ResultadoPublicacao validarPublicacao(JogoId jogoId) {
-        Objects.requireNonNull(jogoId, "JogoId não pode ser nulo");
-        
-        Jogo jogo = jogoRepository.obterPorId(jogoId);
-        if (jogo == null) {
-            return ResultadoPublicacao.erro("Jogo não encontrado: " + jogoId);
-        }
-        
-        StatusPublicacao status = jogo.getStatus();
-        EstrategiaPublicacao estrategia = estrategias.get(status);
-        
-        if (estrategia == null) {
-            return ResultadoPublicacao.erro("Status inválido para validação: " + status);
-        }
-        
-        List<String> erros = estrategia.validar(jogo);
-        if (!erros.isEmpty()) {
-            return ResultadoPublicacao.comErros(erros);
-        }
-        
-        return ResultadoPublicacao.sucesso("Jogo válido para publicação");
-    }
-    
-    private String obterMensagemSucesso(StatusPublicacao statusAnterior, StatusPublicacao statusNovo) {
-        if (statusAnterior == StatusPublicacao.EM_UPLOAD && 
-            statusNovo == StatusPublicacao.AGUARDANDO_VALIDACAO) {
-            return "Jogo enviado para validação com sucesso";
-        }
-        
-        if (statusAnterior == StatusPublicacao.AGUARDANDO_VALIDACAO && 
-            statusNovo == StatusPublicacao.PUBLICADO) {
-            return "Jogo publicado com sucesso na plataforma";
-        }
-        
-        return "Operação realizada com sucesso";
-    }
-
-    public void publicarJogo(ContaId devId, JogoId jogoId) {
-        ResultadoPublicacao resultado = publicarJogoComStrategy(devId, jogoId);
-        
-        if (resultado.isFalha()) {
-            // Lança exceção para manter compatibilidade com código legado
-            if (!resultado.getErros().isEmpty()) {
-                throw new IllegalStateException(
-                    "Não foi possível publicar o jogo: " + String.join(", ", resultado.getErros())
-                );
-            } else {
-                throw new IllegalStateException(resultado.getMensagem());
+        // Adicionar screenshots
+        if (screenshots != null) {
+            for (java.net.URL screenshot : screenshots) {
+                jogo.adicionarScreenshot(screenshot);
             }
         }
         
-        // TODO: Notificar seguidores da desenvolvedora sobre novo jogo
-        // notificacaoService.notificarNovoJogo(jogo);
+        // Adicionar vídeos
+        if (videos != null) {
+            for (java.net.URL video : videos) {
+                jogo.adicionarVideo(video);
+            }
+        }
+
+        // Pegar estratégia do status atual (EM_UPLOAD)
+        StatusPublicacao statusAtual = jogo.getStatus();
+        EstrategiaPublicacao estrategia = estrategias.get(statusAtual);
+        
+        if (estrategia == null) {
+            throw new IllegalStateException(
+                "Não há estratégia de publicação definida para o status: " + statusAtual
+            );
+        }
+        
+        // Validar regras de negócio
+        List<String> erros = estrategia.validar(jogo);
+        if (!erros.isEmpty()) {
+            throw new IllegalStateException(
+                "Não foi possível publicar o jogo: " + String.join(", ", erros)
+            );
+        }
+        
+        // Executar transição de estado (EM_UPLOAD → AGUARDANDO_VALIDACAO)
+        estrategia.executar(jogo);
+        
+        // Salvar no banco
+        jogoRepository.salvar(jogo);
+        
+        return jogo;
     }
 
     public void rejeitarJogo(JogoId jogoId, String motivo) {
@@ -169,18 +140,26 @@ public class PublicacaoService {
             throw new IllegalArgumentException("Jogo não encontrado: " + jogoId);
         }
 
-        if (jogo.getStatus() != StatusPublicacao.AGUARDANDO_VALIDACAO) {
+        // Usa a strategy de AGUARDANDO_VALIDACAO para rejeitar
+        EstrategiaPublicacao estrategia = estrategias.get(StatusPublicacao.AGUARDANDO_VALIDACAO);
+        
+        if (estrategia == null) {
             throw new IllegalStateException(
-                "Apenas jogos aguardando validação podem ser rejeitados. " +
-                "Status atual: " + jogo.getStatus()
+                "Estratégia de rejeição não encontrada"
             );
         }
-
-        jogo.rejeitar();
+        
+        List<String> erros = estrategia.validar(jogo);
+        if (!erros.isEmpty()) {
+            throw new IllegalStateException(
+                "Não foi possível rejeitar o jogo: " + String.join(", ", erros)
+            );
+        }
+        
+        estrategia.executar(jogo);
         jogoRepository.salvar(jogo);
-
+        
         // TODO: Notificar desenvolvedor sobre rejeição com motivo
-        // notificacaoService.notificarRejeicao(jogo, motivo);
     }
 
     public void arquivarJogo(ContaId devId, JogoId jogoId) {
@@ -198,13 +177,24 @@ public class PublicacaoService {
             );
         }
 
-        if (jogo.getStatus() == StatusPublicacao.ARQUIVADO) {
+        // Usa a strategy de PUBLICADO para arquivar
+        EstrategiaPublicacao estrategia = estrategias.get(StatusPublicacao.PUBLICADO);
+        
+        if (estrategia == null) {
             throw new IllegalStateException(
-                "Jogo já está arquivado"
+                "Estratégia de arquivamento não encontrada"
             );
         }
-
-        jogo.arquivar();
+        
+        List<String> erros = estrategia.validar(jogo);
+        if (!erros.isEmpty()) {
+            throw new IllegalStateException(
+                "Não foi possível arquivar o jogo: " + String.join(", ", erros)
+            );
+        }
+        
+        estrategia.executar(jogo);
         jogoRepository.salvar(jogo);
     }
+    
 }
