@@ -2,6 +2,7 @@ package org.ludum.backend.apresentacao.controllers;
 
 import org.ludum.aplicacao.catalogo.PublicarJogoUseCase;
 import org.ludum.dominio.catalogo.jogo.entidades.JogoId;
+import org.ludum.dominio.catalogo.jogo.services.PublicacaoService;
 import org.ludum.dominio.catalogo.jogo.services.ResultadoPublicacao;
 import org.ludum.dominio.identidade.conta.entities.ContaId;
 import org.springframework.http.ResponseEntity;
@@ -13,12 +14,12 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/jogos")
-public class JogoController {
+public class PublicacaoController {
     
-    private final PublicarJogoUseCase publicarJogoUseCase;
+    private final PublicacaoService publicacaoService;
     
-    public JogoController(PublicarJogoUseCase publicarJogoUseCase) {
-        this.publicarJogoUseCase = publicarJogoUseCase;
+    public PublicacaoController(PublicacaoService publicacaoService) {
+        this.publicacaoService = publicacaoService;
     }
     
     @PostMapping("/{id}/publicar")
@@ -27,7 +28,7 @@ public class JogoController {
         ContaId devId = new ContaId("dev-mock-id");
         JogoId jogoId = new JogoId(id);
         
-        ResultadoPublicacao resultado = publicarJogoUseCase.executar(devId, jogoId);
+        ResultadoPublicacao resultado = publicacaoService.executar(devId, jogoId);
         
         Map<String, Object> response = new HashMap<>();
         response.put("sucesso", resultado.isSucesso());
@@ -44,7 +45,7 @@ public class JogoController {
     @GetMapping("/{id}/validar-publicacao")
     public ResponseEntity<Map<String, Object>> validarPublicacao(@PathVariable String id) {
         JogoId jogoId = new JogoId(id);
-        ResultadoPublicacao resultado = publicarJogoUseCase.validar(jogoId);
+        ResultadoPublicacao resultado = publicacaoService.validar(jogoId);
         
         Map<String, Object> response = new HashMap<>();
         response.put("valido", resultado.isSucesso());
