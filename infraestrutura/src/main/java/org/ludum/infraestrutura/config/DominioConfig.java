@@ -6,6 +6,7 @@ import org.ludum.dominio.catalogo.biblioteca.repositorios.BibliotecaRepository;
 import org.ludum.dominio.catalogo.tag.TagRepository;
 import org.ludum.dominio.comunidade.review.repositorios.ReviewRepository;
 import org.ludum.dominio.comunidade.review.services.ReviewService;
+import org.ludum.dominio.comunidade.review.observer.NotificacaoDesenvolvedorObserver;
 import org.ludum.dominio.financeiro.carteira.CarteiraRepository;
 import org.ludum.dominio.financeiro.carteira.OperacoesFinanceirasService;
 import org.ludum.dominio.financeiro.carteira.ProcessadorPagamentoExterno;
@@ -33,7 +34,12 @@ public class DominioConfig {
             JogoRepository jogoRepository,
             BibliotecaRepository bibliotecaRepository
         ) {
-        return new ReviewService(reviewRepository, jogoRepository, bibliotecaRepository);
+        ReviewService service = new ReviewService(reviewRepository, jogoRepository, bibliotecaRepository);
+        
+        // Registrar observer para notificar desenvolvedores sobre novas reviews
+        service.adicionarObservador(new NotificacaoDesenvolvedorObserver(jogoRepository));
+        
+        return service;
     }
 
     @Bean
