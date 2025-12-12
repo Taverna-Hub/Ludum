@@ -174,8 +174,6 @@ public class SaldoFuncionalidade {
         mockCarteiraRepo.salvar(carteira);
 
         operacoesService.comprarJogo(carteira, carteira2, BigDecimal.valueOf(VALOR));
-        mockCarteiraRepo.salvar(carteira);
-        mockCarteiraRepo.salvar(carteira2);
     }
 
     @Given("que adicionei R$50 na carteira")
@@ -261,10 +259,6 @@ public class SaldoFuncionalidade {
     @When("finalizo a compra imediatamente")
     public void finalizo_a_compra() {
         compraComSucesso = operacoesService.comprarJogo(carteira, carteira2, valorJogo);
-        if (compraComSucesso) {
-            mockCarteiraRepo.salvar(carteira);
-            mockCarteiraRepo.salvar(carteira2);
-        }
     }
 
     @Then("a compra não deve ser concluída e o saldo bloqueado deve permanecer inalterado")
@@ -315,10 +309,6 @@ public class SaldoFuncionalidade {
     @When("tento comprar o jogo")
     public void compro_o_jogo_2() {
         compraComSucesso = operacoesService.comprarJogo(carteira, carteira2, valorJogo);
-        if (compraComSucesso) {
-            mockCarteiraRepo.salvar(carteira);
-            mockCarteiraRepo.salvar(carteira2);
-        }
     }
 
     @Then("a compra não deve ser concluída e nenhum débito deve ocorrer no saldo")

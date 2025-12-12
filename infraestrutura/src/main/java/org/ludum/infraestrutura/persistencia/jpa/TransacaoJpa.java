@@ -52,7 +52,15 @@ class TransacaoRepositoryImpl implements TransacaoRepository {
     @Override
     public void salvar(Transacao transacao) {
         TransacaoJpa transacaoJpa = new TransacaoJpa();
-        transacaoJpa.id = transacao.getTransacaoId().getValue();
+        
+        // Gerar ID automaticamente se não foi fornecido
+        if (transacao.getTransacaoId() != null) {
+            transacaoJpa.id = transacao.getTransacaoId().getValue();
+        } else {
+            transacaoJpa.id = "TXN_" + java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 16).toUpperCase();
+            transacao.setTransacaoId(new TransacaoId(transacaoJpa.id));
+        }
+        
         transacaoJpa.contaOrigemId = transacao.getContaOrigem() != null ? transacao.getContaOrigem().getValue() : null;
         transacaoJpa.contaDestinoId = transacao.getContaDestino() != null ? transacao.getContaDestino().getValue() : null;
         transacaoJpa.tipo = transacao.getTipo();

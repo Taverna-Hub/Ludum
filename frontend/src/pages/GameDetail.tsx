@@ -5,18 +5,33 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { 
   ShoppingCart, Download, Star, ThumbsUp, ThumbsDown, 
-  Calendar, Users, Wrench, ArrowLeft, Edit, Trash2, Plus
+  Calendar, Users, Wrench, ArrowLeft, Edit, Trash2, Plus, CheckCircle
 } from "lucide-react";
 import { mockGames, mockReviews, mockUserLibrary, mockCurrentUser, Review } from "@/data/mockData";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { ReviewForm } from "@/components/ReviewForm";
+import { PurchaseConfirmModal } from "@/components/PurchaseConfirmModal";
+import { InsufficientBalanceModal } from "@/components/InsufficientBalanceModal";
+import { comprarJogo } from "@/http/requests/carteiraRequests";
+import { useAuthContext } from "@/contexts/AuthContext";
 
 const GameDetail = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuthContext();
   const game = mockGames.find(g => g.slug === slug);
   const isOwned = game && mockUserLibrary.includes(game.id);
   
@@ -26,6 +41,11 @@ const GameDetail = () => {
   const [editingReview, setEditingReview] = useState<Review | null>(null);
   const [ratingFilter, setRatingFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("recent");
+  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+  const [purchaseLoading, setPurchaseLoading] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showInsufficientBalanceModal, setShowInsufficientBalanceModal] = useState(false);
+  const [balanceInfo, setBalanceInfo] = useState({ current: 0, missing: 0 });
 
   // Load reviews from localStorage on mount
   useEffect(() => {
@@ -89,11 +109,54 @@ const GameDetail = () => {
     if (!isOwned) {
       if (game.price === 0) {
         toast.success(`${game.title} adicionado à sua biblioteca!`);
+        mockUserLibrary.push(game.id);
       } else {
-        toast.success(`Compra de ${game.title} realizada com sucesso!`);
+        setShowPurchaseModal(true);
       }
-      mockUserLibrary.push(game.id);
     }
+  };
+
+  const handleConfirmPurchase = async () => {
+    if (!user?.id || !game) return;
+
+    setPurchaseLoading(true);
+
+
+    try {
+        const response = await comprarJogo({
+        jogoId: game.id,
+        compradorId: user.id,
+        desenvolvedoraId: game.developerId,
+        valor: game.price,
+      });
+
+      if (response.sucesso) {
+        mockUserLibrary.push(game.id);
+        setShowPurchaseModal(false);
+        setShowSuccessModal(true);
+      } else {
+        toast.error(response.mensagem || 'Erro ao processar compra');
+      }
+    } catch (error) {
+      const errorData = error.response.data;
+       if (errorData.valorFaltante !== undefined) {
+        // Saldo insuficiente
+        setBalanceInfo({
+          current: errorData.saldoAtual,
+          missing: errorData.valorFaltante,
+        });
+        setShowPurchaseModal(false);
+        setShowInsufficientBalanceModal(true);
+      }
+    } finally {
+      setPurchaseLoading(false);
+    }
+  };
+
+  const handleAddFunds = () => {
+    setShowInsufficientBalanceModal(false);
+    // Redirecionar para página de pagamento com o valor faltante
+    navigate(`/painel/carteira/adicionar?amount=${balanceInfo.missing}&returnTo=/jogo/${slug}`);
   };
 
   const handleDownload = () => {
@@ -554,6 +617,66 @@ const GameDetail = () => {
           </TabsContent>
         </Tabs>
       </section>
+
+      {/* Purchase Confirmation Modal */}
+      <PurchaseConfirmModal
+        open={showPurchaseModal}
+        onOpenChange={setShowPurchaseModal}
+        gameTitle={game.title}
+        gamePrice={game.price}
+        onConfirm={handleConfirmPurchase}
+        loading={purchaseLoading}
+      />
+
+      {/* Insufficient Balance Modal */}
+      <InsufficientBalanceModal
+        open={showInsufficientBalanceModal}
+        onOpenChange={setShowInsufficientBalanceModal}
+        gameTitle={game.title}
+        gamePrice={game.price}
+        currentBalance={balanceInfo.current}
+        missingAmount={balanceInfo.missing}
+        onAddFunds={handleAddFunds}
+      />
+
+      {/* Success Modal */}
+      <AlertDialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-secondary">
+              <CheckCircle className="w-6 h-6" />
+              Compra Realizada com Sucesso!
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-4 pt-4">
+              <div className="text-center">
+                <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-secondary/20 flex items-center justify-center">
+                  <CheckCircle className="w-10 h-10 text-secondary" />
+                </div>
+                <p className="text-foreground font-medium text-lg mb-2">
+                  {game.title} foi adicionado à sua biblioteca!
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Você já pode fazer o download e começar a jogar.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex gap-2">
+            <AlertDialogCancel onClick={() => setShowSuccessModal(false)}>
+              Continuar Navegando
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowSuccessModal(false);
+                navigate('/biblioteca');
+              }}
+              className="bg-secondary hover:bg-secondary/90"
+            >
+              Ir para Biblioteca
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
