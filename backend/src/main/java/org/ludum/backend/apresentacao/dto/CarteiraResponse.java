@@ -4,45 +4,45 @@ import java.math.BigDecimal;
 
 public class CarteiraResponse {
 
-  private String contaId;
-  private BigDecimal saldoDisponivel;
-  private BigDecimal saldoBloqueado;
+  private String id;
+  private BigDecimal disponivel;
+  private BigDecimal bloqueado;
   private boolean contaExternaValida;
 
   public CarteiraResponse() {
   }
 
-  public CarteiraResponse(String contaId, BigDecimal saldoDisponivel,
-      BigDecimal saldoBloqueado, boolean contaExternaValida) {
-    this.contaId = contaId;
-    this.saldoDisponivel = saldoDisponivel;
-    this.saldoBloqueado = saldoBloqueado;
+  public CarteiraResponse(String id, BigDecimal disponivel,
+      BigDecimal bloqueado, boolean contaExternaValida) {
+    this.id = id;
+    this.disponivel = disponivel;
+    this.bloqueado = bloqueado;
     this.contaExternaValida = contaExternaValida;
   }
 
   // Getters e Setters
-  public String getContaId() {
-    return contaId;
+  public String getId() {
+    return id;
   }
 
-  public void setContaId(String contaId) {
-    this.contaId = contaId;
+  public void setId(String id) {
+    this.id = id;
   }
 
-  public BigDecimal getSaldoDisponivel() {
-    return saldoDisponivel;
+  public BigDecimal getDisponivel() {
+    return disponivel;
   }
 
-  public void setSaldoDisponivel(BigDecimal saldoDisponivel) {
-    this.saldoDisponivel = saldoDisponivel;
+  public void setDisponivel(BigDecimal disponivel) {
+    this.disponivel = disponivel;
   }
 
-  public BigDecimal getSaldoBloqueado() {
-    return saldoBloqueado;
+  public BigDecimal getBloqueado() {
+    return bloqueado;
   }
 
-  public void setSaldoBloqueado(BigDecimal saldoBloqueado) {
-    this.saldoBloqueado = saldoBloqueado;
+  public void setBloqueado(BigDecimal bloqueado) {
+    this.bloqueado = bloqueado;
   }
 
   public boolean isContaExternaValida() {

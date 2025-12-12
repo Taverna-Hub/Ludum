@@ -49,11 +49,26 @@ public class JpaMapeador extends ModelMapper {
     addConverter(new AbstractConverter<CarteiraJpa, Carteira>() {
       @Override
       protected Carteira convert(CarteiraJpa source) {
-        var id = map(source.id, ContaId.class);
+        var id = new ContaId(source.id);
         Saldo saldo = new Saldo(source.disponivel, source.bloqueado);
         var carteira = new Carteira(id, saldo);
+        carteira.setContaExternaValida(source.contaExternaValida);
+        carteira.setContaExterna(source.contaExterna);
 
         return carteira;
+      }
+    });
+
+    addConverter(new AbstractConverter<Carteira, CarteiraJpa>() {
+      @Override
+      protected CarteiraJpa convert(Carteira source) {
+        CarteiraJpa jpa = new CarteiraJpa();
+        jpa.id = source.getId().getValue();
+        jpa.disponivel = source.getSaldo().getDisponivel();
+        jpa.bloqueado = source.getSaldo().getBloqueado();
+        jpa.contaExternaValida = source.isContaExternaValida();
+        jpa.contaExterna = source.getContaExterna();
+        return jpa;
       }
     });
 

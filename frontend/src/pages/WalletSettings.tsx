@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import { useAuthContext } from '@/contexts/AuthContext';
 import { DashboardLayout } from '@/layouts/DashboardLayout';
 import { mockWallet } from '@/data/mockData';
 import { toast } from 'sonner';
+import { getTransacoesPorConta, getCarteiraPorConta, Transacao, Carteira } from '@/http/requests/carteiraRequests';
 
 const WalletSettings = () => {
   const navigate = useNavigate();
@@ -21,6 +22,34 @@ const WalletSettings = () => {
   const [depositAmount, setDepositAmount] = useState('');
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [transacoes, setTransacoes] = useState<Transacao[]>([]);
+  const [carteira, setCarteira] = useState<Carteira | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!user?.id) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const [transacoesData, carteiraData] = await Promise.all([
+          getTransacoesPorConta(user.id),
+          getCarteiraPorConta(user.id)
+        ]);
+        setTransacoes(transacoesData);
+        setCarteira(carteiraData);
+      } catch (error) {
+        console.error('Erro ao buscar dados:', error);
+        toast.error('Erro ao carregar dados da carteira');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [user?.id]);
 
   const handleSavePixKey = async () => {
     setIsSaving(true);
@@ -59,7 +88,7 @@ const WalletSettings = () => {
       return;
     }
 
-    if (amount > mockWallet.availableBalance) {
+    if (amount > (carteira?.disponivel || 0)) {
       toast.error('Saldo insuficiente');
       return;
     }
@@ -69,15 +98,15 @@ const WalletSettings = () => {
   };
 
   const getTransactionIcon = (type: string) => {
-    switch (type) {
-      case 'deposit':
+    const upperType = type.toUpperCase();
+    switch (upperType) {
+      case 'CREDITO':
         return <TrendingUp className="w-5 h-5 text-secondary" />;
-      case 'withdraw':
+      case 'SAQUE':
         return <ArrowDownToLine className="w-5 h-5 text-primary" />;
-      case 'purchase':
-      case 'crowdfunding':
+      case 'DEBITO':
         return <TrendingDown className="w-5 h-5 text-destructive" />;
-      case 'refund':
+      case 'PIX':
         return <TrendingUp className="w-5 h-5 text-secondary" />;
       default:
         return <DollarSign className="w-5 h-5" />;
@@ -85,26 +114,27 @@ const WalletSettings = () => {
   };
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'completed':
+    const upperStatus = status.toUpperCase();
+    switch (upperStatus) {
+      case 'CONFIRMADA':
         return (
           <Badge className="bg-secondary/20 text-secondary border-secondary/30">
             <CheckCircle className="w-3 h-3 mr-1" />
             Concluído
           </Badge>
         );
-      case 'pending':
+      case 'PENDENTE':
         return (
           <Badge className="bg-primary/20 text-primary border-primary/30">
             <Clock className="w-3 h-3 mr-1" />
             Pendente
           </Badge>
         );
-      case 'blocked':
+      case 'CANCELADA':
         return (
           <Badge className="bg-destructive/20 text-destructive border-destructive/30">
             <AlertCircle className="w-3 h-3 mr-1" />
-            Bloqueado
+            Cancelada
           </Badge>
         );
       default:
@@ -134,7 +164,7 @@ const WalletSettings = () => {
                   <p className="text-primary-foreground/80 text-sm font-medium">Saldo Disponível</p>
                 </div>
                 <p className="text-4xl font-bold text-primary-foreground mb-1">
-                  R$ {mockWallet.availableBalance.toFixed(2)}
+                  R$ {(carteira?.disponivel || 0).toFixed(2)}
                 </p>
                 <p className="text-primary-foreground/60 text-sm">Pode ser usado imediatamente</p>
               </div>
@@ -145,7 +175,7 @@ const WalletSettings = () => {
                 <Clock className="w-5 h-5 text-muted-foreground" />
                 <p className="text-muted-foreground text-sm font-medium">Saldo Bloqueado</p>
               </div>
-              <p className="text-4xl font-bold mb-1">R$ {mockWallet.blockedBalance.toFixed(2)}</p>
+              <p className="text-4xl font-bold mb-1">R$ {(carteira?.bloqueado || 0).toFixed(2)}</p>
               <p className="text-muted-foreground text-sm">Aguardando confirmação</p>
             </Card>
           </div>
@@ -231,7 +261,7 @@ const WalletSettings = () => {
                 </Button>
               </div>
               <p className="mt-2 text-xs text-muted-foreground">
-                Mínimo: R$ 10,00 | Disponível: R$ {mockWallet.availableBalance.toFixed(2)}
+                Mínimo: R$ 10,00 | Disponível: R$ {(carteira?.disponivel || 0).toFixed(2)}
               </p>
             </Card>
           </div>
@@ -240,37 +270,52 @@ const WalletSettings = () => {
           <Card className="p-6 bg-card/50 backdrop-blur-sm border-border/50">
             <h2 className="font-bold text-lg mb-6">Histórico de Transações</h2>
             
-            <div className="space-y-4">
-              {mockWallet.transactions.map((transaction) => (
-                <div
-                  key={transaction.id}
-                  className="flex items-center gap-4 p-4 bg-muted/30 rounded-lg hover:bg-muted/50 transition-all"
-                >
-                  <div className="flex-shrink-0">{getTransactionIcon(transaction.type)}</div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium mb-1">{transaction.description}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(transaction.date).toLocaleDateString('pt-BR', {
-                        day: '2-digit',
-                        month: 'long',
-                        year: 'numeric',
-                      })}
-                    </p>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <p
-                      className={`font-bold text-lg ${
-                        transaction.amount > 0 ? 'text-secondary' : 'text-destructive'
-                      }`}
+            {loading ? (
+              <div className="text-center py-8 text-muted-foreground">
+                Carregando transações...
+              </div>
+            ) : transacoes.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                Nenhuma transação encontrada
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {transacoes.map((transacao) => {
+                  const isCredit = transacao.tipo === 'CREDITO';
+                  const amount = isCredit ? transacao.valor : -transacao.valor;
+                  
+                  return (
+                    <div
+                      key={transacao.id}
+                      className="flex items-center gap-4 p-4 bg-muted/30 rounded-lg hover:bg-muted/50 transition-all"
                     >
-                      {transaction.amount > 0 ? '+' : ''}
-                      R$ {Math.abs(transaction.amount).toFixed(2)}
-                    </p>
-                    {getStatusBadge(transaction.status)}
-                  </div>
-                </div>
-              ))}
-            </div>
+                      <div className="flex-shrink-0">{getTransactionIcon(transacao.tipo)}</div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium mb-1">{transacao.descricao}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {new Date(transacao.data).toLocaleDateString('pt-BR', {
+                            day: '2-digit',
+                            month: 'long',
+                            year: 'numeric',
+                          })}
+                        </p>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p
+                          className={`font-bold text-lg ${
+                            amount > 0 ? 'text-secondary' : 'text-destructive'
+                          }`}
+                        >
+                          {amount > 0 ? '+' : ''}
+                          R$ {Math.abs(amount).toFixed(2)}
+                        </p>
+                        {getStatusBadge(transacao.status)}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </Card>
         </div>
       </div>
