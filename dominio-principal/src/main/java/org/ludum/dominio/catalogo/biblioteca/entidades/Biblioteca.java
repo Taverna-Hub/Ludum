@@ -55,27 +55,14 @@ public class Biblioteca {
     }
 
     public void removerJogo(JogoId jogoId) {
-        if (this.primeira == null) {
-            throw new IllegalArgumentException("Jogo não está na biblioteca");
-        }
-
-        if (this.primeira.getConteudo().getJogoId().equals(jogoId)) {
-            this.primeira = this.primeira.getProxima();
-            return;
-        }
-
-        Celula<ItemBiblioteca> anterior = this.primeira;
-        Celula<ItemBiblioteca> atual = this.primeira.getProxima();
-
-        while (atual != null) {
-            if (atual.getConteudo().getJogoId().equals(jogoId)) {
-                anterior.setProxima(atual.getProxima());
+        IteratorBiblioteca<ItemBiblioteca> iterator = criarIterator();
+        while (iterator.existeProximo()) {
+            ItemBiblioteca item = iterator.proximo();
+            if (item.getJogoId().equals(jogoId)) {
+                iterator.remover();
                 return;
             }
-            anterior = atual;
-            atual = atual.getProxima();
         }
-
         throw new IllegalArgumentException("Jogo não está na biblioteca");
     }
 

@@ -104,6 +104,11 @@ public class UploadDeJogoFuncionalidade {
                     .orElse(null);
         }
 
+        @Override
+        public Conta obterPorNome(String nome) {
+            return null;
+        }
+
         public void adicionarConta(Conta conta) {
             contas.add(conta);
         }

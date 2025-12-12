@@ -272,4 +272,79 @@ Recomenda: Sim ✅
 ---
 
 ## Matheus | Iterator
+### 📋 Contexto
+A entidade `Biblioteca` representa uma coleção de jogos adquiridos por um usuário. Para manipular essa coleção (adicionar, remover, buscar) de forma eficiente e encapsulada, foi implementada uma estrutura de dados dinâmica (Lista Encadeada) manualmente. O **Iterator Pattern** é utilizado para permitir o acesso sequencial aos elementos dessa lista sem expor sua representação interna (nós/células).
+
+### 🎯 Problema Resolvido
+Evitar que as classes clientes (`BibliotecaService`, `Tests`) precisem manipular diretamente a estrutura de nós (`Celula<T>`). Sem o Iterator, o código cliente precisaria lidar com ponteiros `proxima`, `anterior`, etc., violando o encapsulamento e acoplando o código à implementação específica da lista.
+
+### 🏗️ Estrutura da Implementação
+
+Foi criada a estrutura de dados personalizada no pacote `estruturas`.
+
+```
+dominio-principal/src/main/java/org/ludum/dominio/catalogo/biblioteca/estruturas/
+├── Celula.java                     # Nó da lista encadeada (Generics T)
+└── IteratorBiblioteca.java         # Implementação do Iterator
+```
+
+#### **Aggregate (Coleção)**
+```
+dominio-principal/src/main/java/org/ludum/dominio/catalogo/biblioteca/entidades/
+└── Biblioteca.java                 # Possui método criandoIterator()
+```
+
+### 📦 Componentes do Padrão
+
+| Componente | Classe | Responsabilidade |
+|-----------|--------|------------------|
+| **Iterator** | `IteratorBiblioteca<T>` | Mantém o estado da iteração (atual, anterior) e implementa movimentação (`proximo`, `remove`) |
+| **ConcreteAggregate** | `Biblioteca` | Cria instâncias do Iterator e armazena a estrutura de dados (cabeça da lista) |
+| **Node** | `Celula<T>` | Estrutura interna de dados (lista ligada) invisível para o cliente do Iterator |
+
+### 🔧 Exemplo de Código
+
+**Iterator (Uso para Remoção na Biblioteca):**
+O próprio agregado (`Biblioteca`) utiliza o Iterator para simplificar suas operações internas, como remover um jogo.
+
+```java
+public void removerJogo(JogoId jogoId) {
+    IteratorBiblioteca<ItemBiblioteca> iterator = criarIterator();
+    while (iterator.existeProximo()) {
+        ItemBiblioteca item = iterator.proximo();
+        if (item.getJogoId().equals(jogoId)) {
+            iterator.remover(); // Lógica complexa de ponteiros encapsulada aqui
+            return;
+        }
+    }
+    throw new IllegalArgumentException("Jogo não está na biblioteca");
+}
+```
+
+**Iterator (Implementação Simplificada):**
+```java
+public class IteratorBiblioteca<T> {
+    private Celula<T> celulaAtual;
+    private Consumer<Celula<T>> gerenciadorDeCabeca; // Callback para remover cabeça da lista
+
+    public boolean existeProximo() {
+        return celulaAtual != null;
+    }
+
+    public T proximo() {
+        // Retorna conteúdo e avança ponteiro
+    }
+
+    public void remover() {
+        // Gerencia reconexão de ponteiros (anterior -> proximo)
+    }
+}
+```
+
+### ✅ Benefícios da Implementação
+
+- **Encapsulamento**: O cliente não sabe que a `Biblioteca` usa uma Lista Encadeada.
+- **Simplificação do Cliente**: O código cliente apenas chama `proximo()` e `remover()`, sem lógica de ponteiros.
+- **Princípio da Responsabilidade Única (SRP)**: A lógica de iteração e remoção segura fica isolada na classe `IteratorBiblioteca`, não poluindo a entidade de negócio.
+- **Suporte a Variações**: Se mudarmos a lista interna para um Array ou Árvore, basta alterar/criar um novo Iterator, sem quebrar o código cliente.
 

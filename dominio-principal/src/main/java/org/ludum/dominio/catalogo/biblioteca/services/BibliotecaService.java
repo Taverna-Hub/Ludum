@@ -2,7 +2,7 @@ package org.ludum.dominio.catalogo.biblioteca.services;
 
 import org.ludum.dominio.catalogo.biblioteca.entidades.Biblioteca;
 import org.ludum.dominio.catalogo.biblioteca.entidades.ItemBiblioteca;
-import org.ludum.dominio.catalogo.biblioteca.estruturas.IteratorBiblioteca;
+
 import org.ludum.dominio.catalogo.biblioteca.enums.ModeloDeAcesso;
 import org.ludum.dominio.catalogo.jogo.entidades.Jogo;
 import org.ludum.dominio.catalogo.jogo.entidades.PacoteZip;
@@ -64,15 +64,7 @@ public class BibliotecaService {
         Jogo currentJogo = jogoRepository.obterPorId(jogoId);
         Versao currentVersao = this.jogoRepository.obterPorId(jogoId).getVersaoHistory().getLast();
 
-        ItemBiblioteca currentItemBiblioteca = null;
-        IteratorBiblioteca<ItemBiblioteca> iterator = currentBiblioteca.criarIterator();
-        while (iterator.existeProximo()) {
-            ItemBiblioteca item = iterator.proximo();
-            if (item.getJogoId().equals(jogoId)) {
-                currentItemBiblioteca = item;
-                break;
-            }
-        }
+        ItemBiblioteca currentItemBiblioteca = currentBiblioteca.buscarJogoEmBiblioteca(jogoId).orElse(null);
 
         Conta currentUser = contaRepository.obterPorId(contaId);
 
