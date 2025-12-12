@@ -20,9 +20,14 @@ import org.ludum.dominio.comunidade.post.entidades.ComentarioId;
 import org.ludum.dominio.identidade.seguimento.entities.Seguimento;
 import org.ludum.dominio.identidade.seguimento.entities.SeguimentoId;
 import org.ludum.dominio.identidade.seguimento.entities.AlvoId;
+import org.ludum.dominio.catalogo.biblioteca.entidades.Biblioteca;
+import org.ludum.dominio.catalogo.biblioteca.entidades.ItemBiblioteca;
+import org.ludum.dominio.catalogo.biblioteca.estruturas.IteratorBiblioteca;
+
 import org.modelmapper.AbstractConverter;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.config.Configuration.AccessLevel;
+
 import org.springframework.stereotype.Component;
 
 import java.net.URI;
@@ -53,12 +58,11 @@ public class JpaMapeador extends ModelMapper {
       @Override
       protected Conta convert(ContaJpa source) {
         return new Conta(
-          new ContaId(source.id),
-          source.nome,
-          source.senhaHash,
-          source.tipo,
-          source.status
-        );
+            new ContaId(source.id),
+            source.nome,
+            source.senhaHash,
+            source.tipo,
+            source.status);
       }
     });
 
@@ -81,7 +85,8 @@ public class JpaMapeador extends ModelMapper {
         var id = new ReviewId(source.id);
         var jogoId = new JogoId(source.jogoId);
         var autorId = new ContaId(source.autorId);
-        return new Review(id, jogoId, autorId, source.nota, source.titulo, source.texto, source.data, source.isRecomendado, source.status);
+        return new Review(id, jogoId, autorId, source.nota, source.titulo, source.texto, source.data,
+            source.isRecomendado, source.status);
       }
     });
 
@@ -139,9 +144,8 @@ public class JpaMapeador extends ModelMapper {
       @Override
       protected Tag convert(TagJpa source) {
         return new Tag(
-          new TagId(source.id),
-          source.nome
-        );
+            new TagId(source.id),
+            source.nome);
       }
     });
 
@@ -160,21 +164,20 @@ public class JpaMapeador extends ModelMapper {
       protected Jogo convert(JogoJpa source) {
         try {
           List<Tag> tags = source.tagIds.stream()
-            .map(tagId -> new Tag(new TagId(tagId), "Tag-" + tagId.substring(0, Math.min(5, tagId.length()))))
-            .collect(Collectors.toList());
+              .map(tagId -> new Tag(new TagId(tagId), "Tag-" + tagId.substring(0, Math.min(5, tagId.length()))))
+              .collect(Collectors.toList());
 
           URL capaOficial = source.capaOficial != null ? URI.create(source.capaOficial).toURL() : null;
 
           Jogo jogo = new Jogo(
-            new JogoId(source.id),
-            new ContaId(source.desenvolvedoraId),
-            source.titulo,
-            source.descricao,
-            capaOficial,
-            tags,
-            source.isNSFW,
-            source.dataDeLancamento
-          );
+              new JogoId(source.id),
+              new ContaId(source.desenvolvedoraId),
+              source.titulo,
+              source.descricao,
+              capaOficial,
+              tags,
+              source.isNSFW,
+              source.dataDeLancamento);
 
           for (String screenshotUrl : source.screenshots) {
             jogo.adicionarScreenshot(URI.create(screenshotUrl).toURL());
@@ -184,9 +187,11 @@ public class JpaMapeador extends ModelMapper {
             jogo.adicionarVideo(URI.create(videoUrl).toURL());
           }
 
-          if (source.status == StatusPublicacao.PUBLICADO && jogo.getStatus() == StatusPublicacao.AGUARDANDO_VALIDACAO) {
+          if (source.status == StatusPublicacao.PUBLICADO
+              && jogo.getStatus() == StatusPublicacao.AGUARDANDO_VALIDACAO) {
             jogo.publicar();
-          } else if (source.status == StatusPublicacao.REJEITADO && jogo.getStatus() == StatusPublicacao.AGUARDANDO_VALIDACAO) {
+          } else if (source.status == StatusPublicacao.REJEITADO
+              && jogo.getStatus() == StatusPublicacao.AGUARDANDO_VALIDACAO) {
             jogo.rejeitar();
           } else if (source.status == StatusPublicacao.ARQUIVADO) {
             if (jogo.getStatus() == StatusPublicacao.AGUARDANDO_VALIDACAO) {
@@ -214,14 +219,14 @@ public class JpaMapeador extends ModelMapper {
         jpa.titulo = source.getTitulo();
         jpa.descricao = source.getDescricao();
         jpa.screenshots = source.getScreenshots().stream()
-          .map(URL::toString)
-          .collect(Collectors.toList());
+            .map(URL::toString)
+            .collect(Collectors.toList());
         jpa.videos = source.getVideos().stream()
-          .map(URL::toString)
-          .collect(Collectors.toList());
+            .map(URL::toString)
+            .collect(Collectors.toList());
         jpa.tagIds = source.getTags().stream()
-          .map(tag -> tag.getId().getValue())
-          .collect(Collectors.toList());
+            .map(tag -> tag.getId().getValue())
+            .collect(Collectors.toList());
         jpa.isNSFW = source.isNSFW();
         jpa.dataDeLancamento = source.getDataDeLancamento();
         return jpa;
@@ -233,33 +238,31 @@ public class JpaMapeador extends ModelMapper {
       protected Post convert(PostJpa source) {
         try {
           List<Tag> tags = source.tagIds.stream()
-            .map(tagId -> new Tag(new TagId(tagId), "Tag-" + tagId.substring(0, Math.min(5, tagId.length()))))
-            .collect(Collectors.toList());
+              .map(tagId -> new Tag(new TagId(tagId), "Tag-" + tagId.substring(0, Math.min(5, tagId.length()))))
+              .collect(Collectors.toList());
 
           URL imagem = source.imagem != null ? URI.create(source.imagem).toURL() : null;
 
           Post post = new Post(
-            new PostId(source.id),
-            new JogoId(source.jogoId),
-            new ContaId(source.autorId),
-            source.titulo,
-            source.conteudo,
-            source.dataPublicacao,
-            imagem,
-            source.status,
-            tags
-          );
+              new PostId(source.id),
+              new JogoId(source.jogoId),
+              new ContaId(source.autorId),
+              source.titulo,
+              source.conteudo,
+              source.dataPublicacao,
+              imagem,
+              source.status,
+              tags);
 
           post.setDataAgendamento(source.dataAgendamento);
 
           for (ComentarioJpa comentarioJpa : source.comentarios) {
             Comentario comentario = new Comentario(
-              new ComentarioId(comentarioJpa.id),
-              new PostId(comentarioJpa.postId),
-              new ContaId(comentarioJpa.autorId),
-              comentarioJpa.texto,
-              comentarioJpa.data
-            );
+                new ComentarioId(comentarioJpa.id),
+                new PostId(comentarioJpa.postId),
+                new ContaId(comentarioJpa.autorId),
+                comentarioJpa.texto,
+                comentarioJpa.data);
             if (comentarioJpa.oculto) {
               comentario.ocultar();
             }
@@ -292,34 +295,89 @@ public class JpaMapeador extends ModelMapper {
         jpa.status = source.getStatus();
 
         jpa.tagIds = source.getTags().stream()
-          .map(tag -> tag.getId().getValue())
-          .collect(Collectors.toList());
+            .map(tag -> tag.getId().getValue())
+            .collect(Collectors.toList());
 
         jpa.comentarios = source.getComentarios().stream()
-          .map(comentario -> {
-            ComentarioJpa cJpa = new ComentarioJpa();
-            cJpa.id = comentario.getId().getId();
-            cJpa.postId = comentario.getPostId().getId();
-            cJpa.autorId = comentario.getAutorId().getValue();
-            cJpa.texto = comentario.getTexto();
-            cJpa.data = comentario.getData();
-            cJpa.oculto = comentario.isOculto();
-            return cJpa;
-          })
-          .collect(Collectors.toList());
+            .map(comentario -> {
+              ComentarioJpa cJpa = new ComentarioJpa();
+              cJpa.id = comentario.getId().getId();
+              cJpa.postId = comentario.getPostId().getId();
+              cJpa.autorId = comentario.getAutorId().getValue();
+              cJpa.texto = comentario.getTexto();
+              cJpa.data = comentario.getData();
+              cJpa.oculto = comentario.isOculto();
+              return cJpa;
+            })
+            .collect(Collectors.toList());
 
         jpa.curtidas = source.getCurtidas().stream()
-          .map(curtida -> {
-            CurtidaJpa cJpa = new CurtidaJpa();
-            cJpa.postId = curtida.getPostId().getId();
-            cJpa.contaId = curtida.getContaId().getValue();
-            return cJpa;
-          })
-          .collect(Collectors.toList());
+            .map(curtida -> {
+              CurtidaJpa cJpa = new CurtidaJpa();
+              cJpa.postId = curtida.getPostId().getId();
+              cJpa.contaId = curtida.getContaId().getValue();
+              return cJpa;
+            })
+            .collect(Collectors.toList());
 
         return jpa;
       }
     });
+
+    addConverter(new AbstractConverter<BibliotecaJpa, Biblioteca>() {
+      @Override
+      protected Biblioteca convert(BibliotecaJpa source) {
+        var contaId = new ContaId(source.contaId);
+        Biblioteca biblioteca = new Biblioteca(contaId);
+
+        for (ItemBibliotecaJpa itemJpa : source.itens) {
+          try {
+            var jogoId = new JogoId(itemJpa.jogoId);
+            biblioteca.adicionarJogo(itemJpa.modeloDeAcesso, jogoId);
+
+            var itemOpt = biblioteca.buscarJogoEmBiblioteca(jogoId);
+            if (itemOpt.isPresent()) {
+              var item = itemOpt.get();
+
+              var dataField = ItemBiblioteca.class.getDeclaredField("dataAdicao");
+              dataField.setAccessible(true);
+              dataField.set(item, itemJpa.dataAdicao);
+
+              if (itemJpa.baixado) {
+                biblioteca.baixouJogo(item);
+              }
+            }
+          } catch (Exception e) {
+            throw new RuntimeException("Erro ao converter ItemBiblioteca", e);
+          }
+        }
+        return biblioteca;
+      }
+    });
+
+    addConverter(new AbstractConverter<Biblioteca, BibliotecaJpa>() {
+      @Override
+      protected BibliotecaJpa convert(Biblioteca source) {
+        BibliotecaJpa jpa = new BibliotecaJpa();
+        jpa.contaId = source.getContaId().getValue();
+
+        IteratorBiblioteca<ItemBiblioteca> iterator = source.criarIterator();
+        while (iterator.existeProximo()) {
+          ItemBiblioteca item = iterator.proximo();
+          ItemBibliotecaJpa itemJpa = new ItemBibliotecaJpa();
+          itemJpa.biblioteca = jpa;
+          itemJpa.jogoId = item.getJogoId().getValue();
+          itemJpa.modeloDeAcesso = item.getModeloDeAcesso();
+          itemJpa.dataAdicao = item.getDataAdicao();
+
+          itemJpa.baixado = source.getItensBaixados().contains(item);
+
+          jpa.itens.add(itemJpa);
+        }
+        return jpa;
+      }
+    });
+
   }
 
   @Override

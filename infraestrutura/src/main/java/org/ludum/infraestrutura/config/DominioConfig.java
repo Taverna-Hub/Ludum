@@ -36,16 +36,25 @@ public class DominioConfig {
     }
 
     @Bean
+    public org.ludum.dominio.catalogo.biblioteca.services.BibliotecaService bibliotecaService(
+            BibliotecaRepository bibliotecaRepository,
+            TransacaoRepository transacaoRepository,
+            JogoRepository jogoRepository,
+            ContaRepository contaRepository) {
+        return new org.ludum.dominio.catalogo.biblioteca.services.BibliotecaService(bibliotecaRepository,
+                transacaoRepository, jogoRepository, contaRepository);
+    }
+
+    @Bean
     public ReviewService reviewService(
             ReviewRepository reviewRepository,
             JogoRepository jogoRepository,
-            BibliotecaRepository bibliotecaRepository
-        ) {
+            BibliotecaRepository bibliotecaRepository) {
         ReviewService service = new ReviewService(reviewRepository, jogoRepository, bibliotecaRepository);
-        
+
         // Registrar observer para notificar desenvolvedores sobre novas reviews
         service.adicionarObservador(new NotificacaoDesenvolvedorObserver(jogoRepository));
-        
+
         return service;
     }
 
@@ -56,7 +65,8 @@ public class DominioConfig {
             BloqueioRepository bloqueioRepository,
             JogoRepository jogoRepository,
             TagRepository tagRepository) {
-        return new RelacionamentoService(seguimentoRepository, contaRepository, bloqueioRepository, jogoRepository, tagRepository);
+        return new RelacionamentoService(seguimentoRepository, contaRepository, bloqueioRepository, jogoRepository,
+                tagRepository);
     }
 
     @Bean
