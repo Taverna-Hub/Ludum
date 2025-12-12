@@ -9,7 +9,6 @@ import org.ludum.dominio.identidade.conta.entities.ContaId;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 public abstract class ProcessadorPagamentoExterno {
 
@@ -21,8 +20,6 @@ public abstract class ProcessadorPagamentoExterno {
 
   public final ResultadoPagamento processar(ContaId contaId, BigDecimal valor, String moeda, String descricao,
       String nomeCliente, String cpfCnpjCliente, String emailCliente, String telefoneCliente) {
-    String transacaoId = gerarIdTransacao();
-
     beforeProcessar(contaId, valor, moeda);
 
     try {
@@ -34,14 +31,16 @@ public abstract class ProcessadorPagamentoExterno {
 
       String idGateway = executarPagamentoNoGateway(dadosGateway, valor);
 
-      registrarResultado(transacaoId, idGateway, true, contaId, valor);
+      Transacao transacao = registrarResultado(idGateway, true, contaId, valor);
+      String transacaoId = transacao.getTransacaoId().getValue();
 
       afterProcessar(transacaoId, true);
 
       return ResultadoPagamento.sucesso(transacaoId, idGateway);
 
     } catch (Exception e) {
-      registrarResultado(transacaoId, null, false, contaId, valor);
+      Transacao transacao = registrarResultado(null, false, contaId, valor);
+      String transacaoId = transacao.getTransacaoId().getValue();
 
       afterProcessar(transacaoId, false);
 
@@ -66,29 +65,28 @@ public abstract class ProcessadorPagamentoExterno {
 
   public abstract String executarPayout(ContaId contaId, BigDecimal valor, String descricao) throws Exception;
 
-  protected void registrarResultado(String transacaoId, String idGateway, boolean sucesso,
+  protected Transacao registrarResultado(String idGateway, boolean sucesso,
       ContaId contaId, BigDecimal valor) {
+    Transacao transacao = new Transacao(
+        null,
+        contaId,
+        null,
+        TipoTransacao.CREDITO,
+        sucesso ? StatusTransacao.CONFIRMADA : StatusTransacao.CANCELADA,
+        LocalDateTime.now(),
+        valor);
+    
     if (transacaoRepository != null) {
-      Transacao transacao = new Transacao(
-          new TransacaoId(transacaoId),
-          contaId,
-          null,
-          TipoTransacao.CREDITO,
-          sucesso ? StatusTransacao.CONFIRMADA : StatusTransacao.CANCELADA,
-          LocalDateTime.now(),
-          valor);
       transacaoRepository.salvar(transacao);
     }
+    
+    return transacao;
   }
 
   protected void beforeProcessar(ContaId contaId, BigDecimal valor, String moeda) {
   }
 
   protected void afterProcessar(String transacaoId, boolean sucesso) {
-  }
-
-  private String gerarIdTransacao() {
-    return "TXN_" + UUID.randomUUID().toString().replace("-", "").substring(0, 16).toUpperCase();
   }
 
   protected TransacaoRepository getTransacaoRepository() {

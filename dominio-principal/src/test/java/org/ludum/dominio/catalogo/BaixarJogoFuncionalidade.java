@@ -88,6 +88,11 @@ public class BaixarJogoFuncionalidade {
         }
 
         @Override
+        public List<Transacao> obterPorContaId(ContaId contaId) {
+            return List.of();
+        }
+
+        @Override
         public void salvarRecibo(Recibo recibo) {
             recibos.add(recibo);
         }
@@ -172,6 +177,11 @@ public class BaixarJogoFuncionalidade {
                     .orElse(null);
         }
 
+        @Override
+        public Conta obterPorNome(String nome) {
+            return null;
+        }
+
         public void adicionarConta(Conta conta) {
             contas.add(conta);
         }
@@ -196,7 +206,7 @@ public class BaixarJogoFuncionalidade {
 
         this.transacaoRepository
                 .salvar(new Transacao(this.transacaoId, this.contaId, new ContaId(UUID.randomUUID().toString()),
-                        TipoTransacao.PIX, StatusTransacao.CONFIRMADA, LocalDateTime.now(), BigDecimal.valueOf(10000)));
+                        TipoTransacao.CREDITO, StatusTransacao.CONFIRMADA, LocalDateTime.now(), BigDecimal.valueOf(10000)));
     }
 
     @Given("que eu sou um usuário com uma conta no status {string}")

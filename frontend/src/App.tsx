@@ -51,6 +51,7 @@ const App = () => (
             {/* Dashboard routes (authenticated) */}
             <Route path="/painel" element={<Profile />} />
             <Route path="/painel/carteira" element={<WalletSettings />} />
+            <Route path="/painel/carteira/adicionar" element={<Payment />} />
             <Route path="/painel/pagamento" element={<Payment />} />
             <Route path="/painel/desenvolvedor" element={<DeveloperPanel />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
