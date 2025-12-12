@@ -55,7 +55,9 @@ const Profile = () => {
                 </div>
                 <div>
                   <p className="font-medium">{user?.name}</p>
-                  <p className="text-sm text-muted-foreground">{user?.email}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {user?.accountType === 'developer' ? 'Desenvolvedor' : 'Jogador'}
+                  </p>
                 </div>
               </div>
 

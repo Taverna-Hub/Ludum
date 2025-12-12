@@ -1,9 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
+import { loginRequest, registroRequest, logoutRequest } from '@/http/requests/authRequests';
+import { 
+  setAuthCookie, 
+  getAuthCookie, 
+  setUserCookie, 
+  getUserCookie, 
+  clearAllAuthCookies,
+  StoredUser 
+} from '@/lib/cookies';
 
 export interface User {
   id: string;
   name: string;
-  email: string;
   accountType: 'player' | 'developer';
   pixKey: string | null;
   createdAt: string;
@@ -15,9 +23,6 @@ interface AuthState {
   isLoading: boolean;
 }
 
-const STORAGE_KEY = 'ludum_auth';
-const USERS_KEY = 'ludum_users';
-
 export const useAuth = () => {
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
@@ -26,87 +31,111 @@ export const useAuth = () => {
   });
 
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      try {
-        const user = JSON.parse(stored);
-        setAuthState({ user, isAuthenticated: true, isLoading: false });
-      } catch {
-        setAuthState({ user: null, isAuthenticated: false, isLoading: false });
-      }
+    const token = getAuthCookie();
+    const storedUser = getUserCookie();
+    
+    if (token && storedUser) {
+      const user: User = {
+        id: storedUser.id,
+        name: storedUser.nome,
+        accountType: storedUser.tipo === 'DESENVOLVEDOR' ? 'developer' : 'player',
+        pixKey: null,
+        createdAt: new Date().toISOString(),
+      };
+      setAuthState({ user, isAuthenticated: true, isLoading: false });
     } else {
+      clearAllAuthCookies();
       setAuthState({ user: null, isAuthenticated: false, isLoading: false });
     }
   }, []);
 
-  const getUsers = (): User[] => {
-    const stored = localStorage.getItem(USERS_KEY);
-    return stored ? JSON.parse(stored) : [];
-  };
-
-  const saveUsers = (users: User[]) => {
-    localStorage.setItem(USERS_KEY, JSON.stringify(users));
-  };
-
-  const login = useCallback(async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
-    const users = getUsers();
-    const user = users.find((u) => u.email === email);
-    
-    if (!user) {
-      return { success: false, error: 'Usuário não encontrado' };
+  const login = useCallback(async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const response = await loginRequest({ nome: username, senha: password });
+      
+      setAuthCookie(response.token);
+      
+      const storedUser: StoredUser = {
+        id: response.userId,
+        nome: response.nome,
+        tipo: 'JOGADOR',
+      };
+      setUserCookie(storedUser);
+      
+      const user: User = {
+        id: response.userId,
+        name: response.nome,
+        accountType: 'player',
+        pixKey: null,
+        createdAt: new Date().toISOString(),
+      };
+      
+      setAuthState({ user, isAuthenticated: true, isLoading: false });
+      return { success: true };
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Erro ao fazer login';
+      return { success: false, error: errorMessage };
     }
-
-    // Simulated password check (in real app, would be hashed)
-    const passwords = JSON.parse(localStorage.getItem('ludum_passwords') || '{}');
-    if (passwords[email] !== password) {
-      return { success: false, error: 'Senha incorreta' };
-    }
-
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
-    setAuthState({ user, isAuthenticated: true, isLoading: false });
-    return { success: true };
   }, []);
 
-  const register = useCallback(async (name: string, email: string, password: string): Promise<{ success: boolean; error?: string }> => {
-    const users = getUsers();
-    
-    if (users.some((u) => u.email === email)) {
-      return { success: false, error: 'Este email já está cadastrado' };
+  const register = useCallback(async (name: string, _username: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      // O backend usa 'nome' como identificador de login
+      const response = await registroRequest({ 
+        nome: name, 
+        senha: password, 
+        tipo: 'JOGADOR' 
+      });
+      
+      setAuthCookie(response.token);
+      
+      const storedUser: StoredUser = {
+        id: response.userId,
+        nome: response.nome,
+        tipo: 'JOGADOR',
+      };
+      setUserCookie(storedUser);
+      
+      const user: User = {
+        id: response.userId,
+        name: response.nome,
+        accountType: 'player',
+        pixKey: null,
+        createdAt: new Date().toISOString(),
+      };
+      
+      setAuthState({ user, isAuthenticated: true, isLoading: false });
+      return { success: true };
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Erro ao criar conta';
+      return { success: false, error: errorMessage };
     }
-
-    const newUser: User = {
-      id: crypto.randomUUID(),
-      name,
-      email,
-      accountType: 'player',
-      pixKey: null,
-      createdAt: new Date().toISOString(),
-    };
-
-    const passwords = JSON.parse(localStorage.getItem('ludum_passwords') || '{}');
-    passwords[email] = password;
-    localStorage.setItem('ludum_passwords', JSON.stringify(passwords));
-
-    saveUsers([...users, newUser]);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newUser));
-    setAuthState({ user: newUser, isAuthenticated: true, isLoading: false });
-    return { success: true };
   }, []);
 
-  const logout = useCallback(() => {
-    localStorage.removeItem(STORAGE_KEY);
-    setAuthState({ user: null, isAuthenticated: false, isLoading: false });
+  const logout = useCallback(async () => {
+    try {
+      await logoutRequest();
+    } catch (error) {
+      console.error('Erro ao fazer logout no servidor:', error);
+    } finally {
+      clearAllAuthCookies();
+      setAuthState({ user: null, isAuthenticated: false, isLoading: false });
+    }
   }, []);
 
   const updateProfile = useCallback((updates: Partial<Pick<User, 'name' | 'accountType' | 'pixKey'>>) => {
     if (!authState.user) return;
 
     const updatedUser = { ...authState.user, ...updates };
-    const users = getUsers();
-    const updatedUsers = users.map((u) => (u.id === updatedUser.id ? updatedUser : u));
     
-    saveUsers(updatedUsers);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedUser));
+    // Atualiza o cookie com os novos dados
+    const storedUser: StoredUser = {
+      id: updatedUser.id,
+      nome: updatedUser.name,
+      tipo: updatedUser.accountType === 'developer' ? 'DESENVOLVEDOR' : 'JOGADOR',
+    };
+    setUserCookie(storedUser);
+    
     setAuthState({ ...authState, user: updatedUser });
   }, [authState]);
 
