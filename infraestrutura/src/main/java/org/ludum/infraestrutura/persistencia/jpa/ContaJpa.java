@@ -24,6 +24,7 @@ class ContaJpa {
 }
 
 interface ContaJpaRepository extends JpaRepository<ContaJpa, String> {
+    java.util.Optional<ContaJpa> findByNome(String nome);
 }
 
 @Repository
@@ -43,6 +44,13 @@ class ContaRepositoryImpl implements ContaRepository {
     @Override
     public Conta obterPorId(ContaId id) {
         return repositorio.findById(id.getValue())
+                .map(jpa -> mapeador.map(jpa, Conta.class))
+                .orElse(null);
+    }
+
+    @Override
+    public Conta obterPorNome(String nome) {
+        return repositorio.findByNome(nome)
                 .map(jpa -> mapeador.map(jpa, Conta.class))
                 .orElse(null);
     }
