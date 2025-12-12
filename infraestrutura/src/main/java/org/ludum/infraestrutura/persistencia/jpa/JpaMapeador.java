@@ -10,6 +10,9 @@ import org.ludum.dominio.comunidade.review.entidades.Review;
 import org.ludum.dominio.comunidade.review.entidades.ReviewId;
 import org.ludum.dominio.catalogo.jogo.entidades.Jogo;
 import org.ludum.dominio.catalogo.jogo.entidades.JogoId;
+import org.ludum.dominio.catalogo.jogo.entidades.Versao;
+import org.ludum.dominio.catalogo.jogo.entidades.VersaoId;
+import org.ludum.dominio.catalogo.jogo.entidades.PacoteZip;
 import org.ludum.dominio.catalogo.jogo.enums.StatusPublicacao;
 import org.ludum.dominio.catalogo.tag.entidades.Tag;
 import org.ludum.dominio.catalogo.tag.entidades.TagId;
@@ -200,6 +203,27 @@ public class JpaMapeador extends ModelMapper {
             jogo.arquivar();
           }
 
+          if (source.versoes != null) {
+            var versaoHistoryField = Jogo.class.getDeclaredField("versaoHistory");
+            versaoHistoryField.setAccessible(true);
+            @SuppressWarnings("unchecked")
+            var listaVersoes = (List<Versao>) versaoHistoryField.get(jogo);
+
+            for (VersaoJpa vJpa : source.versoes) {
+              PacoteZip pacote = new PacoteZip(vJpa.conteudo);
+
+              Versao versao = new Versao(
+                  pacote,
+                  new JogoId(source.id),
+                  new VersaoId(vJpa.id),
+                  vJpa.nomeVersao,
+                  vJpa.descricaoVersao,
+                  vJpa.dataUpload);
+
+              listaVersoes.add(versao);
+            }
+          }
+
           return jogo;
         } catch (Exception e) {
           throw new RuntimeException("Erro ao converter JogoJpa para Jogo", e);
@@ -229,6 +253,22 @@ public class JpaMapeador extends ModelMapper {
             .collect(Collectors.toList());
         jpa.isNSFW = source.isNSFW();
         jpa.dataDeLancamento = source.getDataDeLancamento();
+
+        if (source.getVersaoHistory() != null) {
+          jpa.versoes = source.getVersaoHistory().stream()
+              .map(versao -> {
+                VersaoJpa vJpa = new VersaoJpa();
+                vJpa.id = versao.getId().getValue();
+                vJpa.jogo = jpa;
+                vJpa.conteudo = versao.getPacoteZip().getConteudo();
+                vJpa.nomeVersao = versao.getNomeVersao();
+                vJpa.descricaoVersao = versao.getDescricaoVersao();
+                vJpa.dataUpload = versao.getDataUpload();
+                return vJpa;
+              })
+              .collect(Collectors.toList());
+        }
+
         return jpa;
       }
     });

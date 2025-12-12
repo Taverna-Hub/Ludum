@@ -13,6 +13,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -62,7 +63,34 @@ class JogoJpa {
     @Column(nullable = false)
     boolean isNSFW;
 
+    @OneToMany(mappedBy = "jogo", cascade = CascadeType.ALL, orphanRemoval = true)
+    List<VersaoJpa> versoes = new ArrayList<>();
+
     LocalDate dataDeLancamento;
+}
+
+@Entity
+@Table(name = "VERSAO_JOGO")
+class VersaoJpa {
+    @Id
+    String id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "jogo_id")
+    JogoJpa jogo;
+
+    @Lob
+    @Column(nullable = false)
+    byte[] conteudo;
+
+    @Column(nullable = false)
+    String nomeVersao;
+
+    @Column(nullable = false)
+    String descricaoVersao;
+
+    @Column(nullable = false)
+    java.time.LocalDateTime dataUpload;
 }
 
 interface JogoJpaRepository extends JpaRepository<JogoJpa, String> {
@@ -84,24 +112,28 @@ class JogoRepositoryImpl implements JogoRepository {
     JpaMapeador mapeador;
 
     @Override
+    @Transactional
     public void salvar(Jogo jogo) {
         JogoJpa jogoJpa = mapeador.map(jogo, JogoJpa.class);
         repositorio.save(jogoJpa);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Jogo obterPorId(JogoId id) {
         Optional<JogoJpa> jogoJpa = repositorio.findById(id.getValue());
         return jogoJpa.map(jpa -> mapeador.map(jpa, Jogo.class)).orElse(null);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Jogo obterPorSlug(Slug slug) {
         Optional<JogoJpa> jogoJpa = repositorio.findBySlug(slug.getValor());
         return jogoJpa.map(jpa -> mapeador.map(jpa, Jogo.class)).orElse(null);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public boolean existeSlugParaDesenvolvedora(ContaId devId, Slug slug) {
         Optional<JogoJpa> jogoJpa = repositorio.findByDesenvolvedoraIdAndSlug(
                 devId.getValue(),
@@ -110,6 +142,7 @@ class JogoRepositoryImpl implements JogoRepository {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Jogo> obterJogosPorTag(TagId tagId) {
         List<JogoJpa> jogosJpa = repositorio.findByTagId(tagId.getValue());
         return jogosJpa.stream()
