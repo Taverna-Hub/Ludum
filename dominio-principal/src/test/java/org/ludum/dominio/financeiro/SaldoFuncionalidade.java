@@ -17,7 +17,6 @@ import org.ludum.dominio.financeiro.carteira.entidades.Saldo;
 import org.ludum.dominio.financeiro.transacao.TransacaoRepository;
 import org.ludum.dominio.financeiro.transacao.entidades.Transacao;
 import org.ludum.dominio.financeiro.transacao.entidades.TransacaoId;
-import org.ludum.dominio.financeiro.transacao.enums.StatusTransacao;
 import org.ludum.dominio.identidade.conta.entities.ContaId;
 import org.ludum.dominio.financeiro.transacao.entidades.Recibo;
 
@@ -33,6 +32,12 @@ public class SaldoFuncionalidade {
     private static final int VALOR_MENOR = 30;
     private static final int VALOR = 50;
     private static final int VALOR_MAIOR = 150;
+
+    // Dados de cliente de teste
+    private static final String NOME_CLIENTE_TESTE = "Cliente Teste";
+    private static final String CPF_CLIENTE_TESTE = "12345678901";
+    private static final String EMAIL_CLIENTE_TESTE = "cliente@teste.com";
+    private static final String TELEFONE_CLIENTE_TESTE = "11999999999";
 
     private ContaId conta;
     private Saldo saldo;
@@ -94,14 +99,53 @@ public class SaldoFuncionalidade {
         }
     }
 
+    private static class MockProcessadorPagamento
+            extends org.ludum.dominio.financeiro.carteira.ProcessadorPagamentoExterno {
+        private boolean simulaSucesso = true;
+
+        public MockProcessadorPagamento(TransacaoRepository transacaoRepository) {
+            super(transacaoRepository);
+        }
+
+        public void setSimulaSucesso(boolean simulaSucesso) {
+            this.simulaSucesso = simulaSucesso;
+        }
+
+        @Override
+        protected void validarSolicitacao(ContaId contaId, java.math.BigDecimal valor, String moeda) {
+            if (!simulaSucesso) {
+                throw new IllegalArgumentException("Pagamento simulado como falha");
+            }
+        }
+
+        @Override
+        protected Object prepararDadosGateway(ContaId contaId, java.math.BigDecimal valor, String moeda,
+                String descricao) {
+            return new Object();
+        }
+
+        @Override
+        protected String executarPagamentoNoGateway(Object dadosGateway, java.math.BigDecimal valor) throws Exception {
+            return "mock-gateway-id";
+        }
+
+        @Override
+        public String executarPayout(ContaId contaId, java.math.BigDecimal valor, String descricao) throws Exception {
+            return "mock-payout-id";
+        }
+    }
+
     private MockTransacaoRepository mockTransacaoRepo;
     private MockCarteiraRepository mockCarteiraRepo;
+    private MockProcessadorPagamento mockProcessadorPagamento;
 
     @Before
     public void setup() {
         this.mockTransacaoRepo = new MockTransacaoRepository();
         this.mockCarteiraRepo = new MockCarteiraRepository();
+        this.mockProcessadorPagamento = new MockProcessadorPagamento(mockTransacaoRepo);
         this.operacoesService = new OperacoesFinanceirasService(mockTransacaoRepo, mockCarteiraRepo);
+        this.operacoesService.setProcessadorPagamento(mockProcessadorPagamento);
 
         this.conta = new ContaId("comprador");
         this.saldo = new Saldo();
@@ -123,7 +167,9 @@ public class SaldoFuncionalidade {
     }
 
     private void simularVendaDeJogo() {
-        operacoesService.adicionarSaldo(carteira, BigDecimal.valueOf(VALOR), true);
+        operacoesService.adicionarSaldo(conta, BigDecimal.valueOf(VALOR), "BRL", "Deposito teste",
+                NOME_CLIENTE_TESTE, CPF_CLIENTE_TESTE, EMAIL_CLIENTE_TESTE, TELEFONE_CLIENTE_TESTE);
+        carteira = mockCarteiraRepo.obterPorContaId(conta);
         carteira.liberarSaldoBloqueado();
         mockCarteiraRepo.salvar(carteira);
 
@@ -134,7 +180,9 @@ public class SaldoFuncionalidade {
 
     @Given("que adicionei R$50 na carteira")
     public void adicionei_d1_na_carteira() {
-        operacaoSucesso = operacoesService.adicionarSaldo(carteira, BigDecimal.valueOf(VALOR), true);
+        operacaoSucesso = operacoesService.adicionarSaldo(conta, BigDecimal.valueOf(VALOR), "BRL", "Deposito R$50",
+                NOME_CLIENTE_TESTE, CPF_CLIENTE_TESTE, EMAIL_CLIENTE_TESTE, TELEFONE_CLIENTE_TESTE);
+        carteira = mockCarteiraRepo.obterPorContaId(conta);
     }
 
     @And("o pagamento foi confirmado")
@@ -155,7 +203,11 @@ public class SaldoFuncionalidade {
 
     @Given("que tentei adicionar R$50 na carteira com pagamento pendente")
     public void adicionei_d2_na_carteira() {
-        operacaoSucesso = operacoesService.adicionarSaldo(carteira, BigDecimal.valueOf(VALOR), false);
+        mockProcessadorPagamento.setSimulaSucesso(false);
+        operacaoSucesso = operacoesService.adicionarSaldo(conta, BigDecimal.valueOf(VALOR), "BRL", "Deposito R$50",
+                NOME_CLIENTE_TESTE, CPF_CLIENTE_TESTE, EMAIL_CLIENTE_TESTE, TELEFONE_CLIENTE_TESTE);
+        carteira = mockCarteiraRepo.obterPorContaId(conta);
+        mockProcessadorPagamento.setSimulaSucesso(true);
     }
 
     @And("o pagamento está pendente OU foi recusado")
@@ -164,15 +216,16 @@ public class SaldoFuncionalidade {
 
     @Then("o saldo disponível não deve ser alterado e a transação de depósito não deve ser confirmada")
     public void o_saldo_disponível_nao_deve_ser_alterado_e_a_transacao_de_deposito_nao_deve_ser_confirmada() {
-        assertTrue(operacaoSucesso);
+        assertFalse(operacaoSucesso);
         Carteira carteiraAtual = mockCarteiraRepo.obterPorContaId(conta);
         assertEquals(BigDecimal.ZERO, carteiraAtual.getSaldo().getDisponivel());
-        assertEquals(StatusTransacao.PENDENTE, mockTransacaoRepo.getTransacoes().get(0).getStatus());
     }
 
     @Given("que adicionei R$150 na carteira")
     public void adicionei_150_na_carteira() {
-        operacaoSucesso = operacoesService.adicionarSaldo(carteira, BigDecimal.valueOf(VALOR_MAIOR), true);
+        operacaoSucesso = operacoesService.adicionarSaldo(conta, BigDecimal.valueOf(VALOR_MAIOR), "BRL",
+                "Deposito R$150", NOME_CLIENTE_TESTE, CPF_CLIENTE_TESTE, EMAIL_CLIENTE_TESTE, TELEFONE_CLIENTE_TESTE);
+        carteira = mockCarteiraRepo.obterPorContaId(conta);
     }
 
     @And("o pagamento foi confirmado para o depósito de R$150")
@@ -195,8 +248,9 @@ public class SaldoFuncionalidade {
 
     @Given("que tenho R$150 na carteira e está dentro do período de bloqueio de 24h")
     public void adicionei_150_na_carteira_compra_jogo() {
-        operacaoSucesso = operacoesService.adicionarSaldo(carteira, BigDecimal.valueOf(VALOR_MAIOR), true);
-        mockCarteiraRepo.salvar(carteira);
+        operacaoSucesso = operacoesService.adicionarSaldo(conta, BigDecimal.valueOf(VALOR_MAIOR), "BRL",
+                "Deposito R$150", NOME_CLIENTE_TESTE, CPF_CLIENTE_TESTE, EMAIL_CLIENTE_TESTE, TELEFONE_CLIENTE_TESTE);
+        carteira = mockCarteiraRepo.obterPorContaId(conta);
     }
 
     @And("tento comprar um jogo que custa R$50")
@@ -222,7 +276,9 @@ public class SaldoFuncionalidade {
 
     @Given("que tenho R$30 disponíveis na carteira")
     public void tenho_r_30_disponíveis_na_carteira() {
-        operacoesService.adicionarSaldo(carteira, BigDecimal.valueOf(VALOR_MENOR), true);
+        operacoesService.adicionarSaldo(conta, BigDecimal.valueOf(VALOR_MENOR), "BRL", "Deposito R$30",
+                NOME_CLIENTE_TESTE, CPF_CLIENTE_TESTE, EMAIL_CLIENTE_TESTE, TELEFONE_CLIENTE_TESTE);
+        carteira = mockCarteiraRepo.obterPorContaId(conta);
     }
 
     @And("o jogo custa R$25")
@@ -246,8 +302,9 @@ public class SaldoFuncionalidade {
 
     @Given("que tenho R$20 disponíveis na carteira")
     public void tenho_r_20_disponíveis_na_carteira() {
-        operacoesService.adicionarSaldo(carteira, BigDecimal.valueOf(VALOR_MENOR_AINDA), true);
-        mockCarteiraRepo.salvar(carteira);
+        operacoesService.adicionarSaldo(conta, BigDecimal.valueOf(VALOR_MENOR_AINDA), "BRL", "Deposito R$20",
+                NOME_CLIENTE_TESTE, CPF_CLIENTE_TESTE, EMAIL_CLIENTE_TESTE, TELEFONE_CLIENTE_TESTE);
+        carteira = mockCarteiraRepo.obterPorContaId(conta);
     }
 
     @And("o jogo custa R$27")
@@ -325,7 +382,8 @@ public class SaldoFuncionalidade {
 
     @When("solicito saque")
     public void solicito_saque() {
-        operacaoSucesso = operacoesService.solicitarSaque(carteira2, BigDecimal.valueOf(VALOR), dataVenda, false,
+        operacaoSucesso = operacoesService.solicitarSaque(carteira2, "recipient-mock-id", BigDecimal.valueOf(VALOR),
+                dataVenda, false,
                 false);
     }
 
@@ -348,7 +406,8 @@ public class SaldoFuncionalidade {
     public void solicito_saque_desse_valor() {
         Carteira carteiraAtual = mockCarteiraRepo.obterPorContaId(conta2);
         carteiraAtual.setContaExternaValida(true);
-        operacaoSucesso = operacoesService.solicitarSaque(carteiraAtual, BigDecimal.valueOf(VALOR), dataVenda, false,
+        operacaoSucesso = operacoesService.solicitarSaque(carteiraAtual, "recipient-mock-id", BigDecimal.valueOf(VALOR),
+                dataVenda, false,
                 false);
         if (operacaoSucesso) {
             mockCarteiraRepo.salvar(carteiraAtual);
@@ -377,7 +436,8 @@ public class SaldoFuncionalidade {
 
     @When("solicito o saque")
     public void solicito_saque_valido() {
-        operacaoSucesso = operacoesService.solicitarSaque(carteira2, BigDecimal.valueOf(VALOR), dataVenda, false,
+        operacaoSucesso = operacoesService.solicitarSaque(carteira2, "recipient-mock-id", BigDecimal.valueOf(VALOR),
+                dataVenda, false,
                 false);
     }
 
@@ -420,7 +480,8 @@ public class SaldoFuncionalidade {
 
     @When("solicito saque do valor arrecadado")
     public void solicito_saque_do_valor_arrecadado() {
-        operacaoSucesso = operacoesService.solicitarSaque(carteira2, BigDecimal.valueOf(VALOR), dataVenda, true, true);
+        operacaoSucesso = operacoesService.solicitarSaque(carteira2, "recipient-mock-id", BigDecimal.valueOf(VALOR),
+                dataVenda, true, true);
     }
 
     @Then("o valor arrecadado deve ser liberado e transferido para minha conta externa")

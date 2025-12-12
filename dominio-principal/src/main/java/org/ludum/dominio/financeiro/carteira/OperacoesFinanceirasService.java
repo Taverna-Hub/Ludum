@@ -8,6 +8,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.ludum.dominio.financeiro.carteira.ProcessadorPagamentoExterno.ResultadoPagamento;
 import org.ludum.dominio.financeiro.carteira.entidades.Carteira;
+import org.ludum.dominio.financeiro.carteira.entidades.Saldo;
 import org.ludum.dominio.financeiro.transacao.TransacaoRepository;
 import org.ludum.dominio.financeiro.transacao.entidades.Transacao;
 import org.ludum.dominio.financeiro.transacao.enums.StatusTransacao;
@@ -28,29 +29,73 @@ public class OperacoesFinanceirasService {
         this.processadorPagamento = processadorPagamento;
     }
 
-    public boolean adicionarSaldo(Carteira carteira, BigDecimal valor, boolean pagamentoConfirmado) {
-        Objects.requireNonNull(carteira, "Carteira não pode ser nula");
+    public Carteira obterOuCriarCarteira(ContaId contaId) {
+        Objects.requireNonNull(contaId, "ContaId não pode ser nulo");
+
+        Carteira carteira = carteiraRepository.obterPorContaId(contaId);
+        if (carteira == null) {
+            carteira = new Carteira(contaId, new Saldo());
+            carteiraRepository.salvar(carteira);
+        }
+        return carteira;
+    }
+
+    public Carteira obterCarteira(ContaId contaId) {
+        Objects.requireNonNull(contaId, "ContaId não pode ser nulo");
+        return carteiraRepository.obterPorContaId(contaId);
+    }
+
+    public boolean adicionarSaldo(ContaId contaId, BigDecimal valor, String moeda, String descricao,
+            String nomeCliente, String cpfCnpjCliente, String emailCliente, String telefoneCliente) {
+        Objects.requireNonNull(contaId, "ContaId não pode ser nulo");
         Objects.requireNonNull(valor, "Valor não pode ser nulo");
+        Objects.requireNonNull(nomeCliente, "Nome do cliente não pode ser nulo");
+        Objects.requireNonNull(cpfCnpjCliente, "CPF/CNPJ do cliente não pode ser nulo");
+        Objects.requireNonNull(emailCliente, "Email do cliente não pode ser nulo");
 
         if (valor.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Valor deve ser maior que zero");
         }
 
-        Transacao transacao = new Transacao(null, carteira.getId(), null, TipoTransacao.CREDITO,
-                pagamentoConfirmado ? StatusTransacao.CONFIRMADA : StatusTransacao.PENDENTE,
-                LocalDateTime.now(), valor);
+        if (processadorPagamento == null) {
+            throw new IllegalStateException(
+                    "Processador de pagamento não configurado. Use setProcessadorPagamento() primeiro.");
+        }
 
-        if (pagamentoConfirmado) {
+        Carteira carteira = obterOuCriarCarteira(contaId);
+
+        ResultadoPagamento resultado = processadorPagamento.processar(contaId, valor, moeda, descricao,
+                nomeCliente, cpfCnpjCliente, emailCliente, telefoneCliente);
+
+        if (resultado.isSucesso()) {
             if (valor.compareTo(new BigDecimal("100")) > 0) {
                 carteira.getSaldo().addBloqueado(valor);
-                transacao.setStatus(StatusTransacao.PENDENTE);
             } else {
                 carteira.getSaldo().addDisponivel(valor);
             }
+            carteiraRepository.salvar(carteira);
         }
 
-        transacaoRepository.salvar(transacao);
-        return true;
+        return resultado.isSucesso();
+    }
+
+    public void bloquearSaldo(Carteira carteira, BigDecimal valor) {
+        Objects.requireNonNull(carteira, "Carteira não pode ser nula");
+        Objects.requireNonNull(valor, "Valor não pode ser nulo");
+
+        if (carteira.getSaldo().getDisponivel().compareTo(valor) < 0) {
+            throw new IllegalStateException("Saldo insuficiente para bloqueio");
+        }
+
+        carteira.getSaldo().subtrairDisponivel(valor);
+        carteira.getSaldo().addBloqueado(valor);
+        carteiraRepository.salvar(carteira);
+    }
+
+    public void liberarSaldoBloqueado(Carteira carteira) {
+        Objects.requireNonNull(carteira, "Carteira não pode ser nula");
+        carteira.liberarSaldoBloqueado();
+        carteiraRepository.salvar(carteira);
     }
 
     public boolean comprarJogo(Carteira carteiraSaida, Carteira carteiraEntrada, BigDecimal valor) {
@@ -64,23 +109,19 @@ public class OperacoesFinanceirasService {
 
         if (carteiraSaida.getSaldo().getDisponivel().compareTo(valor) >= 0) {
             carteiraSaida.getSaldo().subtrairDisponivel(valor);
-
             carteiraEntrada.getSaldo().addBloqueado(valor);
 
             Transacao transacaoDebito = new Transacao(null, carteiraSaida.getId(), carteiraEntrada.getId(),
-                    TipoTransacao.DEBITO,
-                    StatusTransacao.CONFIRMADA, LocalDateTime.now(), valor);
+                    TipoTransacao.DEBITO, StatusTransacao.CONFIRMADA, LocalDateTime.now(), valor);
             transacaoRepository.salvar(transacaoDebito);
 
             Transacao transacaoCredito = new Transacao(null, carteiraSaida.getId(), carteiraEntrada.getId(),
-                    TipoTransacao.CREDITO,
-                    StatusTransacao.PENDENTE, LocalDateTime.now(), valor);
+                    TipoTransacao.CREDITO, StatusTransacao.PENDENTE, LocalDateTime.now(), valor);
             transacaoRepository.salvar(transacaoCredito);
 
             return true;
-        } else {
-            return false;
         }
+        return false;
     }
 
     public boolean solicitarReembolso(Carteira carteira, BigDecimal valor, Date dataTransacao) {
@@ -95,87 +136,18 @@ public class OperacoesFinanceirasService {
 
             transacaoRepository.salvar(transacao);
             return true;
-        } else {
-            return false;
         }
+        return false;
     }
 
-    public boolean solicitarSaque(Carteira carteira, BigDecimal valor,
+    public boolean solicitarSaque(Carteira carteira, String recipientId, BigDecimal valor,
             Date dataVenda, boolean isCrowdfunding, boolean metaAtingida) {
 
         if (!carteira.isContaExternaValida()) {
             return false;
         }
 
-        long diferencaMillis = new Date().getTime() - dataVenda.getTime();
-        long diferencaHoras = TimeUnit.MILLISECONDS.toHours(diferencaMillis);
-
-        if (isCrowdfunding) {
-            if (!metaAtingida) {
-                return false;
-            }
-            if (diferencaHoras < 24) {
-                return false;
-            }
-        } else if (diferencaHoras < 24) {
-            return false;
-        }
-
-        if (carteira.getSaldo().getDisponivel().compareTo(valor) >= 0) {
-            carteira.getSaldo().subtrairDisponivel(valor);
-
-            Transacao transacao = new Transacao(null, carteira.getId(), null, TipoTransacao.SAQUE,
-                    StatusTransacao.CONFIRMADA, LocalDateTime.now(), valor);
-
-            transacaoRepository.salvar(transacao);
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    public ResultadoPagamento adicionarSaldoComPagamentoExterno(
-            ContaId contaId,
-            BigDecimal valor,
-            String moeda,
-            String descricao) {
-
-        if (processadorPagamento == null) {
-            throw new IllegalStateException(
-                    "Processador de pagamento não configurado. Use setProcessadorPagamento() primeiro.");
-        }
-
-        ResultadoPagamento resultado = processadorPagamento.processar(contaId, valor, moeda, descricao);
-
-        if (resultado.isSucesso()) {
-            try {
-                Carteira carteira = carteiraRepository.obterPorContaId(contaId);
-                adicionarSaldo(carteira, valor, true);
-                carteiraRepository.salvar(carteira);
-                System.out.println("Saldo adicionado com sucesso na carteira");
-            } catch (Exception e) {
-                System.err.println("Erro ao adicionar saldo após pagamento confirmado: " + e.getMessage());
-            }
-        }
-
-        return resultado;
-    }
-
-    public boolean solicitarSaqueComPayout(
-            Carteira carteira,
-            String recipientId,
-            BigDecimal valor,
-            Date dataVenda,
-            boolean isCrowdfunding,
-            boolean metaAtingida) {
-
-        if (!carteira.isContaExternaValida()) {
-            System.err.println("Erro: Conta externa não configurada");
-            return false;
-        }
-
         if (recipientId == null || recipientId.isBlank()) {
-            System.err.println("Erro: RecipientId não configurado");
             return false;
         }
 
@@ -184,49 +156,35 @@ public class OperacoesFinanceirasService {
 
         if (isCrowdfunding) {
             if (!metaAtingida) {
-                System.err.println("Erro: Meta de crowdfunding não atingida");
                 return false;
             }
             if (diferencaHoras < 24) {
-                System.err.println("Erro: Deve aguardar 24h após atingir a meta");
                 return false;
             }
         } else if (diferencaHoras < 24) {
-            System.err.println("Erro: Deve aguardar 24h após a venda");
             return false;
         }
 
         if (carteira.getSaldo().getDisponivel().compareTo(valor) < 0) {
-            System.err.println("Erro: Saldo insuficiente");
             return false;
         }
 
         if (processadorPagamento == null) {
-            System.err.println("Erro: Processador de pagamento não configurado");
             return false;
         }
 
         try {
-            String transferId = processadorPagamento.executarPayout(carteira.getId(), valor, "Saque de vendas - Ludum");
+            processadorPagamento.executarPayout(carteira.getId(), valor, "Saque de vendas - Ludum");
 
             carteira.getSaldo().subtrairDisponivel(valor);
 
-            Transacao transacao = new Transacao(
-                    null,
-                    carteira.getId(),
-                    null,
-                    TipoTransacao.SAQUE,
-                    StatusTransacao.CONFIRMADA,
-                    LocalDateTime.now(),
-                    valor);
+            Transacao transacao = new Transacao(null, carteira.getId(), null, TipoTransacao.SAQUE,
+                    StatusTransacao.CONFIRMADA, LocalDateTime.now(), valor);
             transacaoRepository.salvar(transacao);
             carteiraRepository.salvar(carteira);
 
-            System.out.println("Saque realizado com sucesso - Transfer ID: " + transferId);
             return true;
-
         } catch (Exception e) {
-            System.err.println("Erro ao executar payout: " + e.getMessage());
             return false;
         }
     }

@@ -6,11 +6,17 @@ import org.ludum.dominio.financeiro.carteira.CarteiraRepository;
 import org.ludum.dominio.financeiro.carteira.ProcessadorPagamentoExterno.ResultadoPagamento;
 import org.ludum.dominio.financeiro.carteira.entidades.Carteira;
 import org.ludum.dominio.financeiro.carteira.entidades.Saldo;
+import org.ludum.dominio.financeiro.transacao.TransacaoRepository;
+import org.ludum.dominio.financeiro.transacao.entidades.Recibo;
+import org.ludum.dominio.financeiro.transacao.entidades.Transacao;
+import org.ludum.dominio.financeiro.transacao.entidades.TransacaoId;
 import org.ludum.dominio.identidade.conta.entities.ContaId;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -20,6 +26,46 @@ class AsaasProcessadorPagamentoTest {
   private AsaasProcessadorPagamento processador;
   private static String API_KEY;
   private CarteiraRepository mockCarteiraRepository;
+  private MockTransacaoRepository mockTransacaoRepository;
+
+  // Dados de cliente de teste
+  private static final String NOME_CLIENTE_TESTE = "Cliente Teste";
+  private static final String CPF_CLIENTE_TESTE = "12345678901";
+  private static final String EMAIL_CLIENTE_TESTE = "cliente@teste.com";
+  private static final String TELEFONE_CLIENTE_TESTE = "11999999999";
+
+  // Mock do TransacaoRepository para capturar as transações salvas
+  private static class MockTransacaoRepository implements TransacaoRepository {
+    private List<Transacao> transacoes = new ArrayList<>();
+    private List<Recibo> recibos = new ArrayList<>();
+
+    @Override
+    public Transacao obterPorId(TransacaoId id) {
+      return transacoes.stream()
+          .filter(t -> t.getTransacaoId().equals(id))
+          .findFirst()
+          .orElse(null);
+    }
+
+    @Override
+    public void salvarRecibo(Recibo recibo) {
+      recibos.add(recibo);
+    }
+
+    @Override
+    public void salvar(Transacao transacao) {
+      transacoes.add(transacao);
+    }
+
+    public List<Transacao> getTransacoes() {
+      return new ArrayList<>(transacoes);
+    }
+
+    public void clear() {
+      transacoes.clear();
+      recibos.clear();
+    }
+  }
 
   @BeforeEach
   void setUp() {
@@ -55,7 +101,9 @@ class AsaasProcessadorPagamentoTest {
       }
     };
 
-    processador = new AsaasProcessadorPagamento(API_KEY, mockCarteiraRepository);
+    mockTransacaoRepository = new MockTransacaoRepository();
+
+    processador = new AsaasProcessadorPagamento(API_KEY, mockCarteiraRepository, mockTransacaoRepository);
   }
 
   @Test
@@ -106,7 +154,8 @@ class AsaasProcessadorPagamentoTest {
     String moeda = "BRL";
     String descricao = "Teste de adicionar saldo";
 
-    ResultadoPagamento resultado = processador.processar(contaId, valor, moeda, descricao);
+    ResultadoPagamento resultado = processador.processar(contaId, valor, moeda, descricao,
+        NOME_CLIENTE_TESTE, CPF_CLIENTE_TESTE, EMAIL_CLIENTE_TESTE, TELEFONE_CLIENTE_TESTE);
 
     assertTrue(resultado.isSucesso());
     assertNotNull(resultado.getIdGateway());
@@ -123,7 +172,8 @@ class AsaasProcessadorPagamentoTest {
     BigDecimal valor = new BigDecimal("3.00");
     String moeda = "BRL";
 
-    ResultadoPagamento resultado = processador.processar(contaId, valor, moeda, "Teste");
+    ResultadoPagamento resultado = processador.processar(contaId, valor, moeda, "Teste",
+        NOME_CLIENTE_TESTE, CPF_CLIENTE_TESTE, EMAIL_CLIENTE_TESTE, TELEFONE_CLIENTE_TESTE);
 
     assertFalse(resultado.isSucesso());
     assertTrue(resultado.getMensagemErro().contains("valor mínimo"));
@@ -136,7 +186,8 @@ class AsaasProcessadorPagamentoTest {
     BigDecimal valor = new BigDecimal("50.00");
     String moeda = "USD";
 
-    ResultadoPagamento resultado = processador.processar(contaId, valor, moeda, "Teste");
+    ResultadoPagamento resultado = processador.processar(contaId, valor, moeda, "Teste",
+        NOME_CLIENTE_TESTE, CPF_CLIENTE_TESTE, EMAIL_CLIENTE_TESTE, TELEFONE_CLIENTE_TESTE);
 
     assertFalse(resultado.isSucesso());
     assertTrue(resultado.getMensagemErro().contains("BRL"));
@@ -156,7 +207,8 @@ class AsaasProcessadorPagamentoTest {
     ContaId contaId = new ContaId(customerId);
     BigDecimal valor = new BigDecimal("25.00");
 
-    ResultadoPagamento resultado = processador.processar(contaId, valor, "BRL", "Teste consulta");
+    ResultadoPagamento resultado = processador.processar(contaId, valor, "BRL", "Teste consulta",
+        NOME_CLIENTE_TESTE, CPF_CLIENTE_TESTE, EMAIL_CLIENTE_TESTE, TELEFONE_CLIENTE_TESTE);
     assertTrue(resultado.isSucesso());
 
     String status = processador.consultarStatusPagamento(resultado.getIdGateway());

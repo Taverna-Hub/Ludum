@@ -42,6 +42,12 @@ import io.cucumber.java.en.When;
 
 public class ComprarJogoFuncionalidade {
 
+    // Dados de cliente de teste
+    private static final String NOME_CLIENTE_TESTE = "Cliente Teste";
+    private static final String CPF_CLIENTE_TESTE = "12345678901";
+    private static final String EMAIL_CLIENTE_TESTE = "cliente@teste.com";
+    private static final String TELEFONE_CLIENTE_TESTE = "11999999999";
+
     private ContaId conta;
     private ContaId contaDesenvolvedor;
     private BigDecimal valorJogo;
@@ -166,14 +172,45 @@ public class ComprarJogoFuncionalidade {
         }
     }
 
+    private static class MockProcessadorPagamento
+            extends org.ludum.dominio.financeiro.carteira.ProcessadorPagamentoExterno {
+        public MockProcessadorPagamento(TransacaoRepository transacaoRepository) {
+            super(transacaoRepository);
+        }
+
+        @Override
+        protected void validarSolicitacao(ContaId contaId, java.math.BigDecimal valor, String moeda) {
+        }
+
+        @Override
+        protected Object prepararDadosGateway(ContaId contaId, java.math.BigDecimal valor, String moeda,
+                String descricao) {
+            return new Object();
+        }
+
+        @Override
+        protected String executarPagamentoNoGateway(Object dadosGateway, java.math.BigDecimal valor) throws Exception {
+            return "mock-gateway-id";
+        }
+
+        @Override
+        public String executarPayout(ContaId contaId, java.math.BigDecimal valor, String descricao) throws Exception {
+            return "mock-payout-id";
+        }
+    }
+
+    private MockProcessadorPagamento mockProcessadorPagamento;
+
     @Before
     public void setup() {
         this.mockTransacaoRepository = new MockTransacaoRepository();
         this.mockBibliotecaRepository = new MockBibliotecaRepository();
         this.mockJogoRepository = new MockJogoRepository();
         this.mockCarteiraRepository = new MockCarteiraRepository();
+        this.mockProcessadorPagamento = new MockProcessadorPagamento(mockTransacaoRepository);
 
         this.operacoesService = new OperacoesFinanceirasService(mockTransacaoRepository, mockCarteiraRepository);
+        this.operacoesService.setProcessadorPagamento(mockProcessadorPagamento);
 
         this.conta = new ContaId("comprador");
         this.contaDesenvolvedor = new ContaId("desenvolvedor");
@@ -310,8 +347,11 @@ public class ComprarJogoFuncionalidade {
 
     @When("eu realizo a compra no valor de R${int}")
     public void eu_realizo_a_compra_no_valor_de_r$(Integer valorCompra) {
-        operacoesService.adicionarSaldo(carteira, new BigDecimal(valorCompra), true);
+        operacoesService.adicionarSaldo(conta, new BigDecimal(valorCompra), "BRL", "Deposito para compra",
+                NOME_CLIENTE_TESTE, CPF_CLIENTE_TESTE, EMAIL_CLIENTE_TESTE, TELEFONE_CLIENTE_TESTE);
+        carteira = mockCarteiraRepository.obterPorContaId(conta);
         carteira.liberarSaldoBloqueado();
+        mockCarteiraRepository.salvar(carteira);
 
         if (!arquivoDisponivel) {
             operacaoSucesso = false;
@@ -342,8 +382,11 @@ public class ComprarJogoFuncionalidade {
         if (!arquivoDisponivel) {
             operacaoSucesso = false;
         } else {
-            operacoesService.adicionarSaldo(carteira, BigDecimal.valueOf(100), true);
+            operacoesService.adicionarSaldo(conta, BigDecimal.valueOf(100), "BRL", "Deposito para compra",
+                    NOME_CLIENTE_TESTE, CPF_CLIENTE_TESTE, EMAIL_CLIENTE_TESTE, TELEFONE_CLIENTE_TESTE);
+            carteira = mockCarteiraRepository.obterPorContaId(conta);
             carteira.liberarSaldoBloqueado();
+            mockCarteiraRepository.salvar(carteira);
             operacaoSucesso = operacoesService.comprarJogo(carteira, carteiraDesenvolvedor, BigDecimal.valueOf(100));
         }
     }
@@ -361,8 +404,11 @@ public class ComprarJogoFuncionalidade {
 
     @When("compro o jogo")
     public void compro_o_jogo() {
-        operacoesService.adicionarSaldo(carteira, this.valorJogo, true);
+        operacoesService.adicionarSaldo(conta, this.valorJogo, "BRL", "Deposito para compra",
+                NOME_CLIENTE_TESTE, CPF_CLIENTE_TESTE, EMAIL_CLIENTE_TESTE, TELEFONE_CLIENTE_TESTE);
+        carteira = mockCarteiraRepository.obterPorContaId(conta);
         carteira.liberarSaldoBloqueado();
+        mockCarteiraRepository.salvar(carteira);
 
         if (jaPossuiJogo) {
             operacaoSucesso = false;
@@ -387,8 +433,11 @@ public class ComprarJogoFuncionalidade {
         if (jaPossuiJogo) {
             operacaoSucesso = false;
         } else {
-            operacoesService.adicionarSaldo(carteira, this.valorJogo, true);
+            operacoesService.adicionarSaldo(conta, this.valorJogo, "BRL", "Deposito para compra",
+                    NOME_CLIENTE_TESTE, CPF_CLIENTE_TESTE, EMAIL_CLIENTE_TESTE, TELEFONE_CLIENTE_TESTE);
+            carteira = mockCarteiraRepository.obterPorContaId(conta);
             carteira.liberarSaldoBloqueado();
+            mockCarteiraRepository.salvar(carteira);
             operacaoSucesso = operacoesService.comprarJogo(carteira, carteiraDesenvolvedor, this.valorJogo);
         }
     }
