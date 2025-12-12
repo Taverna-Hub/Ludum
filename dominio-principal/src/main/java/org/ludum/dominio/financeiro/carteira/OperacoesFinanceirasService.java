@@ -45,9 +45,13 @@ public class OperacoesFinanceirasService {
         return carteiraRepository.obterPorContaId(contaId);
     }
 
-    public boolean adicionarSaldo(ContaId contaId, BigDecimal valor, String moeda, String descricao) {
+    public boolean adicionarSaldo(ContaId contaId, BigDecimal valor, String moeda, String descricao,
+            String nomeCliente, String cpfCnpjCliente, String emailCliente, String telefoneCliente) {
         Objects.requireNonNull(contaId, "ContaId não pode ser nulo");
         Objects.requireNonNull(valor, "Valor não pode ser nulo");
+        Objects.requireNonNull(nomeCliente, "Nome do cliente não pode ser nulo");
+        Objects.requireNonNull(cpfCnpjCliente, "CPF/CNPJ do cliente não pode ser nulo");
+        Objects.requireNonNull(emailCliente, "Email do cliente não pode ser nulo");
 
         if (valor.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Valor deve ser maior que zero");
@@ -60,7 +64,8 @@ public class OperacoesFinanceirasService {
 
         Carteira carteira = obterOuCriarCarteira(contaId);
 
-        ResultadoPagamento resultado = processadorPagamento.processar(contaId, valor, moeda, descricao);
+        ResultadoPagamento resultado = processadorPagamento.processar(contaId, valor, moeda, descricao,
+                nomeCliente, cpfCnpjCliente, emailCliente, telefoneCliente);
 
         if (resultado.isSucesso()) {
             if (valor.compareTo(new BigDecimal("100")) > 0) {

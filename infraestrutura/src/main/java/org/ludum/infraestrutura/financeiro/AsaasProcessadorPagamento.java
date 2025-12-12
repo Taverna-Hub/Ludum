@@ -312,4 +312,14 @@ public class AsaasProcessadorPagamento extends ProcessadorPagamentoExterno {
   public void clearCustomerId() {
     currentCustomerId.remove();
   }
+
+  @Override
+  protected void configurarCliente(String nome, String cpfCnpj, String email, String telefone) {
+    try {
+      String customerId = criarCliente(nome, cpfCnpj, email, telefone);
+      setCustomerId(customerId);
+    } catch (IOException e) {
+      System.err.println("Erro ao criar cliente no Asaas: " + e.getMessage());
+    }
+  }
 }

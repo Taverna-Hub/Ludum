@@ -33,6 +33,12 @@ public class SaldoFuncionalidade {
     private static final int VALOR = 50;
     private static final int VALOR_MAIOR = 150;
 
+    // Dados de cliente de teste
+    private static final String NOME_CLIENTE_TESTE = "Cliente Teste";
+    private static final String CPF_CLIENTE_TESTE = "12345678901";
+    private static final String EMAIL_CLIENTE_TESTE = "cliente@teste.com";
+    private static final String TELEFONE_CLIENTE_TESTE = "11999999999";
+
     private ContaId conta;
     private Saldo saldo;
     private Carteira carteira;
@@ -161,7 +167,8 @@ public class SaldoFuncionalidade {
     }
 
     private void simularVendaDeJogo() {
-        operacoesService.adicionarSaldo(conta, BigDecimal.valueOf(VALOR), "BRL", "Deposito teste");
+        operacoesService.adicionarSaldo(conta, BigDecimal.valueOf(VALOR), "BRL", "Deposito teste",
+                NOME_CLIENTE_TESTE, CPF_CLIENTE_TESTE, EMAIL_CLIENTE_TESTE, TELEFONE_CLIENTE_TESTE);
         carteira = mockCarteiraRepo.obterPorContaId(conta);
         carteira.liberarSaldoBloqueado();
         mockCarteiraRepo.salvar(carteira);
@@ -173,7 +180,8 @@ public class SaldoFuncionalidade {
 
     @Given("que adicionei R$50 na carteira")
     public void adicionei_d1_na_carteira() {
-        operacaoSucesso = operacoesService.adicionarSaldo(conta, BigDecimal.valueOf(VALOR), "BRL", "Deposito R$50");
+        operacaoSucesso = operacoesService.adicionarSaldo(conta, BigDecimal.valueOf(VALOR), "BRL", "Deposito R$50",
+                NOME_CLIENTE_TESTE, CPF_CLIENTE_TESTE, EMAIL_CLIENTE_TESTE, TELEFONE_CLIENTE_TESTE);
         carteira = mockCarteiraRepo.obterPorContaId(conta);
     }
 
@@ -196,7 +204,8 @@ public class SaldoFuncionalidade {
     @Given("que tentei adicionar R$50 na carteira com pagamento pendente")
     public void adicionei_d2_na_carteira() {
         mockProcessadorPagamento.setSimulaSucesso(false);
-        operacaoSucesso = operacoesService.adicionarSaldo(conta, BigDecimal.valueOf(VALOR), "BRL", "Deposito R$50");
+        operacaoSucesso = operacoesService.adicionarSaldo(conta, BigDecimal.valueOf(VALOR), "BRL", "Deposito R$50",
+                NOME_CLIENTE_TESTE, CPF_CLIENTE_TESTE, EMAIL_CLIENTE_TESTE, TELEFONE_CLIENTE_TESTE);
         carteira = mockCarteiraRepo.obterPorContaId(conta);
         mockProcessadorPagamento.setSimulaSucesso(true);
     }
@@ -215,7 +224,7 @@ public class SaldoFuncionalidade {
     @Given("que adicionei R$150 na carteira")
     public void adicionei_150_na_carteira() {
         operacaoSucesso = operacoesService.adicionarSaldo(conta, BigDecimal.valueOf(VALOR_MAIOR), "BRL",
-                "Deposito R$150");
+                "Deposito R$150", NOME_CLIENTE_TESTE, CPF_CLIENTE_TESTE, EMAIL_CLIENTE_TESTE, TELEFONE_CLIENTE_TESTE);
         carteira = mockCarteiraRepo.obterPorContaId(conta);
     }
 
@@ -240,7 +249,7 @@ public class SaldoFuncionalidade {
     @Given("que tenho R$150 na carteira e está dentro do período de bloqueio de 24h")
     public void adicionei_150_na_carteira_compra_jogo() {
         operacaoSucesso = operacoesService.adicionarSaldo(conta, BigDecimal.valueOf(VALOR_MAIOR), "BRL",
-                "Deposito R$150");
+                "Deposito R$150", NOME_CLIENTE_TESTE, CPF_CLIENTE_TESTE, EMAIL_CLIENTE_TESTE, TELEFONE_CLIENTE_TESTE);
         carteira = mockCarteiraRepo.obterPorContaId(conta);
     }
 
@@ -267,7 +276,8 @@ public class SaldoFuncionalidade {
 
     @Given("que tenho R$30 disponíveis na carteira")
     public void tenho_r_30_disponíveis_na_carteira() {
-        operacoesService.adicionarSaldo(conta, BigDecimal.valueOf(VALOR_MENOR), "BRL", "Deposito R$30");
+        operacoesService.adicionarSaldo(conta, BigDecimal.valueOf(VALOR_MENOR), "BRL", "Deposito R$30",
+                NOME_CLIENTE_TESTE, CPF_CLIENTE_TESTE, EMAIL_CLIENTE_TESTE, TELEFONE_CLIENTE_TESTE);
         carteira = mockCarteiraRepo.obterPorContaId(conta);
     }
 
@@ -292,7 +302,8 @@ public class SaldoFuncionalidade {
 
     @Given("que tenho R$20 disponíveis na carteira")
     public void tenho_r_20_disponíveis_na_carteira() {
-        operacoesService.adicionarSaldo(conta, BigDecimal.valueOf(VALOR_MENOR_AINDA), "BRL", "Deposito R$20");
+        operacoesService.adicionarSaldo(conta, BigDecimal.valueOf(VALOR_MENOR_AINDA), "BRL", "Deposito R$20",
+                NOME_CLIENTE_TESTE, CPF_CLIENTE_TESTE, EMAIL_CLIENTE_TESTE, TELEFONE_CLIENTE_TESTE);
         carteira = mockCarteiraRepo.obterPorContaId(conta);
     }
 
