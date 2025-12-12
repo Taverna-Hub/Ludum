@@ -160,7 +160,8 @@ public class UploadDeJogoFuncionalidade {
     @When("eu tento enviar o arquivo {string}")
     public void oPadraoDeNomeDeArquivoDefinidoE(String str) {
         try {
-            this.gestaoDeJogosService.processarUpload(this.contaId, this.jogoId, new PacoteZip(new byte[10]),
+            byte[] validHeader = new byte[] { 0x50, 0x4B, 0x03, 0x04 };
+            this.gestaoDeJogosService.processarUpload(this.contaId, this.jogoId, new PacoteZip(validHeader),
                     new VersaoId(UUID.randomUUID().toString()), str, "a");
             this.passou = true;
         } catch (IllegalStateException | IllegalArgumentException e) {
@@ -199,7 +200,8 @@ public class UploadDeJogoFuncionalidade {
             this.jogoRepository.salvar(new Jogo(newJogoId, new ContaId(UUID.randomUUID().toString()), "jogo-jogo-jogo",
                     "JogoJogoJogo", new URL("https://exemplo.com/capa.jpg"), List.of(new Tag(new TagId("a"), "aaa")),
                     false, LocalDate.of(2021, 3, 15)));
-            this.gestaoDeJogosService.processarUpload(this.contaId, newJogoId, new PacoteZip(new byte[10]),
+            byte[] validHeader = new byte[] { 0x50, 0x4B, 0x03, 0x04 };
+            this.gestaoDeJogosService.processarUpload(this.contaId, newJogoId, new PacoteZip(validHeader),
                     new VersaoId(UUID.randomUUID().toString()), str, "a");
             this.passou = true;
         } catch (IllegalStateException e) {
@@ -224,8 +226,19 @@ public class UploadDeJogoFuncionalidade {
 
     @When("o sistema de verificação de segurança analisa o arquivo {string}")
     public void oSistemaDeverificacaoAnalisaOArquivo(String str) {
+        if ("SEGURO".equals(str)) {
+            // Set valid header
+            byte[] validHeader = new byte[] { 0x50, 0x4B, 0x03, 0x04 };
+            this.versao = new Versao(new PacoteZip(validHeader), this.versao.getJogoId(), this.versao.getId(),
+                    this.versao.getNomeVersao(), this.versao.getDescricaoVersao());
+        } else {
+            // Set invalid header
+            this.versao = new Versao(new PacoteZip(new byte[10]), this.versao.getJogoId(), this.versao.getId(),
+                    this.versao.getNomeVersao(), this.versao.getDescricaoVersao());
+        }
+
         try {
-            this.gestaoDeJogosService.verificarMalware(this.versao.getPacoteZip(), str);
+            this.gestaoDeJogosService.verificarMalware(this.versao.getPacoteZip());
             this.passou = true;
         } catch (IllegalStateException e) {
             this.passou = false;
