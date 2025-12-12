@@ -12,19 +12,17 @@ public class PublicacaoPublicado implements EstrategiaPublicacao {
     public List<String> validar(Jogo jogo) {
         List<String> erros = new ArrayList<>();
         
-        erros.add("Jogo já está publicado na plataforma");
-        erros.add("Não é possível publicar novamente um jogo que já está público");
-        erros.add("Se deseja atualizar o jogo, use a funcionalidade de atualização");
+        if (jogo.getStatus() != StatusPublicacao.PUBLICADO) {
+            erros.add("Apenas jogos publicados podem ser arquivados");
+            erros.add("Status atual: " + jogo.getStatus());
+        }
         
         return erros;
     }
     
     @Override
     public void executar(Jogo jogo) {
-        throw new IllegalStateException(
-            "Não é possível publicar um jogo que já está publicado. " +
-            "Status atual: " + jogo.getStatus()
-        );
+        jogo.arquivar();
     }
     
     @Override

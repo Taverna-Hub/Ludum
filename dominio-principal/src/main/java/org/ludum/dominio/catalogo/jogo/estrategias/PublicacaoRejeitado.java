@@ -12,23 +12,21 @@ public class PublicacaoRejeitado implements EstrategiaPublicacao {
     public List<String> validar(Jogo jogo) {
         List<String> erros = new ArrayList<>();
         
-        erros.add("Jogo foi rejeitado pela equipe de validação");
-        erros.add("Corrija os problemas identificados antes de reenviar para publicação");
-        erros.add("Use a funcionalidade de reenvio após as correções");
+        if (jogo.getStatus() != StatusPublicacao.AGUARDANDO_VALIDACAO) {
+            erros.add("Apenas jogos aguardando validação podem ser rejeitados");
+            erros.add("Status atual: " + jogo.getStatus());
+        }
         
         return erros;
     }
     
     @Override
     public void executar(Jogo jogo) {
-        throw new IllegalStateException(
-            "Não é possível publicar um jogo rejeitado. " +
-            "Corrija os problemas e reenvie para validação."
-        );
+        jogo.rejeitar();
     }
     
     @Override
     public boolean podeAplicar(StatusPublicacao status) {
-        return status == StatusPublicacao.REJEITADO;
+        return status == StatusPublicacao.AGUARDANDO_VALIDACAO;
     }
 }

@@ -22,8 +22,7 @@ public class PublicacaoArquivado implements EstrategiaPublicacao {
     @Override
     public void executar(Jogo jogo) {
         throw new IllegalStateException(
-            "Não é possível publicar um jogo arquivado. " +
-            "Desarquive o jogo antes de publicá-lo."
+            "Operação bloqueada: jogo está arquivado"
         );
     }
     
