@@ -5,9 +5,9 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  register: (name: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  logout: () => void;
+  login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  register: (name: string, username: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  logout: () => Promise<void>;
   updateProfile: (updates: Partial<Pick<User, 'name' | 'accountType' | 'pixKey'>>) => void;
 }
 

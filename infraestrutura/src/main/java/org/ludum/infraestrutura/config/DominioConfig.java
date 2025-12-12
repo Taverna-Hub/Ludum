@@ -2,6 +2,8 @@ package org.ludum.infraestrutura.config;
 
 import org.ludum.dominio.catalogo.jogo.repositorios.JogoRepository;
 import org.ludum.dominio.catalogo.jogo.services.PublicacaoService;
+import org.ludum.dominio.comunidade.post.repositorios.PostRepository;
+import org.ludum.dominio.comunidade.post.services.PostService;
 import org.ludum.dominio.catalogo.biblioteca.repositorios.BibliotecaRepository;
 import org.ludum.dominio.catalogo.tag.TagRepository;
 import org.ludum.dominio.comunidade.review.repositorios.ReviewRepository;
@@ -26,6 +28,11 @@ public class DominioConfig {
             JogoRepository jogoRepository,
             ContaRepository contaRepository) {
         return new PublicacaoService(jogoRepository, contaRepository);
+    }
+
+    @Bean
+    public PostService postService(PostRepository postRepository) {
+        return new PostService(postRepository);
     }
 
     @Bean
