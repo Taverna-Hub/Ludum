@@ -42,8 +42,8 @@ export const DashboardSidebar = () => {
     },
   ];
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/');
   };
 
@@ -97,7 +97,6 @@ export const DashboardSidebar = () => {
       {!collapsed && user && (
         <div className="p-4 border-b border-border/50">
           <p className="font-medium text-sm truncate">{user.name}</p>
-          <p className="text-xs text-muted-foreground truncate">{user.email}</p>
           <span className="inline-block mt-2 text-xs px-2 py-1 rounded-full bg-primary/20 text-primary">
             {user.accountType === 'developer' ? 'Desenvolvedor' : 'Jogador'}
           </span>

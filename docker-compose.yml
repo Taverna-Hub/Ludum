@@ -33,6 +33,7 @@ volumes:
   frontend_node_modules:
   maven_repo:
 
+
 networks:
   ludum-network:
     driver: bridge

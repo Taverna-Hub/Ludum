@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Gamepad2, Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
+import { Gamepad2, Lock, User, Eye, EyeOff } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
@@ -14,7 +14,6 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
-    email: '',
     password: '',
   });
 
@@ -27,7 +26,7 @@ const Auth = () => {
 
     try {
       if (isLogin) {
-        const result = await login(formData.email, formData.password);
+        const result = await login(formData.name, formData.password);
         if (result.success) {
           toast.success('Login realizado com sucesso!');
           navigate('/painel');
@@ -46,7 +45,7 @@ const Auth = () => {
           return;
         }
 
-        const result = await register(formData.name, formData.email, formData.password);
+        const result = await register(formData.name, '', formData.password);
         if (result.success) {
           toast.success('Conta criada com sucesso!');
           navigate('/painel');
@@ -79,33 +78,16 @@ const Auth = () => {
 
         <Card className="p-6 bg-card/50 backdrop-blur-sm border-border/50">
           <form onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && (
-              <div className="space-y-2">
-                <Label htmlFor="name">Nome</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    id="name"
-                    type="text"
-                    placeholder="Seu nome"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-            )}
-
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="name">{isLogin ? 'Nome de usuário' : 'Nome'}</Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  id="email"
-                  type="email"
-                  placeholder="seu@email.com"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  id="name"
+                  type="text"
+                  placeholder={isLogin ? 'Seu nome de usuário' : 'Seu nome'}
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="pl-10"
                   required
                 />

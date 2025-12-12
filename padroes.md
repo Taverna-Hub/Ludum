@@ -8,7 +8,7 @@
 |------|---------------------|----------------|
 | **Ana** | Strategy | Publicação de Jogos |
 | **Sophia** | Template Method | - |
-| **Gabriel** | Observer | - |
+| **Gabriel** | Observer | Review de Jogos |
 | **Luan** | Decorator | - |
 | **Matheus** | Iterator | - |
 
@@ -101,8 +101,168 @@ backend/src/main/java/org/ludum/backend/apresentacao/controllers/
 
 ---
 
-## Gabriel | Observer
+## Gabriel | Observer - Review de Jogos
 
+### 📋 Contexto
+O sistema Ludum precisa notificar diferentes partes interessadas quando uma nova review é criada para um jogo (desenvolvedores, sistema de estatísticas, etc.). O **Observer Pattern** foi implementado para desacoplar a lógica de criação de reviews da lógica de notificação, permitindo adicionar novos observadores sem modificar o código existente.
+
+### 🎯 Problema Resolvido
+Evitar acoplamento forte entre o serviço de reviews e os sistemas que precisam ser notificados quando uma review é criada. Com o Observer, o `ReviewService` não precisa conhecer todos os sistemas que dependem dele - apenas notifica seus observadores registrados.
+
+### 🏗️ Estrutura da Implementação
+
+Foi criada a pasta de observers dentro do módulo de review, contendo a interface e suas implementações.
+
+```
+dominio-principal/src/main/java/org/ludum/dominio/comunidade/review/
+├── entidades/
+│   ├── Review.java                     # Entidade de review
+│   └── ReviewId.java                   # Value Object do ID
+├── enums/
+│   └── StatusReview.java               # Status da review
+├── observer/
+│   ├── ReviewObserver.java             # (interface) Observer
+│   └── NotificacaoDesenvolvedorObserver.java  # Impl - Notifica desenvolvedor
+├── repositorios/
+│   └── ReviewRepository.java           # Interface do repositório
+└── services/
+    └── ReviewService.java              # Subject que notifica observadores
+```
+
+#### **Controller** (camada de apresentação)
+```
+backend/src/main/java/org/ludum/backend/apresentacao/controllers/
+└── ReviewController.java (endpoints REST)
+```
+
+### 🔄 Fluxo de Execução
+
+1. **Registro de Observadores**: Na inicialização do sistema
+   - `ReviewService.adicionarObservador(observer)`
+   - Observadores são armazenados em uma lista interna
+
+2. **Criação de Review**: `POST /jogos/{jogoId}/reviews`
+   - Usuário envia: nota, título, texto, recomendação
+   - Validações: jogo publicado, jogo na biblioteca, review única
+   - Review é salva no repositório
+   - **Notificação**: `notificarObservadores(review)` é chamado
+
+3. **Notificação aos Observadores**:
+   - Para cada observador registrado: `observer.quandoNovaReviewCriada(review)`
+   - Cada observador executa sua lógica específica
+
+### 📦 Componentes do Padrão
+
+| Componente | Classe | Responsabilidade |
+|-----------|--------|------------------|
+| **Subject** | `ReviewService` | Mantém lista de observadores e notifica quando review é criada |
+| **Observer (Interface)** | `ReviewObserver` | Define contrato `quandoNovaReviewCriada(Review)` |
+| **ConcreteObserver** | `NotificacaoDesenvolvedorObserver` | Notifica o desenvolvedor sobre nova review |
+
+### 🔧 Exemplo de Código
+
+**Interface Observer:**
+```java
+public interface ReviewObserver {
+    void quandoNovaReviewCriada(Review review);
+}
+```
+
+**Subject (ReviewService):**
+```java
+public class ReviewService {
+    private final List<ReviewObserver> observadores = new ArrayList<>();
+
+    public void adicionarObservador(ReviewObserver observer) {
+        this.observadores.add(observer);
+    }
+
+    private void notificarObservadores(Review review) {
+        for (ReviewObserver observer : observadores) {
+            observer.quandoNovaReviewCriada(review);
+        }
+    }
+
+    public void avaliarJogo(...) {
+        // ... validações e criação da review
+        reviewRepository.salvar(novaReview);
+        notificarObservadores(novaReview);  // Notifica todos os observadores
+    }
+}
+```
+
+**ConcreteObserver:**
+```java
+public class NotificacaoDesenvolvedorObserver implements ReviewObserver {
+
+    private final JogoRepository jogoRepository;
+
+    public NotificacaoDesenvolvedorObserver(JogoRepository jogoRepository) {
+        this.jogoRepository = jogoRepository;
+    }
+    
+    @Override
+    public void quandoNovaReviewCriada(Review review) {
+        Jogo jogo = jogoRepository.obterPorId(review.getJogoId());
+        String nomeJogo = jogo != null ? jogo.getTitulo() : review.getJogoId().getValue();
+        
+        System.out.println("\n========================================");
+        System.out.println("📢 NOTIFICAÇÃO PARA DESENVOLVEDOR");
+        System.out.println("========================================");
+        System.out.println("Seu jogo \"" + nomeJogo + "\" tem uma nova review!");
+        System.out.println("Nota: " + review.getNota() + "/5 estrelas");
+        System.out.println("Recomenda: " + (review.isRecomendado() ? "Sim ✅" : "Não ❌"));
+        System.out.println("========================================\n");
+    }
+}
+```
+
+**Registro do Observer (DominioConfig):**
+```java
+@Bean
+public ReviewService reviewService(
+        ReviewRepository reviewRepository,
+        JogoRepository jogoRepository,
+        BibliotecaRepository bibliotecaRepository) {
+    
+    ReviewService service = new ReviewService(reviewRepository, jogoRepository, bibliotecaRepository);
+    
+    // Registrar observer para notificar desenvolvedores sobre novas reviews
+    service.adicionarObservador(new NotificacaoDesenvolvedorObserver(jogoRepository));
+    
+    return service;
+}
+```
+
+### 📤 Exemplo de Saída no Terminal
+
+Quando uma nova review é criada, o terminal do servidor exibe:
+```
+========================================
+📢 NOTIFICAÇÃO PARA DESENVOLVEDOR
+========================================
+Seu jogo "Super Adventure" tem uma nova review!
+Nota: 4/5 estrelas
+Recomenda: Sim ✅
+========================================
+```
+
+### ✅ Benefícios da Implementação
+
+- **Desacoplamento**: `ReviewService` não conhece os detalhes de quem será notificado
+- **Open/Closed Principle**: Adicionar novos observadores não requer modificar o `ReviewService`
+- **Single Responsibility**: Cada observador tem uma responsabilidade específica
+- **Extensibilidade**: Fácil adicionar novos tipos de notificação (email, push, analytics)
+- **Testabilidade**: Observadores podem ser testados isoladamente
+
+### 🚀 Possíveis Extensões
+
+| Observador | Funcionalidade |
+|-----------|----------------|
+| `EmailNotificacaoObserver` | Envia email ao desenvolvedor |
+| `EstatisticasObserver` | Atualiza métricas do jogo (média, total) |
+| `ModeracaoObserver` | Envia reviews para fila de moderação |
+| `BadgeObserver` | Concede conquistas ao autor da review |
 
 ---
 
