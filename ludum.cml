@@ -250,6 +250,8 @@ Repository CarteiraRepository {
 
 
     Service OperacoesFinanceirasService { 
+      Carteira obterCarteira(ContaId contaId);
+      Carteira obterOuCriarCarteira(ContaId contaId);
       boolean comprarJogo(Conta jogadorId, JogoId jogoId, Valor valorOfertado);
       boolean solicitarReembolso(Conta jogadorId, ReciboId reciboId);
       boolean adicionarSaldo(Carteira carteira, BigDecimal valor, boolean pagamentoConfirmado);

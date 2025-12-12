@@ -4,6 +4,7 @@ import org.ludum.dominio.financeiro.carteira.entidades.Carteira;
 import org.ludum.dominio.financeiro.carteira.entidades.Saldo;
 import org.ludum.dominio.financeiro.transacao.entidades.Transacao;
 import org.ludum.dominio.financeiro.transacao.entidades.TransacaoId;
+import org.ludum.dominio.identidade.conta.entities.Conta;
 import org.ludum.dominio.identidade.conta.entities.ContaId;
 import org.ludum.dominio.comunidade.review.entidades.Review;
 import org.ludum.dominio.comunidade.review.entidades.ReviewId;
@@ -45,6 +46,32 @@ public class JpaMapeador extends ModelMapper {
         var carteira = new Carteira(id, saldo);
 
         return carteira;
+      }
+    });
+
+    addConverter(new AbstractConverter<ContaJpa, Conta>() {
+      @Override
+      protected Conta convert(ContaJpa source) {
+        return new Conta(
+          new ContaId(source.id),
+          source.nome,
+          source.senhaHash,
+          source.tipo,
+          source.status
+        );
+      }
+    });
+
+    addConverter(new AbstractConverter<Conta, ContaJpa>() {
+      @Override
+      protected ContaJpa convert(Conta source) {
+        ContaJpa jpa = new ContaJpa();
+        jpa.id = source.getId().getValue();
+        jpa.nome = source.getNome();
+        jpa.senhaHash = source.getSenhaHash();
+        jpa.tipo = source.getTipo();
+        jpa.status = source.getStatus();
+        return jpa;
       }
     });
 

@@ -20,6 +20,9 @@ public class Conta {
         this.status = Objects.requireNonNull(status);
     }
 
+    protected Conta() {
+    }
+
     public void publicarJogo() {
         // TODO: Implementar lógica de publicação de jogo
     }
