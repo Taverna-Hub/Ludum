@@ -11,6 +11,20 @@ public class AdicionarSaldoRequest {
   @NotNull(message = "Valor é obrigatório")
   private BigDecimal valor;
 
+  @NotBlank(message = "Nome do cliente é obrigatório")
+  @Size(min = 3, max = 100, message = "Nome do cliente deve ter entre 3 e 100 caracteres")
+  private String nomeCliente;
+
+  @NotBlank(message = "Email do cliente é obrigatório")
+  private String emailCliente;
+
+  @NotBlank(message = "CPF/CNPJ do cliente é obrigatório")
+  @Pattern(regexp = "\\d{11}|\\d{14}", message = "CPF deve ter 11 dígitos ou CNPJ 14 dígitos")
+  private String cpfCnpjCliente;
+
+  @Pattern(regexp = "\\d{10,11}", message = "Telefone do cliente inválido")
+  private String telefoneCliente;
+
   @NotBlank(message = "Número do cartão é obrigatório")
   @Pattern(regexp = "\\d{16}", message = "Número do cartão deve conter 16 dígitos")
   private String numeroCartao;
@@ -31,9 +45,9 @@ public class AdicionarSaldoRequest {
   @Pattern(regexp = "\\d{3}", message = "CVC deve conter 3 dígitos")
   private String cvc;
 
-  @NotBlank(message = "CPF/CNPJ é obrigatório")
+  @NotBlank(message = "CPF/CNPJ do titular do cartão é obrigatório")
   @Pattern(regexp = "\\d{11}|\\d{14}", message = "CPF deve ter 11 dígitos ou CNPJ 14 dígitos")
-  private String cpfCnpj;
+  private String cpfCnpjTitular;
 
   @NotBlank(message = "CEP é obrigatório")
   @Pattern(regexp = "\\d{5}-?\\d{3}", message = "CEP inválido")
@@ -42,11 +56,44 @@ public class AdicionarSaldoRequest {
   @NotBlank(message = "Número do endereço é obrigatório")
   private String numeroEndereco;
 
-  @NotBlank(message = "Telefone é obrigatório")
+  @NotBlank(message = "Telefone do titular é obrigatório")
   @Pattern(regexp = "\\(\\d{2}\\) ?\\d{4,5}-?\\d{4}", message = "Telefone inválido")
-  private String telefone;
+  private String telefoneTitular;
 
   public AdicionarSaldoRequest() {
+  }
+
+  // Getters e Setters - Dados do Cliente
+  public String getNomeCliente() {
+    return nomeCliente;
+  }
+
+  public void setNomeCliente(String nomeCliente) {
+    this.nomeCliente = nomeCliente;
+  }
+
+  public String getEmailCliente() {
+    return emailCliente;
+  }
+
+  public void setEmailCliente(String emailCliente) {
+    this.emailCliente = emailCliente;
+  }
+
+  public String getCpfCnpjCliente() {
+    return cpfCnpjCliente;
+  }
+
+  public void setCpfCnpjCliente(String cpfCnpjCliente) {
+    this.cpfCnpjCliente = cpfCnpjCliente;
+  }
+
+  public String getTelefoneCliente() {
+    return telefoneCliente;
+  }
+
+  public void setTelefoneCliente(String telefoneCliente) {
+    this.telefoneCliente = telefoneCliente;
   }
 
   // Getters e Setters
@@ -98,12 +145,12 @@ public class AdicionarSaldoRequest {
     this.cvc = cvc;
   }
 
-  public String getCpfCnpj() {
-    return cpfCnpj;
+  public String getCpfCnpjTitular() {
+    return cpfCnpjTitular;
   }
 
-  public void setCpfCnpj(String cpfCnpj) {
-    this.cpfCnpj = cpfCnpj;
+  public void setCpfCnpjTitular(String cpfCnpjTitular) {
+    this.cpfCnpjTitular = cpfCnpjTitular;
   }
 
   public String getCep() {
@@ -122,11 +169,11 @@ public class AdicionarSaldoRequest {
     this.numeroEndereco = numeroEndereco;
   }
 
-  public String getTelefone() {
-    return telefone;
+  public String getTelefoneTitular() {
+    return telefoneTitular;
   }
 
-  public void setTelefone(String telefone) {
-    this.telefone = telefone;
+  public void setTelefoneTitular(String telefoneTitular) {
+    this.telefoneTitular = telefoneTitular;
   }
 }

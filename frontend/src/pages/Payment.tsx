@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,20 +12,31 @@ import {
   Lock,
   CheckCircle,
   Copy,
+  User,
 } from 'lucide-react';
 import { DashboardLayout } from '@/layouts/DashboardLayout';
 import { toast } from 'sonner';
+import { useAuthContext } from '@/contexts/AuthContext';
 
 const Payment = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const amount = parseFloat(searchParams.get('amount') || '0');
+  const { user } = useAuthContext();
 
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'pix'>('pix');
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentCompleted, setPaymentCompleted] = useState(false);
 
-  // Card form data (following Asaas patterns)
+  // Dados do cliente (dono da conta - quem está comprando)
+  const [customerData, setCustomerData] = useState({
+    name: '',
+    email: '',
+    cpfCnpj: '',
+    phone: '',
+  });
+
+  // Dados do cartão (titular do cartão - pode ser diferente do cliente)
   const [cardData, setCardData] = useState({
     holderName: '',
     number: '',
@@ -38,7 +49,17 @@ const Payment = () => {
     phone: '',
   });
 
-  // Simulated PIX data
+  // Preencher dados do cliente com informações do usuário logado
+  useEffect(() => {
+    if (user) {
+      setCustomerData((prev) => ({
+        ...prev,
+        name: user.name || '',
+        email: user.email || '',
+      }));
+    }
+  }, [user]);
+
   const pixCode = 'ludum_' + Math.random().toString(36).substring(7);
   const pixQRCode = `00020126580014br.gov.bcb.pix0136${pixCode}5204000053039865802BR5913Ludum Games6008Sao Paulo62070503***6304`;
 
@@ -102,19 +123,25 @@ const Payment = () => {
     try {
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
       // TODO: Pegar o contaId real do contexto de autenticação
-      const contaId = '123e4567-e89b-12d3-a456-426614174000';
+      const contaId = user?.id || '123e4567-e89b-12d3-a456-426614174000';
 
       const payload = {
         valor: amount,
+        // Dados do cliente (dono da conta - registrado no Asaas)
+        nomeCliente: customerData.name,
+        emailCliente: customerData.email,
+        cpfCnpjCliente: customerData.cpfCnpj.replace(/\D/g, ''),
+        telefoneCliente: customerData.phone.replace(/\D/g, ''),
+        // Dados do cartão (titular do cartão)
         numeroCartao: cardData.number.replace(/\s/g, ''),
         nomeCartao: cardData.holderName,
         mesValidade: cardData.expiryMonth,
         anoValidade: cardData.expiryYear,
-        cvv: cardData.ccv,
-        cpfCnpj: cardData.cpfCnpj.replace(/\D/g, ''), // only digits for CPF/CNPJ
-        cep: cardData.postalCode, // keep format XXXXX-XXX
+        cvc: cardData.ccv,
+        cpfCnpjTitular: cardData.cpfCnpj.replace(/\D/g, ''),
+        cep: cardData.postalCode,
         numeroEndereco: cardData.addressNumber,
-        telefone: cardData.phone, // keep format (XX) XXXXX-XXXX
+        telefoneTitular: cardData.phone,
       };
 
       console.log(
@@ -329,162 +356,249 @@ const Payment = () => {
             </Card>
           ) : (
             <Card className="p-6 bg-card/50 backdrop-blur-sm border-border/50">
-              <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
-                <CreditCard className="w-5 h-5 text-primary" />
-                Dados do Cartão
-              </h2>
+              <form onSubmit={handleCardSubmit} className="space-y-6">
+                {/* Dados do Cliente (Comprador) */}
+                <div className="space-y-4">
+                  <h2 className="font-bold text-lg flex items-center gap-2">
+                    <User className="w-5 h-5 text-secondary" />
+                    Dados da Conta
+                  </h2>
+                  <p className="text-xs text-muted-foreground -mt-2">
+                    Seus dados como cliente (quem está fazendo a compra)
+                  </p>
 
-              <form onSubmit={handleCardSubmit} className="space-y-4">
-                {/* Card Number */}
-                <div className="space-y-2">
-                  <Label htmlFor="cardNumber">Número do Cartão</Label>
-                  <Input
-                    id="cardNumber"
-                    placeholder="0000 0000 0000 0000"
-                    value={formatCardNumber(cardData.number)}
-                    onChange={(e) =>
-                      setCardData({
-                        ...cardData,
-                        number: e.target.value.replace(/\s/g, ''),
-                      })
-                    }
-                    maxLength={19}
-                    required
-                  />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="customerName">Nome Completo</Label>
+                      <Input
+                        id="customerName"
+                        placeholder="Seu nome"
+                        value={customerData.name}
+                        onChange={(e) =>
+                          setCustomerData({
+                            ...customerData,
+                            name: e.target.value,
+                          })
+                        }
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="customerEmail">Email</Label>
+                      <Input
+                        id="customerEmail"
+                        type="email"
+                        placeholder="seu@email.com"
+                        value={customerData.email}
+                        onChange={(e) =>
+                          setCustomerData({
+                            ...customerData,
+                            email: e.target.value,
+                          })
+                        }
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="customerCpf">Seu CPF/CNPJ</Label>
+                      <Input
+                        id="customerCpf"
+                        placeholder="000.000.000-00"
+                        value={customerData.cpfCnpj}
+                        onChange={(e) =>
+                          setCustomerData({
+                            ...customerData,
+                            cpfCnpj: formatCPF(e.target.value),
+                          })
+                        }
+                        maxLength={18}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="customerPhone">Seu Telefone</Label>
+                      <Input
+                        id="customerPhone"
+                        placeholder="(00) 00000-0000"
+                        value={customerData.phone}
+                        onChange={(e) =>
+                          setCustomerData({
+                            ...customerData,
+                            phone: formatPhone(e.target.value),
+                          })
+                        }
+                        maxLength={15}
+                      />
+                    </div>
+                  </div>
                 </div>
 
-                {/* Holder Name */}
-                <div className="space-y-2">
-                  <Label htmlFor="holderName">Nome no Cartão</Label>
-                  <Input
-                    id="holderName"
-                    placeholder="Como está no cartão"
-                    value={cardData.holderName}
-                    onChange={(e) =>
-                      setCardData({
-                        ...cardData,
-                        holderName: e.target.value.toUpperCase(),
-                      })
-                    }
-                    required
-                  />
-                </div>
+                <div className="border-t border-border/50 pt-6">
+                  <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
+                    <CreditCard className="w-5 h-5 text-primary" />
+                    Dados do Cartão
+                  </h2>
+                  <p className="text-xs text-muted-foreground -mt-2 mb-4">
+                    Dados do titular do cartão (pode ser diferente do comprador)
+                  </p>
 
-                {/* Expiry & CCV */}
-                <div className="grid grid-cols-3 gap-4">
+                  {/* Card Number */}
                   <div className="space-y-2">
-                    <Label htmlFor="expiryMonth">Mês</Label>
+                    <Label htmlFor="cardNumber">Número do Cartão</Label>
                     <Input
-                      id="expiryMonth"
-                      placeholder="MM"
-                      maxLength={2}
-                      value={cardData.expiryMonth}
+                      id="cardNumber"
+                      placeholder="0000 0000 0000 0000"
+                      value={formatCardNumber(cardData.number)}
                       onChange={(e) =>
                         setCardData({
                           ...cardData,
-                          expiryMonth: e.target.value,
+                          number: e.target.value.replace(/\s/g, ''),
+                        })
+                      }
+                      maxLength={19}
+                      required
+                    />
+                  </div>
+
+                  {/* Holder Name */}
+                  <div className="space-y-2">
+                    <Label htmlFor="holderName">Nome no Cartão</Label>
+                    <Input
+                      id="holderName"
+                      placeholder="Como está no cartão"
+                      value={cardData.holderName}
+                      onChange={(e) =>
+                        setCardData({
+                          ...cardData,
+                          holderName: e.target.value.toUpperCase(),
                         })
                       }
                       required
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="expiryYear">Ano</Label>
-                    <Input
-                      id="expiryYear"
-                      placeholder="AA"
-                      maxLength={2}
-                      value={cardData.expiryYear}
-                      onChange={(e) =>
-                        setCardData({ ...cardData, expiryYear: e.target.value })
-                      }
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="ccv">CVV</Label>
-                    <Input
-                      id="ccv"
-                      placeholder="000"
-                      maxLength={4}
-                      value={cardData.ccv}
-                      onChange={(e) =>
-                        setCardData({ ...cardData, ccv: e.target.value })
-                      }
-                      required
-                    />
-                  </div>
-                </div>
 
-                {/* CPF/CNPJ */}
-                <div className="space-y-2">
-                  <Label htmlFor="cpfCnpj">CPF/CNPJ do Titular</Label>
-                  <Input
-                    id="cpfCnpj"
-                    placeholder="000.000.000-00"
-                    value={cardData.cpfCnpj}
-                    onChange={(e) =>
-                      setCardData({
-                        ...cardData,
-                        cpfCnpj: formatCPF(e.target.value),
-                      })
-                    }
-                    maxLength={14}
-                    required
-                  />
-                </div>
+                  {/* Expiry & CCV */}
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="expiryMonth">Mês</Label>
+                      <Input
+                        id="expiryMonth"
+                        placeholder="MM"
+                        maxLength={2}
+                        value={cardData.expiryMonth}
+                        onChange={(e) =>
+                          setCardData({
+                            ...cardData,
+                            expiryMonth: e.target.value,
+                          })
+                        }
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="expiryYear">Ano</Label>
+                      <Input
+                        id="expiryYear"
+                        placeholder="AA"
+                        maxLength={2}
+                        value={cardData.expiryYear}
+                        onChange={(e) =>
+                          setCardData({
+                            ...cardData,
+                            expiryYear: e.target.value,
+                          })
+                        }
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="ccv">CVV</Label>
+                      <Input
+                        id="ccv"
+                        placeholder="000"
+                        maxLength={4}
+                        value={cardData.ccv}
+                        onChange={(e) =>
+                          setCardData({ ...cardData, ccv: e.target.value })
+                        }
+                        required
+                      />
+                    </div>
+                  </div>
 
-                {/* Address */}
-                <div className="grid grid-cols-2 gap-4">
+                  {/* CPF/CNPJ */}
                   <div className="space-y-2">
-                    <Label htmlFor="postalCode">CEP</Label>
+                    <Label htmlFor="cpfCnpj">CPF/CNPJ do Titular</Label>
                     <Input
-                      id="postalCode"
-                      placeholder="00000-000"
-                      value={cardData.postalCode}
+                      id="cpfCnpj"
+                      placeholder="000.000.000-00"
+                      value={cardData.cpfCnpj}
                       onChange={(e) =>
                         setCardData({
                           ...cardData,
-                          postalCode: formatCEP(e.target.value),
+                          cpfCnpj: formatCPF(e.target.value),
                         })
                       }
-                      maxLength={9}
+                      maxLength={14}
                       required
                     />
                   </div>
+
+                  {/* Address */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="postalCode">CEP</Label>
+                      <Input
+                        id="postalCode"
+                        placeholder="00000-000"
+                        value={cardData.postalCode}
+                        onChange={(e) =>
+                          setCardData({
+                            ...cardData,
+                            postalCode: formatCEP(e.target.value),
+                          })
+                        }
+                        maxLength={9}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="addressNumber">Número</Label>
+                      <Input
+                        id="addressNumber"
+                        placeholder="123"
+                        value={cardData.addressNumber}
+                        onChange={(e) =>
+                          setCardData({
+                            ...cardData,
+                            addressNumber: e.target.value,
+                          })
+                        }
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Phone */}
                   <div className="space-y-2">
-                    <Label htmlFor="addressNumber">Número</Label>
+                    <Label htmlFor="phone">Telefone do Titular</Label>
                     <Input
-                      id="addressNumber"
-                      placeholder="123"
-                      value={cardData.addressNumber}
+                      id="phone"
+                      placeholder="(00) 00000-0000"
+                      value={cardData.phone}
                       onChange={(e) =>
                         setCardData({
                           ...cardData,
-                          addressNumber: e.target.value,
+                          phone: formatPhone(e.target.value),
                         })
                       }
+                      maxLength={15}
                       required
                     />
                   </div>
-                </div>
-
-                {/* Phone */}
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Telefone</Label>
-                  <Input
-                    id="phone"
-                    placeholder="(00) 00000-0000"
-                    value={cardData.phone}
-                    onChange={(e) =>
-                      setCardData({
-                        ...cardData,
-                        phone: formatPhone(e.target.value),
-                      })
-                    }
-                    maxLength={15}
-                    required
-                  />
                 </div>
 
                 <div className="flex items-center gap-2 text-xs text-muted-foreground p-3 bg-muted/30 rounded-lg">

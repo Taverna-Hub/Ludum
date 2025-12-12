@@ -28,6 +28,12 @@ class AsaasProcessadorPagamentoTest {
   private CarteiraRepository mockCarteiraRepository;
   private MockTransacaoRepository mockTransacaoRepository;
 
+  // Dados de cliente de teste
+  private static final String NOME_CLIENTE_TESTE = "Cliente Teste";
+  private static final String CPF_CLIENTE_TESTE = "12345678901";
+  private static final String EMAIL_CLIENTE_TESTE = "cliente@teste.com";
+  private static final String TELEFONE_CLIENTE_TESTE = "11999999999";
+
   // Mock do TransacaoRepository para capturar as transações salvas
   private static class MockTransacaoRepository implements TransacaoRepository {
     private List<Transacao> transacoes = new ArrayList<>();
@@ -148,7 +154,8 @@ class AsaasProcessadorPagamentoTest {
     String moeda = "BRL";
     String descricao = "Teste de adicionar saldo";
 
-    ResultadoPagamento resultado = processador.processar(contaId, valor, moeda, descricao);
+    ResultadoPagamento resultado = processador.processar(contaId, valor, moeda, descricao,
+        NOME_CLIENTE_TESTE, CPF_CLIENTE_TESTE, EMAIL_CLIENTE_TESTE, TELEFONE_CLIENTE_TESTE);
 
     assertTrue(resultado.isSucesso());
     assertNotNull(resultado.getIdGateway());
@@ -165,7 +172,8 @@ class AsaasProcessadorPagamentoTest {
     BigDecimal valor = new BigDecimal("3.00");
     String moeda = "BRL";
 
-    ResultadoPagamento resultado = processador.processar(contaId, valor, moeda, "Teste");
+    ResultadoPagamento resultado = processador.processar(contaId, valor, moeda, "Teste",
+        NOME_CLIENTE_TESTE, CPF_CLIENTE_TESTE, EMAIL_CLIENTE_TESTE, TELEFONE_CLIENTE_TESTE);
 
     assertFalse(resultado.isSucesso());
     assertTrue(resultado.getMensagemErro().contains("valor mínimo"));
@@ -178,7 +186,8 @@ class AsaasProcessadorPagamentoTest {
     BigDecimal valor = new BigDecimal("50.00");
     String moeda = "USD";
 
-    ResultadoPagamento resultado = processador.processar(contaId, valor, moeda, "Teste");
+    ResultadoPagamento resultado = processador.processar(contaId, valor, moeda, "Teste",
+        NOME_CLIENTE_TESTE, CPF_CLIENTE_TESTE, EMAIL_CLIENTE_TESTE, TELEFONE_CLIENTE_TESTE);
 
     assertFalse(resultado.isSucesso());
     assertTrue(resultado.getMensagemErro().contains("BRL"));
@@ -198,7 +207,8 @@ class AsaasProcessadorPagamentoTest {
     ContaId contaId = new ContaId(customerId);
     BigDecimal valor = new BigDecimal("25.00");
 
-    ResultadoPagamento resultado = processador.processar(contaId, valor, "BRL", "Teste consulta");
+    ResultadoPagamento resultado = processador.processar(contaId, valor, "BRL", "Teste consulta",
+        NOME_CLIENTE_TESTE, CPF_CLIENTE_TESTE, EMAIL_CLIENTE_TESTE, TELEFONE_CLIENTE_TESTE);
     assertTrue(resultado.isSucesso());
 
     String status = processador.consultarStatusPagamento(resultado.getIdGateway());

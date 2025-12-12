@@ -36,7 +36,11 @@ public class CarteiraController {
           contaId,
           request.getValor(),
           "BRL",
-          "Adição de saldo via cartão");
+          "Adição de saldo via cartão",
+          request.getNomeCliente(),
+          request.getCpfCnpjCliente(),
+          request.getEmailCliente(),
+          request.getTelefoneCliente());
 
       if (sucesso) {
         PagamentoResponse response = PagamentoResponse.sucesso(request.getValor());

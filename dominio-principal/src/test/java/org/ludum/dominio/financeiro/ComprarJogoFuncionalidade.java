@@ -42,6 +42,12 @@ import io.cucumber.java.en.When;
 
 public class ComprarJogoFuncionalidade {
 
+    // Dados de cliente de teste
+    private static final String NOME_CLIENTE_TESTE = "Cliente Teste";
+    private static final String CPF_CLIENTE_TESTE = "12345678901";
+    private static final String EMAIL_CLIENTE_TESTE = "cliente@teste.com";
+    private static final String TELEFONE_CLIENTE_TESTE = "11999999999";
+
     private ContaId conta;
     private ContaId contaDesenvolvedor;
     private BigDecimal valorJogo;
@@ -341,7 +347,8 @@ public class ComprarJogoFuncionalidade {
 
     @When("eu realizo a compra no valor de R${int}")
     public void eu_realizo_a_compra_no_valor_de_r$(Integer valorCompra) {
-        operacoesService.adicionarSaldo(conta, new BigDecimal(valorCompra), "BRL", "Deposito para compra");
+        operacoesService.adicionarSaldo(conta, new BigDecimal(valorCompra), "BRL", "Deposito para compra",
+                NOME_CLIENTE_TESTE, CPF_CLIENTE_TESTE, EMAIL_CLIENTE_TESTE, TELEFONE_CLIENTE_TESTE);
         carteira = mockCarteiraRepository.obterPorContaId(conta);
         carteira.liberarSaldoBloqueado();
         mockCarteiraRepository.salvar(carteira);
@@ -375,7 +382,8 @@ public class ComprarJogoFuncionalidade {
         if (!arquivoDisponivel) {
             operacaoSucesso = false;
         } else {
-            operacoesService.adicionarSaldo(conta, BigDecimal.valueOf(100), "BRL", "Deposito para compra");
+            operacoesService.adicionarSaldo(conta, BigDecimal.valueOf(100), "BRL", "Deposito para compra",
+                    NOME_CLIENTE_TESTE, CPF_CLIENTE_TESTE, EMAIL_CLIENTE_TESTE, TELEFONE_CLIENTE_TESTE);
             carteira = mockCarteiraRepository.obterPorContaId(conta);
             carteira.liberarSaldoBloqueado();
             mockCarteiraRepository.salvar(carteira);
@@ -396,7 +404,8 @@ public class ComprarJogoFuncionalidade {
 
     @When("compro o jogo")
     public void compro_o_jogo() {
-        operacoesService.adicionarSaldo(conta, this.valorJogo, "BRL", "Deposito para compra");
+        operacoesService.adicionarSaldo(conta, this.valorJogo, "BRL", "Deposito para compra",
+                NOME_CLIENTE_TESTE, CPF_CLIENTE_TESTE, EMAIL_CLIENTE_TESTE, TELEFONE_CLIENTE_TESTE);
         carteira = mockCarteiraRepository.obterPorContaId(conta);
         carteira.liberarSaldoBloqueado();
         mockCarteiraRepository.salvar(carteira);
@@ -424,7 +433,8 @@ public class ComprarJogoFuncionalidade {
         if (jaPossuiJogo) {
             operacaoSucesso = false;
         } else {
-            operacoesService.adicionarSaldo(conta, this.valorJogo, "BRL", "Deposito para compra");
+            operacoesService.adicionarSaldo(conta, this.valorJogo, "BRL", "Deposito para compra",
+                    NOME_CLIENTE_TESTE, CPF_CLIENTE_TESTE, EMAIL_CLIENTE_TESTE, TELEFONE_CLIENTE_TESTE);
             carteira = mockCarteiraRepository.obterPorContaId(conta);
             carteira.liberarSaldoBloqueado();
             mockCarteiraRepository.salvar(carteira);
