@@ -38,11 +38,19 @@ public class BibliotecaService {
 
     public void adicionarJogo(ModeloDeAcesso modeloDeAcesso, JogoId jogoid, ContaId contaid, TransacaoId transacaoId) {
         Biblioteca currentBiblioteca = this.bibliotecaRepository.obterPorJogador(contaid);
-        Transacao currentTransacao = transacaoRepository.obterPorId(transacaoId);
+
+        if (currentBiblioteca == null) {
+            currentBiblioteca = new Biblioteca(contaid);
+        }
+
+        Transacao currentTransacao = null;
+        if (transacaoId != null) {
+            currentTransacao = transacaoRepository.obterPorId(transacaoId);
+        }
 
         if (modeloDeAcesso.equals(ModeloDeAcesso.PAGO)) {
-            if (currentTransacao.getStatus() != StatusTransacao.CONFIRMADA) {
-                throw new IllegalStateException("Transação cancelada ou pendente");
+            if (currentTransacao == null || currentTransacao.getStatus() != StatusTransacao.CONFIRMADA) {
+                throw new IllegalStateException("Transação cancelada, pendente ou inexistente");
             }
         }
 
