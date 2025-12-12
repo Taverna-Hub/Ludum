@@ -31,6 +31,13 @@ public class DominioConfig {
     }
 
     @Bean
+    public org.ludum.dominio.catalogo.jogo.services.GestaoDeJogosService gestaoDeJogosService(
+            JogoRepository jogoRepository,
+            ContaRepository contaRepository) {
+        return new org.ludum.dominio.catalogo.jogo.services.GestaoDeJogosService(jogoRepository, contaRepository);
+    }
+
+    @Bean
     public PostService postService(PostRepository postRepository) {
         return new PostService(postRepository);
     }
