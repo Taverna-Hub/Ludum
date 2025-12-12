@@ -13,7 +13,8 @@ public class CorsConfig {
     return new WebMvcConfigurer() {
       @Override
       public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/api/**")
+        // Allow CORS for all endpoints so controllers under paths like /jogos are covered
+        registry.addMapping("/**")
             .allowedOrigins(
                 "http://localhost:5173",
                 "http://localhost:5174",
