@@ -110,7 +110,7 @@ public class PostService {
         return post;
     }
 
-    public void editarPost(PostId postId, ContaId solicitanteId,
+    public Post editarPost(PostId postId, ContaId solicitanteId,
             String novoTitulo, String novoConteudo) {
 
         Objects.requireNonNull(postId, "PostId não pode ser nulo");
@@ -137,6 +137,7 @@ public class PostService {
 
         post.editarConteudo(novoTitulo, novoConteudo);
         postRepository.salvar(post);
+        return post;
     }
 
     public void curtirPost(PostId postId, ContaId contaId) {
@@ -224,7 +225,7 @@ public class PostService {
         postRepository.remover(post);
     }
 
-    public void agendarPost(PostId postId, LocalDateTime dataAgendamento) {
+    public Post agendarPost(PostId postId, LocalDateTime dataAgendamento) {
         Objects.requireNonNull(postId, "PostId não pode ser nulo");
         Objects.requireNonNull(dataAgendamento, "Data de agendamento não pode ser nula");
 
@@ -267,6 +268,7 @@ public class PostService {
             // Agendar post
             post.agendarPost(dataAgendamento);
             postRepository.salvar(post);
+            return post;
 
         } catch (Exception e) {
             // Notificar sobre falha genérica
@@ -279,7 +281,7 @@ public class PostService {
         }
     }
 
-    public void publicarRascunho(PostId postId, ContaId autorId) {
+    public Post publicarRascunho(PostId postId, ContaId autorId) {
         Objects.requireNonNull(postId, "PostId não pode ser nulo");
         Objects.requireNonNull(autorId, "AutorId não pode ser nulo");
 
@@ -295,6 +297,7 @@ public class PostService {
         // Publicar post
         post.publicarPost();
         postRepository.salvar(post);
+        return post;
     }
 
     public List<Post> obterPostsPorAutor(ContaId autorId) {
@@ -315,6 +318,19 @@ public class PostService {
     public List<Post> obterPostsPorStatus(PostStatus status) {
         Objects.requireNonNull(status, "Status não pode ser nulo");
         return postRepository.obterPorStatus(status);
+    }
+
+    public List<Post> obterTodosOsPosts() {
+        return postRepository.obterTodosPosts();
+    }
+
+    public Post obterPostPorId(PostId postId) {
+        Objects.requireNonNull(postId, "PostId não pode ser nulo");
+        Post post = postRepository.obterPorId(postId);
+        if (post == null) {
+            throw new IllegalArgumentException("Post não encontrado: " + postId.getId());
+        }
+        return post;
     }
 
     // ==================== MÉTODOS PRIVADOS DE VALIDAÇÃO ====================

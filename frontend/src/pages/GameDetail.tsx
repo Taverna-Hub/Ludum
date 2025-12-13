@@ -19,7 +19,8 @@ import {
   ShoppingCart, Download, Star, ThumbsUp, ThumbsDown, 
   Calendar, Users, Wrench, ArrowLeft, Edit, Trash2, Plus, CheckCircle, Loader2
 } from "lucide-react";
-import { mockGames, mockUserLibrary } from "@/data/mockData";
+import { mockUserLibrary } from "@/data/mockData";
+import { Game } from "@/types/game";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { ReviewForm } from "@/components/ReviewForm";
@@ -35,6 +36,7 @@ import {
   ReviewFrontend,
   transformReviewResponse 
 } from "@/http/requests/reviewRequests";
+import { obterJogo } from "@/http/requests/jogoRequests";
 import { useAuthContext } from "@/contexts/AuthContext";
 
 // Tipo local para Review do frontend
@@ -44,8 +46,11 @@ const GameDetail = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
   const { user } = useAuthContext();
-  const game = mockGames.find(g => g.slug === slug);
-  const isOwned = game && mockUserLibrary.includes(game.id);
+  
+  // Estado para o jogo carregado da API
+  const [game, setGame] = useState<Game | null>(null);
+  const [gameLoading, setGameLoading] = useState(true);
+  const [gameError, setGameError] = useState<string | null>(null);
   
   const [selectedImage, setSelectedImage] = useState(0);
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -63,6 +68,31 @@ const GameDetail = () => {
   const [reviewsLoading, setReviewsLoading] = useState(true);
   const [reviewResumo, setReviewResumo] = useState({ mediaEstrelas: 0, totalRecomendacoes: 0, porcentagemRecomendacoes: 0 });
   const [submittingReview, setSubmittingReview] = useState(false);
+  
+  // Verificar se o jogo é possuído (depois de carregar o game)
+  const isOwned = game && mockUserLibrary.includes(game.id);
+
+  // Carregar jogo da API
+  useEffect(() => {
+    const carregarJogo = async () => {
+      if (!slug) return;
+      
+      setGameLoading(true);
+      setGameError(null);
+      
+      try {
+        const jogoData = await obterJogo(slug);
+        setGame(jogoData);
+      } catch (error) {
+        console.error('Erro ao carregar jogo:', error);
+        setGameError('Jogo não encontrado');
+      } finally {
+        setGameLoading(false);
+      }
+    };
+    
+    carregarJogo();
+  }, [slug]);
 
   // Carregar reviews da API
   const carregarReviews = async () => {
@@ -91,10 +121,21 @@ const GameDetail = () => {
     carregarReviews();
   }, [game?.id, sortBy]);
 
-  if (!game) {
+  // Loading state
+  if (gameLoading) {
     return (
       <div className="min-h-screen pt-16 flex items-center justify-center">
-        <p>Jogo não encontrado</p>
+        <Loader2 className="w-8 h-8 animate-spin text-ludum-blue" />
+        <span className="ml-2 text-white">Carregando jogo...</span>
+      </div>
+    );
+  }
+
+  // Error state
+  if (gameError || !game) {
+    return (
+      <div className="min-h-screen pt-16 flex items-center justify-center">
+        <p className="text-red-400">{gameError || 'Jogo não encontrado'}</p>
       </div>
     );
   }
