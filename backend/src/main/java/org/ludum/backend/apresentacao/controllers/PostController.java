@@ -203,7 +203,7 @@ public class PostController {
         response.setImagemUrl(post.getImagem() != null ? post.getImagem().toString() : null);
         response.setStatus(post.getStatus());
         response.setTagIds(post.getTags().stream()
-                .map(tag -> tag.getId().getValue())
+                .map(tag -> tag.getNome())
                 .collect(Collectors.toList()));
         response.setNumeroCurtidas(post.getCurtidas().size());
         response.setNumeroComentarios(post.getComentarios().size());
