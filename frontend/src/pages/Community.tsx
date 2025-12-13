@@ -12,6 +12,14 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { AVAILABLE_TAGS } from "@/constants/tags";
+import { parseTagIds, tagNamesToIds } from "@/types/tagMapping";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Heart,
   MessageSquare,
@@ -49,10 +57,18 @@ const Community = () => {
   const [postTitulo, setPostTitulo] = useState("");
   const [imagemUrl, setImagemUrl] = useState("");
   const [mostrarInputImagem, setMostrarInputImagem] = useState(false);
+  const [mostrarRascunhos, setMostrarRascunhos] = useState(false);
+  const [rascunhos, setRascunhos] = useState<PostResponse[]>([]);
+  const [loadingRascunhos, setLoadingRascunhos] = useState(false);
+  const [rascunhoEmEdicao, setRascunhoEmEdicao] = useState<string | null>(null);
+  const [mostrarAgendamento, setMostrarAgendamento] = useState(false);
+  const [rascunhoParaAgendar, setRascunhoParaAgendar] = useState<string | null>(
+    null
+  );
+  const [dataAgendamento, setDataAgendamento] = useState("");
 
   // Log para debug
   useEffect(() => {
-    console.log("Estado do usuário:", { user, isAuthenticated });
   }, [user, isAuthenticated]);
 
   // Carregar posts curtidos do localStorage
@@ -98,11 +114,35 @@ const Community = () => {
     carregarPosts();
   }, []);
 
+  // Carregar rascunhos quando usuário mudar
+  useEffect(() => {
+    if (user?.id) {
+      carregarRascunhos();
+    }
+  }, [user?.id]);
+
+  // Carregar rascunhos do backend
+  const carregarRascunhos = async () => {
+    if (!user?.id) return;
+
+    try {
+      setLoadingRascunhos(true);
+      const todosPostsAutor = await postRequests.obterPostsPorAutor(user.id);
+      const rascunhosAutor = todosPostsAutor.filter(
+        (post) => post.status === "EM_RASCUNHO"
+      );
+      setRascunhos(rascunhosAutor);
+    } catch (error) {
+      console.error("Erro ao carregar rascunhos:", error);
+    } finally {
+      setLoadingRascunhos(false);
+    }
+  };
+
   const carregarPosts = async () => {
     try {
       setLoading(true);
       const postsData = await postRequests.obterTodosOsPosts();
-      // Filtrar apenas posts PUBLICADOS
       const postsFiltrados = postsData.filter(
         (post) => post.status === "PUBLICADO"
       );
@@ -127,12 +167,6 @@ const Community = () => {
     setLikingPost(postId);
 
     try {
-      console.log(
-        `${isLiked ? "Descurtindo" : "Curtindo"} post:`,
-        postId,
-        "Usuario:",
-        user.id
-      );
 
       if (isLiked) {
         await postRequests.descurtirPost(postId, user.id);
@@ -202,10 +236,9 @@ const Community = () => {
         titulo: postTitulo.trim() || "Post da Comunidade",
         conteudo: newPost,
         imagemUrl: imagemUrl.trim() || undefined,
-        tagIds: tagsSelecionadas, // Backend espera nomes de tags, não IDs
+        tagIds: tagsSelecionadas, // Converter nomes para IDs do backend
       };
 
-      console.log("Publicando post com dados:", postData);
 
       await postRequests.publicarPost(postData);
       toast.success("Post publicado com sucesso!");
@@ -228,6 +261,147 @@ const Community = () => {
         error?.response?.data?.message ||
         error?.message ||
         "Erro ao publicar post";
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleSaveDraft = async () => {
+    if (!user?.id) {
+      toast.error("Você precisa estar logado para salvar rascunhos");
+      return;
+    }
+
+    if (!newPost.trim() && !postTitulo.trim()) {
+      toast.error("Digite algo para salvar como rascunho");
+      return;
+    }
+
+    if (!jogoSelecionado) {
+      toast.error("Selecione um jogo para o rascunho");
+      return;
+    }
+
+    try {
+      const draftData = {
+        jogoId: jogoSelecionado,
+        autorId: user.id,
+        titulo: postTitulo.trim() || "Rascunho sem título",
+        conteudo: newPost,
+        imagemUrl: imagemUrl.trim() || undefined,
+        tagIds: tagsSelecionadas, // Converter nomes para IDs do backend
+      };
+
+      if (rascunhoEmEdicao) {
+        // Atualizar rascunho existente
+        await postRequests.editarPost(rascunhoEmEdicao, user.id, {
+          titulo: draftData.titulo,
+          conteudo: draftData.conteudo,
+        });
+        toast.success("Rascunho atualizado com sucesso!");
+      } else {
+        // Criar novo rascunho
+        await postRequests.criarRascunho(draftData);
+        toast.success("Rascunho salvo com sucesso!");
+      }
+
+      setNewPost("");
+      setPostTitulo("");
+      setImagemUrl("");
+      setMostrarInputImagem(false);
+      setTagsSelecionadas([]);
+      setRascunhoEmEdicao(null);
+      await carregarRascunhos();
+    } catch (error: any) {
+      console.error("Erro ao salvar rascunho:", error);
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Erro ao salvar rascunho";
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleLoadDraft = (draft: PostResponse) => {
+    setPostTitulo(draft.titulo);
+    setNewPost(draft.conteudo);
+    setImagemUrl(draft.imagemUrl || "");
+    setJogoSelecionado(draft.jogoId);
+    setTagsSelecionadas(parseTagIds(draft.tagIds)); // Converter IDs para nomes
+    setRascunhoEmEdicao(draft.id);
+    if (draft.imagemUrl) {
+      setMostrarInputImagem(true);
+    }
+    setMostrarRascunhos(false);
+    toast.success("Rascunho carregado para edição!");
+  };
+
+  const handleDeleteDraft = async (draftId: string) => {
+    if (!user?.id) return;
+
+    try {
+      await postRequests.removerPost(draftId, user.id);
+      toast.success("Rascunho excluído!");
+      await carregarRascunhos();
+    } catch (error: any) {
+      console.error("Erro ao excluir rascunho:", error);
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Erro ao excluir rascunho";
+      toast.error(errorMessage);
+    }
+  };
+
+  const handlePublishDraft = async (draftId: string) => {
+    if (!user?.id) return;
+
+    try {
+      await postRequests.publicarRascunho(draftId, user.id);
+      toast.success("Rascunho publicado com sucesso!");
+      await carregarRascunhos();
+      await carregarPosts();
+    } catch (error: any) {
+      console.error("Erro ao publicar rascunho:", error);
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Erro ao publicar rascunho";
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleOpenSchedule = (draftId: string) => {
+    setRascunhoParaAgendar(draftId);
+    setMostrarAgendamento(true);
+    // Definir data mínima como 1 hora a partir de agora
+    const minDate = new Date();
+    minDate.setHours(minDate.getHours() + 1);
+    const minDateStr = minDate.toISOString().slice(0, 16);
+    setDataAgendamento(minDateStr);
+  };
+
+  const handleScheduleDraft = async () => {
+    if (!rascunhoParaAgendar || !dataAgendamento) {
+      toast.error("É necessário selecionar uma data e hora");
+      return;
+    }
+
+    try {
+      const dataAgendamentoISO = new Date(dataAgendamento).toISOString();
+      await postRequests.agendarPost(rascunhoParaAgendar, {
+        dataAgendamento: dataAgendamentoISO,
+      });
+      toast.success("Post agendado com sucesso!");
+      setMostrarAgendamento(false);
+      setRascunhoParaAgendar(null);
+      setDataAgendamento("");
+      await carregarRascunhos();
+    } catch (error: any) {
+      console.error("Erro ao agendar post:", error);
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Erro ao agendar post";
       toast.error(errorMessage);
     }
   };
@@ -293,14 +467,6 @@ const Community = () => {
     }
 
     try {
-      console.log(
-        "Comentando post:",
-        postId,
-        "Usuario:",
-        user.id,
-        "Texto:",
-        texto
-      );
       await postRequests.comentarPost(postId, {
         autorId: user.id,
         texto: texto,
@@ -320,16 +486,8 @@ const Community = () => {
     setShowComments({ ...showComments, [postId]: !showComments[postId] });
   };
 
-  // Get popular tags from games reais do backend
-  const allTags = jogosDisponiveis.flatMap((game) => game.tags);
-  const tagCounts = allTags.reduce((acc, tag) => {
-    acc[tag] = (acc[tag] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-  const popularTags = Object.entries(tagCounts)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 10)
-    .map(([tag]) => tag);
+  // Get popular tags from AVAILABLE_TAGS
+  const popularTags = AVAILABLE_TAGS.slice(0, 10);
 
   // Get developers from games reais do backend (deduplicated by ID)
   const developersMap = new Map();
@@ -446,7 +604,16 @@ const Community = () => {
                 <>
                   {/* Create Post */}
                   <Card className="p-6 bg-card/50 backdrop-blur-sm mb-8">
-                    <h2 className="font-bold text-lg mb-4">Criar novo post</h2>
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="font-bold text-lg">Criar novo post</h2>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setMostrarRascunhos(true)}
+                      >
+                        Ver Rascunhos ({rascunhos.length})
+                      </Button>
+                    </div>
 
                     {/* Input de Título */}
                     <div className="mb-4">
@@ -495,7 +662,7 @@ const Community = () => {
                         Tags (Selecione pelo menos uma)
                       </label>
                       <div className="flex flex-wrap gap-2">
-                        {AVAILABLE_TAGS.slice(0, 10).map((tag) => (
+                        {AVAILABLE_TAGS.slice(0, 30).map((tag) => (
                           <Badge
                             key={tag}
                             variant={
@@ -571,6 +738,15 @@ const Community = () => {
                         <span className="text-sm text-muted-foreground">
                           {newPost.length}/500
                         </span>
+                        <Button
+                          variant="outline"
+                          onClick={handleSaveDraft}
+                          disabled={!newPost.trim() && !postTitulo.trim()}
+                        >
+                          {rascunhoEmEdicao
+                            ? "Atualizar Rascunho"
+                            : "Criar Rascunho"}
+                        </Button>
                         <Button
                           variant="hero"
                           onClick={handlePost}
@@ -661,9 +837,9 @@ const Community = () => {
                             {/* Tags do Post */}
                             {post.tagIds && post.tagIds.length > 0 && (
                               <div className="flex flex-wrap gap-2 mb-4">
-                                {post.tagIds.map((tag) => (
+                                {parseTagIds(post.tagIds).map((tag, index) => (
                                   <Badge
-                                    key={tag}
+                                    key={`${post.id}-${index}`}
                                     variant="secondary"
                                     className="text-xs"
                                   >
@@ -781,6 +957,163 @@ const Community = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal de Rascunhos */}
+      <Dialog open={mostrarRascunhos} onOpenChange={setMostrarRascunhos}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Seus Rascunhos</DialogTitle>
+            <DialogDescription>
+              Gerencie seus posts salvos como rascunho
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="mt-4">
+            {loadingRascunhos ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              </div>
+            ) : rascunhos.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">Nenhum rascunho salvo</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {rascunhos.map((draft) => (
+                  <div
+                    key={draft.id}
+                    className="border border-border rounded-lg p-4 hover:border-primary/50 transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-base mb-2">
+                          {draft.titulo}
+                        </h4>
+                        <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                          {draft.conteudo}
+                        </p>
+                        {draft.tagIds && draft.tagIds.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mb-2">
+                            {parseTagIds(draft.tagIds).map((tag, index) => (
+                              <Badge
+                                key={`${draft.id}-${index}`}
+                                variant="secondary"
+                                className="text-xs"
+                              >
+                                {tag}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                        <p className="text-xs text-muted-foreground">
+                          Criado em:{" "}
+                          {draft.dataPublicacao
+                            ? new Date(draft.dataPublicacao).toLocaleDateString(
+                                "pt-BR",
+                                {
+                                  day: "2-digit",
+                                  month: "2-digit",
+                                  year: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                }
+                              )
+                            : "Sem data"}
+                        </p>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleLoadDraft(draft)}
+                        >
+                          Editar
+                        </Button>
+                        <Button
+                          variant="hero"
+                          size="sm"
+                          onClick={() => handlePublishDraft(draft.id)}
+                        >
+                          Publicar
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => handleOpenSchedule(draft.id)}
+                        >
+                          Agendar
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDeleteDraft(draft.id)}
+                        >
+                          Excluir
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Agendamento */}
+      <Dialog open={mostrarAgendamento} onOpenChange={setMostrarAgendamento}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Agendar Publicação</DialogTitle>
+            <DialogDescription>
+              Escolha a data e hora para publicar este post automaticamente
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 mt-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">
+                Data e Hora da Publicação
+              </label>
+              <input
+                type="datetime-local"
+                value={dataAgendamento}
+                onChange={(e) => setDataAgendamento(e.target.value)}
+                min={new Date(Date.now() + 60 * 60 * 1000)
+                  .toISOString()
+                  .slice(0, 16)}
+                max={new Date(Date.now() + 24 * 60 * 60 * 1000)
+                  .toISOString()
+                  .slice(0, 16)}
+                className="w-full px-3 py-2 bg-background border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+              <p className="text-xs text-muted-foreground mt-2">
+                O post será publicado entre 1 e 24 horas a partir de agora
+              </p>
+            </div>
+
+            <div className="flex gap-2 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setMostrarAgendamento(false);
+                  setRascunhoParaAgendar(null);
+                  setDataAgendamento("");
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="hero"
+                onClick={handleScheduleDraft}
+                disabled={!dataAgendamento}
+              >
+                Confirmar Agendamento
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 };

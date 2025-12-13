@@ -10,7 +10,7 @@ export interface PostResponse {
   dataPublicacao: string;
   dataAgendamento?: string;
   imagemUrl?: string;
-  status: 'RASCUNHO' | 'AGENDADO' | 'PUBLICADO';
+  status: 'EM_RASCUNHO' | 'AGENDADO' | 'PUBLICADO';
   tagIds: string[];
   numeroCurtidas: number;
   numeroComentarios: number;
