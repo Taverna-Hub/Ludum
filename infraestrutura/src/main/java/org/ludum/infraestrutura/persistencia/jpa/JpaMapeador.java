@@ -36,6 +36,7 @@ import org.springframework.stereotype.Component;
 
 import java.net.URI;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -186,11 +187,12 @@ public class JpaMapeador extends ModelMapper {
       @Override
       protected Jogo convert(JogoJpa source) {
         try {
-          List<Tag> tags = source.tagIds.stream()
+          List<Tag> tags = source.tagIds != null ? source.tagIds.stream()
               .map(tagId -> new Tag(new TagId(tagId), "Tag-" + tagId.substring(0, Math.min(5, tagId.length()))))
-              .collect(Collectors.toList());
+              .collect(Collectors.toList()) : new ArrayList<>();
 
-          URL capaOficial = source.capaOficial != null ? URI.create(source.capaOficial).toURL() : null;
+          URL capaOficial = source.capaOficial != null && !source.capaOficial.isEmpty() 
+              ? URI.create(source.capaOficial).toURL() : null;
 
           Jogo jogo = new Jogo(
               new JogoId(source.id),
@@ -202,28 +204,31 @@ public class JpaMapeador extends ModelMapper {
               source.isNSFW,
               source.dataDeLancamento);
 
-          for (String screenshotUrl : source.screenshots) {
-            jogo.adicionarScreenshot(URI.create(screenshotUrl).toURL());
-          }
-
-          for (String videoUrl : source.videos) {
-            jogo.adicionarVideo(URI.create(videoUrl).toURL());
-          }
-
-          if (source.status == StatusPublicacao.PUBLICADO
-              && jogo.getStatus() == StatusPublicacao.AGUARDANDO_VALIDACAO) {
-            jogo.publicar();
-          } else if (source.status == StatusPublicacao.REJEITADO
-              && jogo.getStatus() == StatusPublicacao.AGUARDANDO_VALIDACAO) {
-            jogo.rejeitar();
-          } else if (source.status == StatusPublicacao.ARQUIVADO) {
-            if (jogo.getStatus() == StatusPublicacao.AGUARDANDO_VALIDACAO) {
-              jogo.publicar();
+          if (source.screenshots != null) {
+            for (String screenshotUrl : source.screenshots) {
+              if (screenshotUrl != null && !screenshotUrl.isEmpty()) {
+                jogo.adicionarScreenshot(URI.create(screenshotUrl).toURL());
+              }
             }
-            jogo.arquivar();
           }
 
-          if (source.versoes != null) {
+          if (source.videos != null) {
+            for (String videoUrl : source.videos) {
+              if (videoUrl != null && !videoUrl.isEmpty()) {
+                jogo.adicionarVideo(URI.create(videoUrl).toURL());
+              }
+            }
+          }
+
+          // Define o status diretamente via reflection para evitar validações
+          // que já foram feitas quando o jogo foi originalmente publicado
+          if (source.status != null && source.status != jogo.getStatus()) {
+            var statusField = Jogo.class.getDeclaredField("status");
+            statusField.setAccessible(true);
+            statusField.set(jogo, source.status);
+          }
+
+          if (source.versoes != null && !source.versoes.isEmpty()) {
             var versaoHistoryField = Jogo.class.getDeclaredField("versaoHistory");
             versaoHistoryField.setAccessible(true);
             @SuppressWarnings("unchecked")
@@ -246,7 +251,8 @@ public class JpaMapeador extends ModelMapper {
 
           return jogo;
         } catch (Exception e) {
-          throw new RuntimeException("Erro ao converter JogoJpa para Jogo", e);
+          e.printStackTrace();
+          throw new RuntimeException("Erro ao converter JogoJpa para Jogo: " + e.getMessage(), e);
         }
       }
     });
