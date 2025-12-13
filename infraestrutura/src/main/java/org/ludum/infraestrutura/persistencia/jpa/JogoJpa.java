@@ -121,6 +121,9 @@ class JogoRepositoryImpl implements JogoRepository, JogoRepositorioConsulta {
     @Autowired
     JpaMapeador mapeador;
 
+    @Autowired
+    TagRepositoryImpl tagRepository;
+
     // ========== Métodos do JogoRepository (Domínio) ==========
 
     @Override
@@ -191,6 +194,14 @@ class JogoRepositoryImpl implements JogoRepository, JogoRepositorioConsulta {
             JogoId jogoId = new JogoId(jpa.id);
 
             List<Tag> tags = new ArrayList<>();
+            if (jpa.tagIds != null && !jpa.tagIds.isEmpty()) {
+                for (String tagId : jpa.tagIds) {
+                    Tag tag = tagRepository.obterPorId(new TagId(tagId));
+                    if (tag != null) {
+                        tags.add(tag);
+                    }
+                }
+            }
 
             Jogo jogo = new Jogo(
                     jogoId,
