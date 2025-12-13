@@ -1,6 +1,7 @@
 package org.ludum.infraestrutura.persistencia.jpa;
 
 import jakarta.persistence.*;
+import org.ludum.aplicacao.catalogo.jogo.JogoRepositorioConsulta;
 import org.ludum.dominio.catalogo.jogo.entidades.Jogo;
 import org.ludum.dominio.catalogo.jogo.entidades.JogoId;
 import org.ludum.dominio.catalogo.jogo.entidades.Slug;
@@ -101,15 +102,22 @@ interface JogoJpaRepository extends JpaRepository<JogoJpa, String> {
 
     @Query("SELECT j FROM JogoJpa j JOIN j.tagIds t WHERE t = :tagId")
     List<JogoJpa> findByTagId(@Param("tagId") String tagId);
+
+    @Query("SELECT j FROM JogoJpa j WHERE j.status = 'PUBLICADO'")
+    List<JogoJpa> findAllPublicados();
+
+    List<JogoJpa> findByDesenvolvedoraId(String desenvolvedoraId);
 }
 
 @Repository
-class JogoRepositoryImpl implements JogoRepository {
+class JogoRepositoryImpl implements JogoRepository, JogoRepositorioConsulta {
     @Autowired
     JogoJpaRepository repositorio;
 
     @Autowired
     JpaMapeador mapeador;
+
+    // ========== Métodos do JogoRepository (Domínio) ==========
 
     @Override
     @Transactional
@@ -145,6 +153,26 @@ class JogoRepositoryImpl implements JogoRepository {
     @Transactional(readOnly = true)
     public List<Jogo> obterJogosPorTag(TagId tagId) {
         List<JogoJpa> jogosJpa = repositorio.findByTagId(tagId.getValue());
+        return jogosJpa.stream()
+                .map(jpa -> mapeador.map(jpa, Jogo.class))
+                .collect(Collectors.toList());
+    }
+
+    // ========== Métodos do JogoRepositorioConsulta (Aplicação) ==========
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Jogo> listarTodosPublicados() {
+        List<JogoJpa> jogosJpa = repositorio.findAllPublicados();
+        return jogosJpa.stream()
+                .map(jpa -> mapeador.map(jpa, Jogo.class))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Jogo> listarPorDesenvolvedora(ContaId devId) {
+        List<JogoJpa> jogosJpa = repositorio.findByDesenvolvedoraId(devId.getValue());
         return jogosJpa.stream()
                 .map(jpa -> mapeador.map(jpa, Jogo.class))
                 .collect(Collectors.toList());

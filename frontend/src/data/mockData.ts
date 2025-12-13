@@ -19,20 +19,6 @@ export interface Game {
   downloadCount: number;
 }
 
-export interface Review {
-  id: string;
-  gameId: string;
-  userId: string;
-  userName: string;
-  rating: number;
-  comment: string;
-  recommended: boolean;
-  date: string;
-  updatedAt?: string;
-  helpful: number;
-  deleted?: boolean;
-}
-
 export interface CrowdfundingCampaign {
   id: string;
   gameId: string;
@@ -95,20 +81,23 @@ export interface User {
   gamesPlayed?: number;
 }
 
+
 // Mock Games
 export const mockGames: Game[] = [
   {
-    id: '1',
+    id: 'jogo-1',
     title: 'Cyber Knights',
     slug: 'cyber-knights',
-    description: 'Um RPG cyberpunk de mundo aberto onde suas escolhas moldam o futuro da cidade. Explore Nova Tokyo, uma metrópole futurista cheia de perigos e oportunidades.',
+    description: 'Um RPG de ação futurista onde você é um mercenário cybernético em uma megacidade distópica. Explore um mundo aberto, complete missões e customize seu personagem com implantes cibernéticos.',
     price: 59.90,
-    coverImage: 'https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=800',
+    originalPrice: 79.90,
+    coverImage: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800',
     screenshots: [
-      'https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=1200',
-      'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1200',
+      'https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=800',
+      'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800',
+      'https://images.unsplash.com/photo-1552820728-8b83bb6b2b0b?w=800',
     ],
-    tags: ['RPG', 'Cyberpunk', 'Mundo Aberto', 'História Rica'],
+    tags: ['RPG', 'Ação', 'Cyberpunk', 'Mundo Aberto'],
     developerId: 'dev1',
     developerName: 'NeonStudios',
     rating: 4.8,
@@ -117,150 +106,73 @@ export const mockGames: Game[] = [
     isEarlyAccess: false,
     hasAdultContent: false,
     modsEnabled: true,
-    downloadCount: 12400,
+    downloadCount: 45000,
   },
   {
-    id: '2',
+    id: 'jogo-2',
     title: 'Dungeon Survivors',
     slug: 'dungeon-survivors',
-    description: 'Roguelike desafiador com combate tático por turnos. Cada partida é única com masmorras geradas proceduralmente e centenas de combinações de builds.',
-    price: 0,
-    originalPrice: 39.90,
-    coverImage: 'https://images.unsplash.com/photo-1551103782-8ab07afd45c1?w=800',
+    description: 'Um roguelike brutal onde cada run é única. Enfrente hordas de monstros, colete itens poderosos e tente sobreviver até o chefe final. Morte é apenas o começo!',
+    price: 29.90,
+    coverImage: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=800',
     screenshots: [
-      'https://images.unsplash.com/photo-1551103782-8ab07afd45c1?w=1200',
+      'https://images.unsplash.com/photo-1551103782-8ab07afd45c1?w=800',
+      'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=800',
     ],
-    tags: ['Roguelike', 'Estratégia', 'Indie', 'Difícil'],
+    tags: ['Roguelike', 'Ação', 'Indie', 'Difícil'],
     developerId: 'dev2',
     developerName: 'PixelForge',
-    rating: 4.5,
-    reviewCount: 856,
-    releaseDate: '2024-01-20',
-    isEarlyAccess: false,
-    hasAdultContent: false,
-    modsEnabled: true,
-    downloadCount: 8900,
-  },
-  {
-    id: '3',
-    title: 'Starship Commander',
-    slug: 'starship-commander',
-    description: 'Simulador espacial onde você comanda sua própria nave. Explore galáxias, faça comércio, forme alianças ou torne-se um pirata temido.',
-    price: 89.90,
-    coverImage: 'https://images.unsplash.com/photo-1614732414444-096e5f1122d5?w=800',
-    screenshots: [
-      'https://images.unsplash.com/photo-1614732414444-096e5f1122d5?w=1200',
-    ],
-    tags: ['Simulação', 'Espacial', 'Multiplayer', 'Sandbox'],
-    developerId: 'dev1',
-    developerName: 'NeonStudios',
-    rating: 4.9,
-    reviewCount: 2103,
-    releaseDate: '2023-11-10',
-    isEarlyAccess: false,
-    hasAdultContent: false,
-    modsEnabled: true,
-    downloadCount: 25600,
-  },
-  {
-    id: '4',
-    title: 'Mystic Realms',
-    slug: 'mystic-realms',
-    description: 'MMORPG de fantasia com foco em narrativa e escolhas morais. Junte-se a guildas, participe de raids épicas e molde o destino do reino.',
-    price: 0,
-    coverImage: 'https://images.unsplash.com/photo-1552820728-8b83bb6b773f?w=800',
-    screenshots: [
-      'https://images.unsplash.com/photo-1552820728-8b83bb6b773f?w=1200',
-    ],
-    tags: ['MMORPG', 'Fantasia', 'Cooperativo', 'PvP'],
-    developerId: 'dev3',
-    developerName: 'MysticGames',
-    rating: 4.3,
-    reviewCount: 3421,
-    releaseDate: '2024-02-01',
+    rating: 4.6,
+    reviewCount: 892,
+    releaseDate: '2024-06-20',
     isEarlyAccess: true,
     hasAdultContent: false,
-    modsEnabled: false,
-    downloadCount: 45200,
+    modsEnabled: true,
+    downloadCount: 28000,
   },
   {
-    id: '5',
-    title: 'Shadow Tactics',
-    slug: 'shadow-tactics',
-    description: 'Jogo stealth tático ambientado no Japão feudal. Controle uma equipe de ninjas com habilidades únicas e complete missões de infiltração.',
-    price: 44.90,
-    coverImage: 'https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?w=800',
+    id: 'jogo-3',
+    title: 'Starship Commander',
+    slug: 'starship-commander',
+    description: 'Comande sua própria frota espacial neste jogo de estratégia épico. Construa naves, gerencie recursos e conquiste a galáxia através de diplomacia ou força bruta.',
+    price: 0,
+    coverImage: 'https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=800',
     screenshots: [
-      'https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?w=1200',
+      'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800',
+      'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=800',
     ],
-    tags: ['Stealth', 'Estratégia', 'História', 'Tático'],
+    tags: ['Estratégia', 'Espacial', 'Grátis', '4X'],
+    developerId: 'dev1',
+    developerName: 'NeonStudios',
+    rating: 4.3,
+    reviewCount: 2341,
+    releaseDate: '2024-01-10',
+    isEarlyAccess: false,
+    hasAdultContent: false,
+    modsEnabled: false,
+    downloadCount: 120000,
+  },
+  {
+    id: 'jogo-4',
+    title: 'Mystic Garden',
+    slug: 'mystic-garden',
+    description: 'Um jogo relaxante de simulação de jardinagem com elementos mágicos. Cultive plantas místicas, descubra criaturas fantásticas e crie seu próprio jardim dos sonhos.',
+    price: 19.90,
+    coverImage: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=800',
+    screenshots: [
+      'https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?w=800',
+      'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?w=800',
+    ],
+    tags: ['Simulação', 'Relaxante', 'Indie', 'Fantasia'],
     developerId: 'dev2',
     developerName: 'PixelForge',
-    rating: 4.7,
-    reviewCount: 1567,
-    releaseDate: '2024-04-05',
+    rating: 4.9,
+    reviewCount: 567,
+    releaseDate: '2024-08-05',
     isEarlyAccess: false,
     hasAdultContent: false,
     modsEnabled: true,
-    downloadCount: 15800,
-  },
-  {
-    id: '6',
-    title: 'Neon Racing',
-    slug: 'neon-racing',
-    description: 'Corrida arcade futurista com física arcade e visuais neon vibrantes. Compete online ou desafie seus amigos em pistas impossíveis.',
-    price: 29.90,
-    coverImage: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800',
-    screenshots: [
-      'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=1200',
-    ],
-    tags: ['Corrida', 'Arcade', 'Multiplayer', 'Casual'],
-    developerId: 'dev4',
-    developerName: 'SpeedStudios',
-    rating: 4.4,
-    reviewCount: 892,
-    releaseDate: '2024-05-20',
-    isEarlyAccess: false,
-    hasAdultContent: false,
-    modsEnabled: false,
-    downloadCount: 9200,
-  },
-];
-
-// Mock Reviews
-export const mockReviews: Review[] = [
-  {
-    id: 'r1',
-    gameId: '1',
-    userId: 'u1',
-    userName: 'João Silva',
-    rating: 5,
-    comment: 'Jogo incrível! A história é envolvente e o mundo aberto é repleto de detalhes. Já joguei mais de 100 horas e ainda descobrindo coisas novas. Vale cada centavo!',
-    recommended: true,
-    date: '2024-10-01',
-    helpful: 234,
-  },
-  {
-    id: 'r2',
-    gameId: '1',
-    userId: 'u2',
-    userName: 'Maria Costa',
-    rating: 4,
-    comment: 'Muito bom, mas tem alguns bugs que precisam ser corrigidos. A jogabilidade é excelente e os gráficos são de tirar o fôlego.',
-    recommended: true,
-    date: '2024-09-28',
-    helpful: 156,
-  },
-  {
-    id: 'r3',
-    gameId: '2',
-    userId: 'u3',
-    userName: 'Pedro Santos',
-    rating: 5,
-    comment: 'Melhor roguelike que já joguei! A dificuldade é perfeitamente balanceada e cada run é única. Já viciei completamente.',
-    recommended: true,
-    date: '2024-10-05',
-    helpful: 89,
+    downloadCount: 15000,
   },
 ];
 
@@ -333,7 +245,7 @@ export const mockCampaigns: CrowdfundingCampaign[] = [
 export const mockMods: Mod[] = [
   {
     id: 'm1',
-    gameId: '1',
+    gameId: 'jogo-1',
     gameName: 'Cyber Knights',
     title: 'Enhanced Graphics Pack',
     description: 'Melhora drasticamente os gráficos do jogo com texturas em 4K, iluminação aprimorada e efeitos visuais redesenhados.',
@@ -348,7 +260,7 @@ export const mockMods: Mod[] = [
   },
   {
     id: 'm2',
-    gameId: '1',
+    gameId: 'jogo-1',
     gameName: 'Cyber Knights',
     title: 'New Weapons Arsenal',
     description: 'Adiciona 50+ novas armas balanceadas ao jogo, desde pistolas futuristas até rifles de plasma devastadores.',
@@ -363,7 +275,7 @@ export const mockMods: Mod[] = [
   },
   {
     id: 'm3',
-    gameId: '2',
+    gameId: 'jogo-2',
     gameName: 'Dungeon Survivors',
     title: 'Ultimate Classes Overhaul',
     description: 'Rebalanceia todas as classes e adiciona 10 novas classes jogáveis com mecânicas únicas.',
@@ -382,7 +294,7 @@ export const mockMods: Mod[] = [
 export const mockPosts: Post[] = [
   {
     id: 'p1',
-    gameId: '1',
+    gameId: 'jogo-1',
     gameName: 'Cyber Knights',
     userId: 'u1',
     userName: 'João Silva',
@@ -394,7 +306,7 @@ export const mockPosts: Post[] = [
   },
   {
     id: 'p2',
-    gameId: '3',
+    gameId: 'jogo-3',
     gameName: 'Starship Commander',
     userId: 'u7',
     userName: 'Ana Paula',
@@ -405,7 +317,7 @@ export const mockPosts: Post[] = [
   },
   {
     id: 'p3',
-    gameId: '2',
+    gameId: 'jogo-2',
     gameName: 'Dungeon Survivors',
     userId: 'u3',
     userName: 'Pedro Santos',
@@ -464,7 +376,7 @@ export const mockCurrentUser: User = {
 };
 
 // Biblioteca do usuário atual (jogos que ele "comprou")
-export const mockUserLibrary = ['1', '2', '4'];
+export const mockUserLibrary = ['jogo-1', 'jogo-2', 'jogo-4'];
 
 // Carteira
 export const mockWallet = {

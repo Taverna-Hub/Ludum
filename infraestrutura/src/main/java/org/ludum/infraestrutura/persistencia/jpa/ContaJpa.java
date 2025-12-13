@@ -21,6 +21,10 @@ class ContaJpa {
     TipoConta tipo;
     @Enumerated(EnumType.STRING)
     StatusConta status;
+
+    public String getNome() {
+        return nome;
+    }
 }
 
 interface ContaJpaRepository extends JpaRepository<ContaJpa, String> {
