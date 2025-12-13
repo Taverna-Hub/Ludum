@@ -3,11 +3,13 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, Star, TrendingUp, Filter, Loader2 } from 'lucide-react';
+import { Search, Star, TrendingUp, Filter, Loader2, Heart } from 'lucide-react';
 import { Game } from '@/types/game';
 import { listarJogos } from '@/http/requests/jogoRequests';
+import { listarTags, TagResumo } from '@/http/requests/tagRequests';
 import { useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '@/layouts/DashboardLayout';
+import { useSeguimento } from '@/hooks/useSeguimento';
 
 const Catalog = () => {
   const navigate = useNavigate();
@@ -18,6 +20,17 @@ const Catalog = () => {
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Estado para tags da API
+  const [tags, setTags] = useState<TagResumo[]>([]);
+  const [loadingTags, setLoadingTags] = useState(true);
+
+  // Hook de seguimento
+  const { 
+    toggleSeguir, 
+    verificarMultiplosSeguindo, 
+    followingMap 
+  } = useSeguimento();
 
   // Carregar jogos da API
   useEffect(() => {
@@ -39,15 +52,37 @@ const Catalog = () => {
     carregarJogos();
   }, []);
 
-  // Get all unique tags
-  const allTags = Array.from(new Set(games.flatMap((game) => game.tags)));
+  // Carregar tags da API
+  useEffect(() => {
+    const carregarTags = async () => {
+      setLoadingTags(true);
+      try {
+        const tagsData = await listarTags();
+        setTags(tagsData);
+      } catch (err) {
+        console.error('Erro ao carregar tags:', err);
+      } finally {
+        setLoadingTags(false);
+      }
+    };
+    
+    carregarTags();
+  }, []);
 
-  // Filter games
+  // Verificar se está seguindo as tags quando carregar
+  useEffect(() => {
+    if (tags.length > 0) {
+      const tagIds = tags.map(tag => tag.id);
+      verificarMultiplosSeguindo(tagIds);
+    }
+  }, [tags, verificarMultiplosSeguindo]);
+
+  // Filter games by tag name
   const filteredGames = games.filter((game) => {
     const matchesSearch =
       game.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       game.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesTag = !selectedTag || game.tags.includes(selectedTag);
+    const matchesTag = !selectedTag || game.tags.some(tag => tag === selectedTag);
     return matchesSearch && matchesTag;
   });
 
@@ -95,25 +130,49 @@ const Catalog = () => {
                 <div className="space-y-4">
                   <div>
                     <h3 className="text-sm font-medium mb-3">Tags</h3>
-                    <div className="flex flex-wrap gap-2">
-                      <Badge
-                        variant={!selectedTag ? 'default' : 'outline'}
-                        className="cursor-pointer"
-                        onClick={() => setSelectedTag(null)}
-                      >
-                        Todas
-                      </Badge>
-                      {allTags.map((tag) => (
+                    {loadingTags ? (
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span className="text-sm text-muted-foreground">Carregando tags...</span>
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
                         <Badge
-                          key={tag}
-                          variant={selectedTag === tag ? 'default' : 'outline'}
+                          variant={!selectedTag ? 'default' : 'outline'}
                           className="cursor-pointer"
-                          onClick={() => setSelectedTag(tag)}
+                          onClick={() => setSelectedTag(null)}
                         >
-                          {tag}
+                          Todas
                         </Badge>
-                      ))}
-                    </div>
+                        {tags.map((tag) => (
+                          <div key={tag.id} className="flex items-center gap-1">
+                            <Badge
+                              variant={selectedTag === tag.nome ? 'default' : 'outline'}
+                              className="cursor-pointer"
+                              onClick={() => setSelectedTag(tag.nome)}
+                            >
+                              {tag.nome}
+                            </Badge>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleSeguir(tag.id, 'TAG', tag.nome);
+                              }}
+                              className="p-1 hover:scale-110 transition-transform"
+                              title={followingMap[tag.id] ? 'Deixar de seguir' : 'Seguir tag'}
+                            >
+                              <Heart
+                                className={`w-4 h-4 ${
+                                  followingMap[tag.id]
+                                    ? 'fill-red-500 text-red-500'
+                                    : 'text-muted-foreground hover:text-red-500'
+                                }`}
+                              />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               </Card>

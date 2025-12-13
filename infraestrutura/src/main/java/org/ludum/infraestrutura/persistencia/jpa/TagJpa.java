@@ -1,6 +1,8 @@
 package org.ludum.infraestrutura.persistencia.jpa;
 
 import jakarta.persistence.*;
+import org.ludum.aplicacao.tag.TagRepositorioConsulta;
+import org.ludum.aplicacao.tag.TagResumo;
 import org.ludum.dominio.catalogo.tag.TagRepository;
 import org.ludum.dominio.catalogo.tag.entidades.Tag;
 import org.ludum.dominio.catalogo.tag.entidades.TagId;
@@ -27,12 +29,14 @@ interface TagJpaRepository extends JpaRepository<TagJpa, String> {
 }
 
 @Repository
-class TagRepositoryImpl implements TagRepository {
+class TagRepositoryImpl implements TagRepository, TagRepositorioConsulta {
     @Autowired
     TagJpaRepository repositorio;
 
     @Autowired
     JpaMapeador mapeador;
+
+    // ========== Métodos do TagRepository (Domínio) ==========
 
     @Override
     public Tag obterPorNome(String nome) {
@@ -62,5 +66,14 @@ class TagRepositoryImpl implements TagRepository {
     @Override
     public void remover(Tag tag) {
         repositorio.deleteById(tag.getId().getValue());
+    }
+
+    // ========== Métodos do TagRepositorioConsulta (Aplicação) ==========
+
+    @Override
+    public List<TagResumo> listarTodas() {
+        return repositorio.findAll().stream()
+                .map(jpa -> new TagResumo(jpa.id, jpa.nome))
+                .collect(Collectors.toList());
     }
 }
