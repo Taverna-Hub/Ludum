@@ -29,7 +29,9 @@ const Catalog = () => {
   const { 
     toggleSeguir, 
     verificarMultiplosSeguindo, 
-    followingMap 
+    followingMap,
+    buscarContadorSeguidores,
+    getContadorSeguidores
   } = useSeguimento();
 
   // Carregar jogos da API
@@ -76,6 +78,16 @@ const Catalog = () => {
       verificarMultiplosSeguindo(tagIds);
     }
   }, [tags, verificarMultiplosSeguindo]);
+
+  // Verificar se está seguindo os jogos quando carregar
+  useEffect(() => {
+    if (games.length > 0) {
+      const gameIds = games.map(game => game.id);
+      verificarMultiplosSeguindo(gameIds);
+      // Buscar contador de seguidores de cada jogo
+      gameIds.forEach(id => buscarContadorSeguidores(id));
+    }
+  }, [games, verificarMultiplosSeguindo, buscarContadorSeguidores]);
 
   // Filter games by tag name
   const filteredGames = games.filter((game) => {
@@ -230,13 +242,37 @@ const Catalog = () => {
                         alt={game.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-smooth"
                       />
+                      
+                      {/* Botão de seguir no canto superior esquerdo */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleSeguir(game.id, 'JOGO', game.title);
+                        }}
+                        className="absolute top-3 left-3 p-2 bg-black/60 hover:bg-black/80 rounded-full backdrop-blur-sm transition-all hover:scale-110 z-10 flex items-center gap-1"
+                        title={followingMap[game.id] ? 'Deixar de seguir' : 'Seguir jogo'}
+                      >
+                        <Heart
+                          className={`w-5 h-5 ${
+                            followingMap[game.id]
+                              ? 'fill-red-500 text-red-500'
+                              : 'text-white'
+                          }`}
+                        />
+                        {getContadorSeguidores(game.id) > 0 && (
+                          <span className="text-white text-xs font-medium">
+                            {getContadorSeguidores(game.id)}
+                          </span>
+                        )}
+                      </button>
+
                       {game.isEarlyAccess && (
                         <Badge className="absolute top-3 right-3 bg-secondary">
                           Acesso Antecipado
                         </Badge>
                       )}
                       {game.price === 0 && (
-                        <Badge className="absolute top-3 left-3 bg-gradient-secondary">
+                        <Badge className="absolute top-12 right-3 bg-gradient-secondary">
                           Grátis
                         </Badge>
                       )}
