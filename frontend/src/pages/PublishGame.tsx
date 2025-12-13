@@ -1,6 +1,12 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Card } from "@/components/ui/card";
+import { AVAILABLE_TAGS } from "@/constants/tags";
+import {
+  jogoRequests,
+  CriarJogoRequest,
+} from "@/http/requests/publicacaoRequests";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,13 +14,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { 
-  Upload, 
-  X, 
-  Image as ImageIcon, 
+import {
+  Upload,
+  X,
+  Image as ImageIcon,
   Plus,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
@@ -23,6 +29,8 @@ const PublishGame = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuthContext();
+  const [isLoading, setIsLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -34,21 +42,19 @@ const PublishGame = () => {
     modsEnabled: true,
   });
 
-  const [coverImage, setCoverImage] = useState<string | null>(null);
+  const [coverImage, setCoverImage] = useState<string>("");
   const [screenshots, setScreenshots] = useState<string[]>([]);
+  const [videos, setVideos] = useState<string[]>([]);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
+  const [screenshotInput, setScreenshotInput] = useState("");
+  const [videoInput, setVideoInput] = useState("");
 
-  const availableTags = [
-    "RPG", "Ação", "Aventura", "Estratégia", "Puzzle", "Indie",
-    "Multiplayer", "Singleplayer", "Roguelike", "Pixel Art",
-    "Narrativa", "Casual", "Simulação", "Terror", "Fantasia",
-    "Cyberpunk", "+18", "Mundo Aberto", "Stealth"
-  ];
+  const availableTags = AVAILABLE_TAGS;
 
   const handleInputChange = (field: string, value: string | boolean) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    
+    setFormData((prev) => ({ ...prev, [field]: value }));
+
     // Gerar slug automaticamente a partir do título
     if (field === "title" && typeof value === "string") {
       const slug = value
@@ -57,34 +63,42 @@ const PublishGame = () => {
         .replace(/[\u0300-\u036f]/g, "")
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/(^-|-$)/g, "");
-      setFormData(prev => ({ ...prev, slug }));
+      setFormData((prev) => ({ ...prev, slug }));
     }
   };
 
-  const handleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setCoverImage(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+  const addScreenshot = () => {
+    if (!screenshotInput.trim()) {
+      toast({
+        title: "URL inválida",
+        description: "Digite uma URL válida para o screenshot.",
+        variant: "destructive",
+      });
+      return;
     }
-  };
-
-  const handleScreenshotUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    files.forEach(file => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setScreenshots(prev => [...prev, reader.result as string]);
-      };
-      reader.readAsDataURL(file);
-    });
+    setScreenshots((prev) => [...prev, screenshotInput.trim()]);
+    setScreenshotInput("");
   };
 
   const removeScreenshot = (index: number) => {
-    setScreenshots(prev => prev.filter((_, i) => i !== index));
+    setScreenshots((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const addVideo = () => {
+    if (!videoInput.trim()) {
+      toast({
+        title: "URL inválida",
+        description: "Digite uma URL válida para o vídeo.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setVideos((prev) => [...prev, videoInput.trim()]);
+    setVideoInput("");
+  };
+
+  const removeVideo = (index: number) => {
+    setVideos((prev) => prev.filter((_, i) => i !== index));
   };
 
   const addTag = (tag: string) => {
@@ -97,13 +111,13 @@ const PublishGame = () => {
       return;
     }
     if (!tags.includes(tag)) {
-      setTags(prev => [...prev, tag]);
+      setTags((prev) => [...prev, tag]);
     }
     setTagInput("");
   };
 
   const removeTag = (tag: string) => {
-    setTags(prev => prev.filter(t => t !== tag));
+    setTags((prev) => prev.filter((t) => t !== tag));
   };
 
   const validateForm = () => {
@@ -164,10 +178,53 @@ const PublishGame = () => {
     return true;
   };
 
-  const handlePublish = () => {
+  const handlePublish = async () => {
     if (!validateForm()) return;
 
-    navigate("/desenvolvedor/upload");
+    if (!user) {
+      toast({
+        title: "Não autenticado",
+        description: "Você precisa estar logado para publicar um jogo.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const requestData: CriarJogoRequest = {
+        desenvolvedoraId: user.id,
+        titulo: formData.title,
+        descricao: formData.description,
+        capaOficial: coverImage,
+        screenshots: screenshots,
+        videos: videos,
+        tags: tags,
+        isNSFW: formData.hasAdultContent,
+        dataDeLancamento: new Date().toISOString(),
+      };
+
+      const response = await jogoRequests.publicarJogo(requestData);
+
+      toast({
+        title: "Sucesso!",
+        description: response.mensagem,
+      });
+
+      // Redirecionar para página de upload com o ID do jogo
+      navigate(`/desenvolvedor/upload/${response.jogoId}`);
+    } catch (error: any) {
+      toast({
+        title: "Erro ao publicar",
+        description:
+          error.response?.data?.mensagem ||
+          "Ocorreu um erro ao publicar o jogo.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -191,7 +248,7 @@ const PublishGame = () => {
               <Card className="p-6 bg-card/50 backdrop-blur-sm">
                 <h2 className="text-xl font-bold mb-4">Informações Básicas</h2>
                 <Separator className="mb-6" />
-                
+
                 <div className="space-y-4">
                   <div>
                     <Label htmlFor="title">Título do Jogo *</Label>
@@ -199,7 +256,9 @@ const PublishGame = () => {
                       id="title"
                       placeholder="Nome do seu jogo"
                       value={formData.title}
-                      onChange={(e) => handleInputChange("title", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("title", e.target.value)
+                      }
                       className="mt-2"
                     />
                   </div>
@@ -210,7 +269,9 @@ const PublishGame = () => {
                       id="slug"
                       placeholder="nome-do-jogo"
                       value={formData.slug}
-                      onChange={(e) => handleInputChange("slug", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("slug", e.target.value)
+                      }
                       className="mt-2"
                     />
                     <p className="text-xs text-muted-foreground mt-1">
@@ -224,7 +285,9 @@ const PublishGame = () => {
                       id="description"
                       placeholder="Descreva seu jogo..."
                       value={formData.description}
-                      onChange={(e) => handleInputChange("description", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("description", e.target.value)
+                      }
                       className="mt-2 min-h-32"
                     />
                   </div>
@@ -236,7 +299,9 @@ const PublishGame = () => {
                       type="number"
                       placeholder="0.00"
                       value={formData.price}
-                      onChange={(e) => handleInputChange("price", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("price", e.target.value)
+                      }
                       className="mt-2"
                     />
                     <p className="text-xs text-muted-foreground mt-1">
@@ -253,50 +318,53 @@ const PublishGame = () => {
 
                 {/* Capa */}
                 <div className="mb-6">
-                  <Label>Capa Oficial *</Label>
-                  <div className="mt-2">
-                    {!coverImage ? (
-                      <div
-                        className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-secondary/50 transition-smooth cursor-pointer"
-                        onClick={() => document.getElementById('cover-upload')?.click()}
-                      >
-                        <ImageIcon className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />
-                        <p className="text-sm">Clique para adicionar capa</p>
-                        <p className="text-xs text-muted-foreground mt-1">Recomendado: 1920x1080px</p>
-                      </div>
-                    ) : (
-                      <div className="relative">
-                        <img
-                          src={coverImage}
-                          alt="Capa"
-                          className="w-full h-64 object-cover rounded-lg"
-                        />
-                        <Button
-                          size="icon"
-                          variant="destructive"
-                          className="absolute top-2 right-2"
-                          onClick={() => setCoverImage(null)}
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    )}
-                    <Input
-                      id="cover-upload"
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleCoverUpload}
-                    />
-                  </div>
+                  <Label htmlFor="cover-url">URL da Capa Oficial *</Label>
+                  <Input
+                    id="cover-url"
+                    placeholder="https://exemplo.com/capa.jpg"
+                    value={coverImage}
+                    onChange={(e) => setCoverImage(e.target.value)}
+                    className="mt-2"
+                  />
+                  {coverImage && (
+                    <div className="mt-4 relative">
+                      <img
+                        src={coverImage}
+                        alt="Preview da capa"
+                        className="w-full h-64 object-cover rounded-lg"
+                        onError={(e) => {
+                          e.currentTarget.src = "";
+                          toast({
+                            title: "Erro ao carregar imagem",
+                            description: "Verifique se a URL está correta.",
+                            variant: "destructive",
+                          });
+                        }}
+                      />
+                    </div>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Recomendado: 1920x1080px
+                  </p>
                 </div>
 
                 {/* Screenshots */}
-                <div>
+                <div className="mb-6">
                   <Label>Screenshots *</Label>
                   <p className="text-xs text-muted-foreground mb-2">
                     Adicione pelo menos 1 screenshot
                   </p>
+                  <div className="flex gap-2 mb-4">
+                    <Input
+                      placeholder="https://exemplo.com/screenshot.jpg"
+                      value={screenshotInput}
+                      onChange={(e) => setScreenshotInput(e.target.value)}
+                      onKeyPress={(e) => e.key === "Enter" && addScreenshot()}
+                    />
+                    <Button onClick={addScreenshot} type="button">
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     {screenshots.map((screenshot, index) => (
                       <div key={index} className="relative group">
@@ -304,6 +372,9 @@ const PublishGame = () => {
                           src={screenshot}
                           alt={`Screenshot ${index + 1}`}
                           className="w-full h-32 object-cover rounded-lg"
+                          onError={(e) => {
+                            e.currentTarget.src = "";
+                          }}
                         />
                         <Button
                           size="icon"
@@ -315,21 +386,47 @@ const PublishGame = () => {
                         </Button>
                       </div>
                     ))}
-                    <div
-                      className="border-2 border-dashed border-border rounded-lg h-32 flex items-center justify-center hover:border-secondary/50 transition-smooth cursor-pointer"
-                      onClick={() => document.getElementById('screenshot-upload')?.click()}
-                    >
-                      <Plus className="w-8 h-8 text-muted-foreground" />
-                    </div>
                   </div>
-                  <Input
-                    id="screenshot-upload"
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="hidden"
-                    onChange={handleScreenshotUpload}
-                  />
+                </div>
+
+                {/* Vídeos */}
+                <div>
+                  <Label>Vídeos (Opcional)</Label>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Adicione URLs de vídeos (YouTube, Vimeo, etc.)
+                  </p>
+                  <div className="flex gap-2 mb-4">
+                    <Input
+                      placeholder="https://youtube.com/watch?v=..."
+                      value={videoInput}
+                      onChange={(e) => setVideoInput(e.target.value)}
+                      onKeyPress={(e) => e.key === "Enter" && addVideo()}
+                    />
+                    <Button onClick={addVideo} type="button">
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  {videos.length > 0 && (
+                    <div className="space-y-2">
+                      {videos.map((video, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center gap-2 p-2 border border-border rounded-lg"
+                        >
+                          <span className="text-sm flex-1 truncate">
+                            {video}
+                          </span>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => removeVideo(index)}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </Card>
 
@@ -342,9 +439,11 @@ const PublishGame = () => {
                   <Label>Tags Selecionadas ({tags.length}/15)</Label>
                   <div className="flex flex-wrap gap-2 mt-2 min-h-[40px] p-3 border border-border rounded-lg">
                     {tags.length === 0 ? (
-                      <span className="text-sm text-muted-foreground">Nenhuma tag selecionada</span>
+                      <span className="text-sm text-muted-foreground">
+                        Nenhuma tag selecionada
+                      </span>
                     ) : (
-                      tags.map(tag => (
+                      tags.map((tag) => (
                         <Badge
                           key={tag}
                           variant="secondary"
@@ -361,7 +460,7 @@ const PublishGame = () => {
                 <div>
                   <Label>Tags Disponíveis</Label>
                   <div className="flex flex-wrap gap-2 mt-2">
-                    {availableTags.map(tag => (
+                    {availableTags.map((tag) => (
                       <Badge
                         key={tag}
                         variant="outline"
@@ -392,7 +491,9 @@ const PublishGame = () => {
                     </div>
                     <Switch
                       checked={formData.isEarlyAccess}
-                      onCheckedChange={(checked) => handleInputChange("isEarlyAccess", checked)}
+                      onCheckedChange={(checked) =>
+                        handleInputChange("isEarlyAccess", checked)
+                      }
                     />
                   </div>
 
@@ -405,7 +506,9 @@ const PublishGame = () => {
                     </div>
                     <Switch
                       checked={formData.hasAdultContent}
-                      onCheckedChange={(checked) => handleInputChange("hasAdultContent", checked)}
+                      onCheckedChange={(checked) =>
+                        handleInputChange("hasAdultContent", checked)
+                      }
                     />
                   </div>
 
@@ -418,7 +521,9 @@ const PublishGame = () => {
                     </div>
                     <Switch
                       checked={formData.modsEnabled}
-                      onCheckedChange={(checked) => handleInputChange("modsEnabled", checked)}
+                      onCheckedChange={(checked) =>
+                        handleInputChange("modsEnabled", checked)
+                      }
                     />
                   </div>
                 </div>
@@ -488,6 +593,7 @@ const PublishGame = () => {
                   variant="outline"
                   onClick={() => navigate(-1)}
                   className="flex-1"
+                  disabled={isLoading}
                 >
                   Cancelar
                 </Button>
@@ -495,9 +601,10 @@ const PublishGame = () => {
                   variant="accent"
                   onClick={handlePublish}
                   className="flex-1"
+                  disabled={isLoading}
                 >
                   <Upload className="w-4 h-4 mr-2" />
-                  Publicar Jogo
+                  {isLoading ? "Publicando..." : "Publicar Jogo"}
                 </Button>
               </div>
             </div>

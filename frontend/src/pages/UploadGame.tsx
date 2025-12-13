@@ -1,22 +1,24 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Progress } from '@/components/ui/progress';
+import { useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { Card } from "@/components/ui/card";
+import { jogoRequests } from "@/http/requests/publicacaoRequests";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import {
   Upload,
   FileArchive,
   CheckCircle2,
   AlertCircle,
   Loader2,
-} from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { DashboardLayout } from '@/layouts/DashboardLayout';
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { DashboardLayout } from "@/layouts/DashboardLayout";
 
 const UploadGame = () => {
   const navigate = useNavigate();
+  const { jogoId } = useParams<{ jogoId: string }>();
   const { toast } = useToast();
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -29,11 +31,11 @@ const UploadGame = () => {
     if (!selectedFile) return;
 
     // Validação: deve ser .zip
-    if (!selectedFile.name.endsWith('.zip')) {
+    if (!selectedFile.name.endsWith(".zip")) {
       toast({
-        title: 'Arquivo inválido',
-        description: 'O jogo deve ser enviado em um arquivo .zip único.',
-        variant: 'destructive',
+        title: "Arquivo inválido",
+        description: "O jogo deve ser enviado em um arquivo .zip único.",
+        variant: "destructive",
       });
       return;
     }
@@ -42,9 +44,9 @@ const UploadGame = () => {
     const maxSize = 2 * 1024 * 1024 * 1024; // 2GB
     if (selectedFile.size > maxSize) {
       toast({
-        title: 'Arquivo muito grande',
-        description: 'O arquivo não pode ter mais de 2GB.',
-        variant: 'destructive',
+        title: "Arquivo muito grande",
+        description: "O arquivo não pode ter mais de 2GB.",
+        variant: "destructive",
       });
       return;
     }
@@ -70,9 +72,9 @@ const UploadGame = () => {
   const handleUpload = async () => {
     if (!file) {
       toast({
-        title: 'Nenhum arquivo selecionado',
-        description: 'Selecione um arquivo .zip para fazer upload.',
-        variant: 'destructive',
+        title: "Nenhum arquivo selecionado",
+        description: "Selecione um arquivo .zip para fazer upload.",
+        variant: "destructive",
       });
       return;
     }
@@ -86,8 +88,8 @@ const UploadGame = () => {
 
       // Simular verificação de malware
       toast({
-        title: 'Verificando segurança...',
-        description: 'Analisando o arquivo em busca de malware.',
+        title: "Verificando segurança...",
+        description: "Analisando o arquivo em busca de malware.",
       });
 
       await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -98,24 +100,90 @@ const UploadGame = () => {
       setUploadComplete(true);
 
       toast({
-        title: 'Upload concluído! ✅',
+        title: "Upload concluído! ✅",
         description:
-          'Arquivo verificado e salvo com sucesso. Agora você pode publicar o jogo.',
+          "Arquivo verificado e salvo com sucesso. Agora você pode publicar o jogo.",
       });
     } catch (error) {
       toast({
-        title: 'Erro no upload',
+        title: "Erro no upload",
         description:
-          'Ocorreu um erro ao fazer upload do arquivo. Tente novamente.',
-        variant: 'destructive',
+          "Ocorreu um erro ao fazer upload do arquivo. Tente novamente.",
+        variant: "destructive",
       });
     } finally {
       setUploading(false);
     }
   };
 
-  const handlePublish = () => {
+  const handleReject = async () => {
+    if (!jogoId) {
+      toast({
+        title: "Erro",
+        description: "ID do jogo não encontrado.",
+        variant: "destructive",
+      });
+      return;
+    }
 
+    const motivoRejeicao = "Jogo rejeitado pelo desenvolvedor após análise";
+
+    try {
+      const response = await jogoRequests.rejeitarJogo(jogoId, motivoRejeicao);
+
+      toast({
+        title: "Jogo rejeitado",
+        description: response.mensagem || "O jogo foi rejeitado com sucesso.",
+      });
+
+      setTimeout(() => {
+        navigate("/desenvolvedor");
+      }, 1500);
+    } catch (error: any) {
+      console.error("Erro ao rejeitar jogo:", error);
+      toast({
+        title: "Erro ao rejeitar",
+        description:
+          error.response?.data?.mensagem ||
+          "Ocorreu um erro ao rejeitar o jogo.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handlePublish = async () => {
+    if (!jogoId) {
+      toast({
+        title: "Erro",
+        description: "ID do jogo não encontrado.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await jogoRequests.validarJogo(jogoId);
+
+      toast({
+        title: "Jogo publicado! 🎉",
+        description:
+          response.mensagem ||
+          "Seu jogo foi validado e publicado com sucesso na plataforma.",
+      });
+
+      setTimeout(() => {
+        navigate("/desenvolvedor");
+      }, 1500);
+    } catch (error: any) {
+      console.error("Erro ao publicar jogo:", error);
+      toast({
+        title: "Erro ao publicar",
+        description:
+          error.response?.data?.mensagem ||
+          "Ocorreu um erro ao publicar o jogo.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -149,12 +217,12 @@ const UploadGame = () => {
                     <div
                       className="border-2 border-dashed border-border rounded-lg p-12 text-center hover:border-secondary/50 transition-smooth cursor-pointer"
                       onClick={() =>
-                        document.getElementById('game-file')?.click()
+                        document.getElementById("game-file")?.click()
                       }
                     >
                       <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
                       <p className="text-lg font-medium mb-2">
-                        {file ? file.name : 'Clique para selecionar o arquivo'}
+                        {file ? file.name : "Clique para selecionar o arquivo"}
                       </p>
                       <p className="text-sm text-muted-foreground">
                         Apenas arquivos .zip (máximo 2GB)
@@ -271,10 +339,7 @@ const UploadGame = () => {
                     pode adicionar as informações e publicá-lo na plataforma.
                   </p>
                   <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                    <Button
-                      variant="outline"
-                      onClick={() => navigate('/')}
-                    >
+                    <Button variant="outline" onClick={handleReject}>
                       Rejeitar
                     </Button>
                     <Button variant="accent" onClick={handlePublish}>
