@@ -26,16 +26,13 @@ const UploadGame = () => {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadComplete, setUploadComplete] = useState(false);
-  const [gameId, setGameId] = useState<string | null>(null);
+  const [versionName, setVersionName] = useState("");
+  const [versionDescription, setVersionDescription] = useState("");
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
 
-    // Modificado: verificação de .zip removida a pedido do usuário.
-    // O backend ainda valida magic bytes para integridade do pacote.
-
-    // Validação: tamanho máximo modificado para 10MB
     const maxSize = 10 * 1024 * 1024; // 10MB
     if (selectedFile.size > maxSize) {
       toast({
@@ -47,6 +44,12 @@ const UploadGame = () => {
     }
 
     setFile(selectedFile);
+    
+    // Auto-preencher nome da versão sugerido se estiver vazio
+    if (!versionName) {
+        const sanitizedName = selectedFile.name.replace(/\.zip$/i, "").replace(/_/g, "-");
+        setVersionName(`${sanitizedName}_1.0.0.zip`);
+    }
   };
 
   const simulateUpload = () => {
@@ -74,6 +77,15 @@ const UploadGame = () => {
         variant: "destructive",
       });
       return;
+    }
+
+    if (!versionName.trim()) {
+        toast({
+            title: "Nome de versão obrigatório",
+            description: "Por favor, informe o nome da versão (ex: Jogo_1.0.0.zip).",
+            variant: "destructive"
+        });
+        return;
     }
 
     if (!user) {
@@ -105,25 +117,17 @@ const UploadGame = () => {
         setUploadProgress((prev) => Math.min(prev + 10, 90));
       }, 500);
 
-      // Backend requires strictly "Name_Major.Minor.Patch.zip"
-      // Split by _ must be size 2. Split by . must be size 4.
-      const sanitizedName = file.name.replace(/\.zip$/i, "").replace(/_/g, "-");
-      const nomeVersao = `${sanitizedName}_1.0.0.zip`;
-      const descricaoVersao = "Versão Inicial 1.0.0";
-
       await gestaoJogosRequests.uploadJogo(
         jogoId,
         file,
-        nomeVersao,
-        descricaoVersao,
+        versionName,
+        versionDescription || "Sem descrição",
         user.id
       );
 
       clearInterval(progressInterval);
       setUploadProgress(100);
 
-      // Usar o ID real do jogo que já temos
-      setGameId(jogoId);
       setUploadComplete(true);
 
       toast({
@@ -133,9 +137,18 @@ const UploadGame = () => {
       });
     } catch (error: any) {
       console.error("Erro no upload:", error);
+      console.log("Error details:", JSON.stringify(error, null, 2));
+      
+      let errorMsg = "Erro desconhecido";
+      if (error.response) {
+          errorMsg = error.response.data?.message || error.response.data || `Status: ${error.response.status}`;
+      } else if (error.message) {
+          errorMsg = error.message;
+      }
+
       toast({
         title: "Erro no upload",
-        description: "Falha ao enviar arquivo: " + (error.response?.status === 413 ? "Arquivo muito grande by server" : "Erro desconhecido"),
+        description: `Falha: ${errorMsg}`,
         variant: "destructive",
       });
     } finally {
@@ -234,7 +247,7 @@ const UploadGame = () => {
               {!uploadComplete ? (
                 <>
                   {/* Upload Area */}
-                  <div className="mb-8">
+                  <div className="mb-6">
                     <Label
                       htmlFor="game-file"
                       className="text-base font-semibold mb-4 block"
@@ -242,12 +255,12 @@ const UploadGame = () => {
                       Arquivo do Jogo
                     </Label>
                     <div
-                      className="border-2 border-dashed border-border rounded-lg p-12 text-center hover:border-secondary/50 transition-smooth cursor-pointer"
+                      className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-secondary/50 transition-smooth cursor-pointer"
                       onClick={() =>
                         document.getElementById("game-file")?.click()
                       }
                     >
-                      <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                      <Upload className="w-10 h-10 mx-auto mb-4 text-muted-foreground" />
                       <p className="text-lg font-medium mb-2">
                         {file ? file.name : "Clique para selecionar o arquivo"}
                       </p>
@@ -261,6 +274,33 @@ const UploadGame = () => {
                         className="hidden"
                         onChange={handleFileChange}
                       />
+                    </div>
+                  </div>
+
+                  {/* Manual Version Inputs */}
+                  <div className="grid gap-4 mb-6">
+                    <div>
+                        <Label htmlFor="version-name">Nome da Versão</Label>
+                        <Input 
+                            id="version-name" 
+                            placeholder="NomeDoJogo_1.0.0.zip" 
+                            value={versionName}
+                            onChange={(e) => setVersionName(e.target.value)}
+                            className="mt-1"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                            Formato recomendado: Nome_Major.Minor.Patch.zip
+                        </p>
+                    </div>
+                    <div>
+                        <Label htmlFor="version-desc">Descrição da Versão</Label>
+                        <Input 
+                            id="version-desc" 
+                            placeholder="Ex: Versão inicial, Correção de bugs..." 
+                            value={versionDescription}
+                            onChange={(e) => setVersionDescription(e.target.value)}
+                            className="mt-1"
+                        />
                     </div>
                   </div>
 
