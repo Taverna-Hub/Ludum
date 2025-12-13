@@ -7,7 +7,7 @@
 | Nome | Padrão Implementado | Funcionalidade |
 |------|---------------------|----------------|
 | **Ana** | Strategy | Publicação de Jogos |
-| **Sophia** | Template Method | - |
+| **Sophia** | Template Method | Adicionar Saldo |
 | **Gabriel** | Observer | Review de Jogos |
 | **Luan** | Decorator | - |
 | **Matheus** | Iterator | - |
@@ -96,8 +96,77 @@ backend/src/main/java/org/ludum/backend/apresentacao/controllers/
 
 ---
 
-## Sophia | Template Method
+## Sophia | Template Method - Adicionar Saldo
 
+### 📋 Contexto
+O sistema Ludum precisa processar pagamentos através de diferentes gateways de pagamento (Asaas, Stripe, PayPal, etc.). O **Template Method** foi implementado para definir um algoritmo padrão de processamento de pagamentos, permitindo que cada gateway customize etapas específicas sem alterar o fluxo geral da operação.
+
+### 🎯 Problema Resolvido
+Evitar duplicação de código ao integrar múltiplos gateways de pagamento e garantir que o fluxo de processamento (validação → preparação → execução → registro) seja consistente. Com o Template Method, o `ProcessadorPagamentoExterno` define a estrutura do algoritmo e cada gateway (Asaas, Stripe) implementa apenas suas particularidades.
+
+### 🏗️ Estrutura da Implementação
+
+O padrão foi estruturado em camadas, com a classe abstrata no domínio e implementações concretas na infraestrutura.
+
+```
+dominio-principal/src/main/java/org/ludum/dominio/financeiro/
+├── carteira/
+│   ├── ProcessadorPagamentoExterno.java  # Template Method (classe abstrata)
+│   ├── CarteiraRepository.java
+│   └── entidades/
+│       └── Carteira.java
+├── transacao/
+│   ├── TransacaoRepository.java
+│   └── entidades/
+│       └── Transacao.java
+
+infraestrutura/src/main/java/org/ludum/infraestrutura/financeiro/
+└── AsaasProcessadorPagamento.java  # Implementação concreta
+```
+
+### 🔄 Fluxo de Execução
+
+1. **Validação**: `validarSolicitacao()` (abstrato)
+   - Cada gateway valida suas regras específicas (valor mínimo, moeda suportada)
+   - Asaas: mínimo R$5,00 e apenas BRL
+
+2. **Configuração de Cliente**: `configurarCliente()` (hook opcional)
+   - Cria ou recupera cliente no gateway
+   - Asaas: cria customer via API `/customers`
+
+3. **Preparação de Dados**: `prepararDadosGateway()` (abstrato)
+   - Converte dados do domínio para formato do gateway
+   - Asaas: monta JSON com customer, value, billingType, etc.
+
+4. **Execução no Gateway**: `executarPagamentoNoGateway()` (abstrato)
+   - Realiza chamada HTTP/SDK para o gateway
+   - Asaas: POST `/payments`
+
+5. **Registro de Resultado**: `registrarResultado()` (concreto)
+   - Salva transação de CREDITO (CONFIRMADA ou CANCELADA)
+   - Implementação compartilhada por todos os gateways
+
+6. **Hooks de Log**: `beforeProcessar()` e `afterProcessar()` (opcionais)
+   - Pontos de extensão para logging customizado
+
+### 📦 Componentes do Padrão
+
+| Componente | Classe | Responsabilidade |
+|-----------|--------|------------------|
+| **Template Method** | `ProcessadorPagamentoExterno.processar()` | Define algoritmo padrão (final) e coordena as etapas |
+| **Abstract Steps** | `validarSolicitacao()`, `prepararDadosGateway()`, `executarPagamentoNoGateway()` | Etapas que cada gateway deve implementar |
+| **Concrete Step** | `registrarResultado()` | Lógica comum de persistência de transações |
+| **Optional Hooks** | `configurarCliente()`, `beforeProcessar()`, `afterProcessar()` | Pontos de extensão opcionais |
+| **Concrete Template** | `AsaasProcessadorPagamento` | Implementação específica para o gateway Asaas |
+
+### ✅ Benefícios da Implementação
+
+- **Open/Closed Principle**: Adicionar novo gateway (Stripe, PayPal) não requer modificar código existente
+- **Reutilização**: Lógica de registro de transações é compartilhada por todos os gateways
+- **Consistência**: Algoritmo de processamento é uniforme, reduzindo bugs
+- **Testabilidade**: Cada gateway pode ser testado isoladamente
+- **Manutenibilidade**: Mudanças no fluxo geral afetam todos os gateways de uma vez
+- **Extensibilidade**: Hooks permitem customização sem quebrar o contrato
 
 ---
 
