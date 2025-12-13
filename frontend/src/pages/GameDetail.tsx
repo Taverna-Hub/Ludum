@@ -4,7 +4,13 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,9 +21,22 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { 
-  ShoppingCart, Download, Star, ThumbsUp, ThumbsDown, 
-  Calendar, Users, Wrench, ArrowLeft, Edit, Trash2, Plus, CheckCircle, Loader2, Heart
+import {
+  ShoppingCart,
+  Download,
+  Star,
+  ThumbsUp,
+  ThumbsDown,
+  Calendar,
+  Users,
+  Wrench,
+  ArrowLeft,
+  Edit,
+  Trash2,
+  Plus,
+  CheckCircle,
+  Loader2,
+  Heart,
 } from "lucide-react";
 import { mockUserLibrary } from "@/data/mockData";
 import { Game } from "@/types/game";
@@ -27,17 +46,21 @@ import { ReviewForm } from "@/components/ReviewForm";
 import { PurchaseConfirmModal } from "@/components/PurchaseConfirmModal";
 import { InsufficientBalanceModal } from "@/components/InsufficientBalanceModal";
 import { comprarJogo } from "@/http/requests/carteiraRequests";
-import { 
-  criarReview, 
-  editarReview, 
-  removerReview, 
-  listarReviews, 
+import {
+  criarReview,
+  editarReview,
+  removerReview,
+  listarReviews,
   obterResumoReviews,
   ReviewFrontend,
-  transformReviewResponse 
+  transformReviewResponse,
 } from "@/http/requests/reviewRequests";
 import { obterJogo } from "@/http/requests/jogoRequests";
-import { adicionarJogo, verificarPosse } from "@/http/requests/bibliotecaRequests";
+import {
+  adicionarJogo,
+  verificarPosse,
+} from "@/http/requests/bibliotecaRequests";
+import { postRequests, PostResponse } from "@/http/requests/postRequests";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useSeguimento } from "@/hooks/useSeguimento";
 
@@ -48,12 +71,12 @@ const GameDetail = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
   const { user } = useAuthContext();
-  
+
   // Estado para o jogo carregado da API
   const [game, setGame] = useState<Game | null>(null);
   const [gameLoading, setGameLoading] = useState(true);
   const [gameError, setGameError] = useState<string | null>(null);
-  
+
   const [selectedImage, setSelectedImage] = useState(0);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [showReviewForm, setShowReviewForm] = useState(false);
@@ -63,24 +86,33 @@ const GameDetail = () => {
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [purchaseLoading, setPurchaseLoading] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [showInsufficientBalanceModal, setShowInsufficientBalanceModal] = useState(false);
+  const [showInsufficientBalanceModal, setShowInsufficientBalanceModal] =
+    useState(false);
   const [balanceInfo, setBalanceInfo] = useState({ current: 0, missing: 0 });
-  
+
   // Estados para reviews da API
   const [reviewsLoading, setReviewsLoading] = useState(true);
-  const [reviewResumo, setReviewResumo] = useState({ mediaEstrelas: 0, totalRecomendacoes: 0, porcentagemRecomendacoes: 0 });
+  const [reviewResumo, setReviewResumo] = useState({
+    mediaEstrelas: 0,
+    totalRecomendacoes: 0,
+    porcentagemRecomendacoes: 0,
+  });
   const [submittingReview, setSubmittingReview] = useState(false);
-  
+
+  // Estados para posts da comunidade
+  const [gamePosts, setGamePosts] = useState<PostResponse[]>([]);
+  const [postsLoading, setPostsLoading] = useState(true);
+
   // Hook de seguimento
-  const { 
+  const {
     loading: seguimentoLoading,
     verificarSeguindo,
     buscarContadorSeguidores,
     toggleSeguir,
     isSeguindo,
-    getContadorSeguidores
+    getContadorSeguidores,
   } = useSeguimento();
-  
+
   // Verificar se o jogo é possuído (depois de carregar o game)
   const [isOwned, setIsOwned] = useState(false);
 
@@ -102,21 +134,21 @@ const GameDetail = () => {
   useEffect(() => {
     const carregarJogo = async () => {
       if (!slug) return;
-      
+
       setGameLoading(true);
       setGameError(null);
-      
+
       try {
         const jogoData = await obterJogo(slug);
         setGame(jogoData);
       } catch (error) {
-        console.error('Erro ao carregar jogo:', error);
-        setGameError('Jogo não encontrado');
+        console.error("Erro ao carregar jogo:", error);
+        setGameError("Jogo não encontrado");
       } finally {
         setGameLoading(false);
       }
     };
-    
+
     carregarJogo();
   }, [slug]);
 
@@ -133,19 +165,24 @@ const GameDetail = () => {
   // Carregar reviews da API
   const carregarReviews = async () => {
     if (!game) return;
-    
+
     setReviewsLoading(true);
     try {
       const [reviewsData, resumoData] = await Promise.all([
-        listarReviews(game.id, { ordenarPorData: true, maisRecentes: sortBy === "recent" }),
-        obterResumoReviews(game.id)
+        listarReviews(game.id, {
+          ordenarPorData: true,
+          maisRecentes: sortBy === "recent",
+        }),
+        obterResumoReviews(game.id),
       ]);
-      
-      const transformedReviews = reviewsData.map(r => transformReviewResponse(r));
+
+      const transformedReviews = reviewsData.map((r) =>
+        transformReviewResponse(r)
+      );
       setReviews(transformedReviews);
       setReviewResumo(resumoData);
     } catch (error) {
-      console.error('Erro ao carregar reviews:', error);
+      console.error("Erro ao carregar reviews:", error);
       // Fallback para lista vazia se houver erro
       setReviews([]);
     } finally {
@@ -156,6 +193,30 @@ const GameDetail = () => {
   useEffect(() => {
     carregarReviews();
   }, [game?.id, sortBy]);
+
+  useEffect(() => {
+    const carregarPosts = async () => {
+      if (!game?.id) return;
+
+      setPostsLoading(true);
+      try {
+        const postsPublicados = await postRequests.obterPostsPorStatus(
+          "PUBLICADO"
+        );
+        const postsFiltrados = postsPublicados.filter(
+          (post) => post.jogoId === game.id
+        );
+        setGamePosts(postsFiltrados);
+      } catch (error) {
+        console.error("Erro ao carregar posts:", error);
+        setGamePosts([]);
+      } finally {
+        setPostsLoading(false);
+      }
+    };
+
+    carregarPosts();
+  }, [game?.id]);
 
   // Loading state
   if (gameLoading) {
@@ -171,16 +232,18 @@ const GameDetail = () => {
   if (gameError || !game) {
     return (
       <div className="min-h-screen pt-16 flex items-center justify-center">
-        <p className="text-red-400">{gameError || 'Jogo não encontrado'}</p>
+        <p className="text-red-400">{gameError || "Jogo não encontrado"}</p>
       </div>
     );
   }
 
   // Filter reviews: exclude deleted ones and filter by game
-  const gameReviews = reviews.filter(r => r.gameId === game.id && !r.deleted);
-  
+  const gameReviews = reviews.filter((r) => r.gameId === game.id && !r.deleted);
+
   // Check if current user already has a review for this game
-  const userReview = user ? gameReviews.find(r => r.userId === user.id) : null;
+  const userReview = user
+    ? gameReviews.find((r) => r.userId === user.id)
+    : null;
 
   // Use dados do resumo da API
   const totalReviews = gameReviews.length;
@@ -190,16 +253,20 @@ const GameDetail = () => {
 
   // Filter and sort reviews
   let filteredReviews = [...gameReviews];
-  
+
   if (ratingFilter !== "all") {
     const filterRating = parseInt(ratingFilter);
-    filteredReviews = filteredReviews.filter(r => r.rating === filterRating);
+    filteredReviews = filteredReviews.filter((r) => r.rating === filterRating);
   }
 
   if (sortBy === "recent") {
-    filteredReviews.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    filteredReviews.sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
   } else if (sortBy === "oldest") {
-    filteredReviews.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    filteredReviews.sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
   } else if (sortBy === "helpful") {
     filteredReviews.sort((a, b) => b.helpful - a.helpful);
   }
@@ -208,20 +275,20 @@ const GameDetail = () => {
     if (!isOwned) {
       if (game.price === 0) {
         if (!user) {
-             toast.error("Faça login para adicionar jogos à biblioteca");
-             return;
+          toast.error("Faça login para adicionar jogos à biblioteca");
+          return;
         }
         try {
-            await adicionarJogo({
-                jogoId: game.id,
-                contaId: user.id,
-                modeloDeAcesso: 'GRATUITO'
-            });
-            toast.success(`${game.title} adicionado à sua biblioteca!`);
-            setIsOwned(true);
+          await adicionarJogo({
+            jogoId: game.id,
+            contaId: user.id,
+            modeloDeAcesso: "GRATUITO",
+          });
+          toast.success(`${game.title} adicionado à sua biblioteca!`);
+          setIsOwned(true);
         } catch (e) {
-            toast.error("Erro ao adicionar jogo à biblioteca");
-            console.error(e);
+          toast.error("Erro ao adicionar jogo à biblioteca");
+          console.error(e);
         }
       } else {
         setShowPurchaseModal(true);
@@ -234,9 +301,8 @@ const GameDetail = () => {
 
     setPurchaseLoading(true);
 
-
     try {
-        const response = await comprarJogo({
+      const response = await comprarJogo({
         jogoId: game.id,
         compradorId: user.id,
         desenvolvedoraId: game.developerId,
@@ -248,11 +314,11 @@ const GameDetail = () => {
         setShowPurchaseModal(false);
         setShowSuccessModal(true);
       } else {
-        toast.error(response.mensagem || 'Erro ao processar compra');
+        toast.error(response.mensagem || "Erro ao processar compra");
       }
     } catch (error) {
       const errorData = error.response.data;
-       if (errorData.valorFaltante !== undefined) {
+      if (errorData.valorFaltante !== undefined) {
         // Saldo insuficiente
         setBalanceInfo({
           current: errorData.saldoAtual,
@@ -269,14 +335,21 @@ const GameDetail = () => {
   const handleAddFunds = () => {
     setShowInsufficientBalanceModal(false);
     // Redirecionar para página de pagamento com o valor faltante
-    navigate(`/painel/carteira/adicionar?amount=${balanceInfo.missing}&returnTo=/jogo/${slug}`);
+    navigate(
+      `/painel/carteira/adicionar?amount=${balanceInfo.missing}&returnTo=/jogo/${slug}`
+    );
   };
 
   const handleDownload = () => {
     toast.success(`Download de ${game.title} iniciado!`);
   };
 
-  const handleSubmitReview = async (reviewData: { rating: number; title: string; comment: string; recommended: boolean }) => {
+  const handleSubmitReview = async (reviewData: {
+    rating: number;
+    title: string;
+    comment: string;
+    recommended: boolean;
+  }) => {
     if (!isOwned) {
       toast.error("Você precisa ter o jogo na sua biblioteca para avaliar!");
       return;
@@ -296,7 +369,7 @@ const GameDetail = () => {
           nota: reviewData.rating,
           titulo: reviewData.title,
           texto: reviewData.comment,
-          recomenda: reviewData.recommended
+          recomenda: reviewData.recommended,
         });
         toast.success("Review atualizada com sucesso!");
         setEditingReview(null);
@@ -306,18 +379,23 @@ const GameDetail = () => {
           nota: reviewData.rating,
           titulo: reviewData.title,
           texto: reviewData.comment,
-          recomenda: reviewData.recommended
+          recomenda: reviewData.recommended,
         });
         toast.success("Review publicada com sucesso!");
       }
-      
+
       setShowReviewForm(false);
       // Recarregar reviews
       await carregarReviews();
     } catch (error: any) {
-      console.error('Erro ao enviar review:', error);
-      const mensagem = error.response?.data?.message || error.response?.data || 'Erro ao enviar review';
-      toast.error(typeof mensagem === 'string' ? mensagem : 'Erro ao enviar review');
+      console.error("Erro ao enviar review:", error);
+      const mensagem =
+        error.response?.data?.message ||
+        error.response?.data ||
+        "Erro ao enviar review";
+      toast.error(
+        typeof mensagem === "string" ? mensagem : "Erro ao enviar review"
+      );
     } finally {
       setSubmittingReview(false);
     }
@@ -332,14 +410,14 @@ const GameDetail = () => {
 
   const handleDeleteReview = async () => {
     if (!userReview) return;
-    
+
     try {
       await removerReview(userReview.id);
       toast.success("Review removida com sucesso!");
       await carregarReviews();
     } catch (error: any) {
-      console.error('Erro ao remover review:', error);
-      toast.error('Erro ao remover review');
+      console.error("Erro ao remover review:", error);
+      toast.error("Erro ao remover review");
     }
   };
 
@@ -349,7 +427,7 @@ const GameDetail = () => {
     <div className="min-h-screen pt-16">
       {/* Back Button */}
       <div className="container mx-auto px-4 py-4">
-        <Button variant="ghost" onClick={() => navigate('/catalogo')}>
+        <Button variant="ghost" onClick={() => navigate("/catalogo")}>
           <ArrowLeft className="w-4 h-4 mr-2" />
           Voltar ao catálogo
         </Button>
@@ -372,7 +450,9 @@ const GameDetail = () => {
                 <div
                   key={idx}
                   className={`rounded-lg overflow-hidden cursor-pointer border-2 transition-smooth ${
-                    selectedImage === idx ? 'border-primary' : 'border-transparent'
+                    selectedImage === idx
+                      ? "border-primary"
+                      : "border-transparent"
                   }`}
                   onClick={() => setSelectedImage(idx)}
                 >
@@ -391,7 +471,9 @@ const GameDetail = () => {
             <Card className="p-6 bg-card/50 backdrop-blur-sm sticky top-20">
               <div className="mb-4">
                 <h1 className="text-3xl font-bold mb-2">{game.title}</h1>
-                <p className="text-muted-foreground">por {game.developerName}</p>
+                <p className="text-muted-foreground">
+                  por {game.developerName}
+                </p>
               </div>
 
               {isOwned ? (
@@ -399,15 +481,23 @@ const GameDetail = () => {
                   <Badge className="w-full justify-center py-2 bg-gradient-secondary">
                     Na sua biblioteca
                   </Badge>
-                  <Button variant="hero" className="w-full" onClick={handleDownload}>
+                  <Button
+                    variant="hero"
+                    className="w-full"
+                    onClick={handleDownload}
+                  >
                     <Download className="w-5 h-5 mr-2" />
                     Baixar
                   </Button>
-                  <Button variant="outline" className="w-full" onClick={() => navigate('/mods')}>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => navigate("/mods")}
+                  >
                     <Wrench className="w-5 h-5 mr-2" />
                     Ver Mods
                   </Button>
-                  
+
                   {/* Botão Seguir Jogo - também disponível para jogos na biblioteca */}
                   <Button
                     variant={isSeguindo(game.id) ? "outline" : "secondary"}
@@ -417,16 +507,20 @@ const GameDetail = () => {
                         toast.error("Faça login para seguir jogos");
                         return;
                       }
-                      toggleSeguir(game.id, 'JOGO', game.title);
+                      toggleSeguir(game.id, "JOGO", game.title);
                     }}
                     disabled={seguimentoLoading}
                   >
                     {seguimentoLoading ? (
                       <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                     ) : (
-                      <Heart className={`w-5 h-5 mr-2 ${isSeguindo(game.id) ? 'fill-current text-red-500' : ''}`} />
+                      <Heart
+                        className={`w-5 h-5 mr-2 ${
+                          isSeguindo(game.id) ? "fill-current text-red-500" : ""
+                        }`}
+                      />
                     )}
-                    {isSeguindo(game.id) ? 'Seguindo' : 'Seguir'}
+                    {isSeguindo(game.id) ? "Seguindo" : "Seguir"}
                     <span className="ml-1 text-xs text-muted-foreground">
                       ({getContadorSeguidores(game.id)})
                     </span>
@@ -447,15 +541,21 @@ const GameDetail = () => {
                     </div>
                   ) : (
                     <div className="text-center py-4">
-                      <p className="text-4xl font-bold text-secondary">Gratuito</p>
+                      <p className="text-4xl font-bold text-secondary">
+                        Gratuito
+                      </p>
                     </div>
                   )}
-                  
-                  <Button variant="hero" className="w-full" onClick={handlePurchase}>
+
+                  <Button
+                    variant="hero"
+                    className="w-full"
+                    onClick={handlePurchase}
+                  >
                     <ShoppingCart className="w-5 h-5 mr-2" />
-                    {game.price > 0 ? 'Comprar' : 'Adicionar à Biblioteca'}
+                    {game.price > 0 ? "Comprar" : "Adicionar à Biblioteca"}
                   </Button>
-                  
+
                   {/* Botão Seguir Jogo */}
                   <Button
                     variant={isSeguindo(game.id) ? "outline" : "secondary"}
@@ -465,16 +565,20 @@ const GameDetail = () => {
                         toast.error("Faça login para seguir jogos");
                         return;
                       }
-                      toggleSeguir(game.id, 'JOGO', game.title);
+                      toggleSeguir(game.id, "JOGO", game.title);
                     }}
                     disabled={seguimentoLoading}
                   >
                     {seguimentoLoading ? (
                       <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                     ) : (
-                      <Heart className={`w-5 h-5 mr-2 ${isSeguindo(game.id) ? 'fill-current text-red-500' : ''}`} />
+                      <Heart
+                        className={`w-5 h-5 mr-2 ${
+                          isSeguindo(game.id) ? "fill-current text-red-500" : ""
+                        }`}
+                      />
                     )}
-                    {isSeguindo(game.id) ? 'Seguindo' : 'Seguir'}
+                    {isSeguindo(game.id) ? "Seguindo" : "Seguir"}
                     <span className="ml-1 text-xs text-muted-foreground">
                       ({getContadorSeguidores(game.id)})
                     </span>
@@ -486,7 +590,9 @@ const GameDetail = () => {
               <div className="mt-6 pt-6 border-t border-border/50 space-y-3">
                 <div className="flex items-center gap-2">
                   <Star className="w-5 h-5 fill-primary text-primary" />
-                  <span className="font-semibold">{averageRating.toFixed(1)}</span>
+                  <span className="font-semibold">
+                    {averageRating.toFixed(1)}
+                  </span>
                   <span className="text-muted-foreground text-sm">
                     ({totalReviews} reviews)
                   </span>
@@ -494,12 +600,15 @@ const GameDetail = () => {
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Calendar className="w-5 h-5" />
                   <span className="text-sm">
-                    Lançamento: {new Date(game.releaseDate).toLocaleDateString('pt-BR')}
+                    Lançamento:{" "}
+                    {new Date(game.releaseDate).toLocaleDateString("pt-BR")}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Users className="w-5 h-5" />
-                  <span className="text-sm">{game.downloadCount.toLocaleString('pt-BR')} downloads</span>
+                  <span className="text-sm">
+                    {game.downloadCount.toLocaleString("pt-BR")} downloads
+                  </span>
                 </div>
               </div>
 
@@ -508,7 +617,9 @@ const GameDetail = () => {
                 <p className="text-sm font-medium mb-3">Tags</p>
                 <div className="flex flex-wrap gap-2">
                   {game.tags.map((tag) => (
-                    <Badge key={tag} variant="outline">{tag}</Badge>
+                    <Badge key={tag} variant="outline">
+                      {tag}
+                    </Badge>
                   ))}
                 </div>
               </div>
@@ -537,7 +648,8 @@ const GameDetail = () => {
                 <div className="bg-muted/50 border border-border/50 rounded-lg p-4 mb-6">
                   <p className="font-semibold mb-2">⚠️ Acesso Antecipado</p>
                   <p className="text-sm text-muted-foreground">
-                    Este jogo está em desenvolvimento ativo. Recursos e conteúdo podem mudar.
+                    Este jogo está em desenvolvimento ativo. Recursos e conteúdo
+                    podem mudar.
                   </p>
                 </div>
               )}
@@ -546,7 +658,8 @@ const GameDetail = () => {
                 <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
                   <p className="font-semibold mb-2">🎮 Suporte a Mods</p>
                   <p className="text-sm text-muted-foreground">
-                    Este jogo tem oficina de mods ativa! Personalize sua experiência.
+                    Este jogo tem oficina de mods ativa! Personalize sua
+                    experiência.
                   </p>
                 </div>
               )}
@@ -562,50 +675,61 @@ const GameDetail = () => {
                     <Loader2 className="w-8 h-8 animate-spin text-primary" />
                   </div>
                 ) : (
-                <div className="flex items-start gap-6">
-                  <div className="text-center">
-                    <div className="text-5xl font-bold text-primary mb-2">
-                      {averageRating.toFixed(1)}
-                    </div>
-                    <div className="flex gap-1 mb-2">
-                      {[...Array(5)].map((_, i) => (
-                        <Star 
-                          key={i} 
-                          className={`w-4 h-4 ${
-                            i < Math.round(averageRating) 
-                              ? "fill-primary text-primary" 
-                              : "text-muted"
-                          }`}
-                        />
-                      ))}
-                    </div>
-                    <p className="text-sm text-muted-foreground">{totalReviews} avaliações</p>
-                  </div>
-                  <div className="flex-1">
-                    <div className="mb-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <ThumbsUp className="w-5 h-5 text-primary" />
-                        <span className="text-lg font-semibold">
-                          {recommendationPercentage.toFixed(0)}% recomendam
-                        </span>
+                  <div className="flex items-start gap-6">
+                    <div className="text-center">
+                      <div className="text-5xl font-bold text-primary mb-2">
+                        {averageRating.toFixed(1)}
+                      </div>
+                      <div className="flex gap-1 mb-2">
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`w-4 h-4 ${
+                              i < Math.round(averageRating)
+                                ? "fill-primary text-primary"
+                                : "text-muted"
+                            }`}
+                          />
+                        ))}
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {recommendedCount} de {totalReviews} jogadores recomendam este jogo
+                        {totalReviews} avaliações
                       </p>
                     </div>
-                    {[5, 4, 3, 2, 1].map((rating) => {
-                      const count = gameReviews.filter(r => r.rating === rating).length;
-                      const percentage = totalReviews > 0 ? (count / totalReviews) * 100 : 0;
-                      return (
-                        <div key={rating} className="flex items-center gap-2 mb-2">
-                          <span className="text-sm w-12">{rating} ★</span>
-                          <Progress value={percentage} className="flex-1" />
-                          <span className="text-sm text-muted-foreground w-12">{count}</span>
+                    <div className="flex-1">
+                      <div className="mb-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <ThumbsUp className="w-5 h-5 text-primary" />
+                          <span className="text-lg font-semibold">
+                            {recommendationPercentage.toFixed(0)}% recomendam
+                          </span>
                         </div>
-                      );
-                    })}
+                        <p className="text-sm text-muted-foreground">
+                          {recommendedCount} de {totalReviews} jogadores
+                          recomendam este jogo
+                        </p>
+                      </div>
+                      {[5, 4, 3, 2, 1].map((rating) => {
+                        const count = gameReviews.filter(
+                          (r) => r.rating === rating
+                        ).length;
+                        const percentage =
+                          totalReviews > 0 ? (count / totalReviews) * 100 : 0;
+                        return (
+                          <div
+                            key={rating}
+                            className="flex items-center gap-2 mb-2"
+                          >
+                            <span className="text-sm w-12">{rating} ★</span>
+                            <Progress value={percentage} className="flex-1" />
+                            <span className="text-sm text-muted-foreground w-12">
+                              {count}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
                 )}
               </Card>
 
@@ -617,28 +741,45 @@ const GameDetail = () => {
                       <div className="flex items-center justify-between mb-4">
                         <h3 className="text-lg font-semibold">Sua Review</h3>
                         <div className="flex gap-2">
-                          <Button variant="outline" size="sm" onClick={handleEditReview}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleEditReview}
+                          >
                             <Edit className="w-4 h-4 mr-1" />
                             Editar
                           </Button>
-                          <Button variant="outline" size="sm" onClick={handleDeleteReview}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleDeleteReview}
+                          >
                             <Trash2 className="w-4 h-4 mr-1" />
                             Remover
                           </Button>
                         </div>
                       </div>
-                      <h4 className="font-medium text-lg mb-2">{userReview.title}</h4>
+                      <h4 className="font-medium text-lg mb-2">
+                        {userReview.title}
+                      </h4>
                       <div className="flex gap-1 mb-2">
                         {[...Array(5)].map((_, i) => (
                           <Star
                             key={i}
                             className={`w-5 h-5 ${
-                              i < userReview.rating ? 'fill-primary text-primary' : 'text-muted'
+                              i < userReview.rating
+                                ? "fill-primary text-primary"
+                                : "text-muted"
                             }`}
                           />
                         ))}
                       </div>
-                      <Badge variant={userReview.recommended ? "default" : "destructive"} className="mb-3">
+                      <Badge
+                        variant={
+                          userReview.recommended ? "default" : "destructive"
+                        }
+                        className="mb-3"
+                      >
                         {userReview.recommended ? (
                           <>
                             <ThumbsUp className="w-3 h-3 mr-1" />
@@ -651,10 +792,15 @@ const GameDetail = () => {
                           </>
                         )}
                       </Badge>
-                      <p className="text-muted-foreground">{userReview.comment}</p>
+                      <p className="text-muted-foreground">
+                        {userReview.comment}
+                      </p>
                       {userReview.updatedAt && (
                         <p className="text-xs text-muted-foreground mt-2">
-                          Editado em: {new Date(userReview.updatedAt).toLocaleDateString('pt-BR')}
+                          Editado em:{" "}
+                          {new Date(userReview.updatedAt).toLocaleDateString(
+                            "pt-BR"
+                          )}
                         </p>
                       )}
                     </div>
@@ -665,13 +811,17 @@ const GameDetail = () => {
                       </h3>
                       <ReviewForm
                         gameId={game.id}
-                        existingReview={editingReview ? {
-                          id: editingReview.id,
-                          rating: editingReview.rating,
-                          title: editingReview.title || '',
-                          comment: editingReview.comment,
-                          recommended: editingReview.recommended,
-                        } : undefined}
+                        existingReview={
+                          editingReview
+                            ? {
+                                id: editingReview.id,
+                                rating: editingReview.rating,
+                                title: editingReview.title || "",
+                                comment: editingReview.comment,
+                                recommended: editingReview.recommended,
+                              }
+                            : undefined
+                        }
                         onSubmit={handleSubmitReview}
                         onCancel={() => {
                           setShowReviewForm(false);
@@ -686,7 +836,10 @@ const GameDetail = () => {
                       )}
                     </div>
                   ) : (
-                    <Button onClick={() => setShowReviewForm(true)} className="w-full">
+                    <Button
+                      onClick={() => setShowReviewForm(true)}
+                      className="w-full"
+                    >
                       <Plus className="w-4 h-4 mr-2" />
                       Escrever Review
                     </Button>
@@ -698,8 +851,13 @@ const GameDetail = () => {
               <Card className="p-4 bg-card/50 backdrop-blur-sm">
                 <div className="flex flex-wrap gap-4">
                   <div className="flex-1 min-w-[200px]">
-                    <label className="text-sm font-medium mb-2 block">Filtrar por nota</label>
-                    <Select value={ratingFilter} onValueChange={setRatingFilter}>
+                    <label className="text-sm font-medium mb-2 block">
+                      Filtrar por nota
+                    </label>
+                    <Select
+                      value={ratingFilter}
+                      onValueChange={setRatingFilter}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Todas as notas" />
                       </SelectTrigger>
@@ -714,7 +872,9 @@ const GameDetail = () => {
                     </Select>
                   </div>
                   <div className="flex-1 min-w-[200px]">
-                    <label className="text-sm font-medium mb-2 block">Ordenar por</label>
+                    <label className="text-sm font-medium mb-2 block">
+                      Ordenar por
+                    </label>
                     <Select value={sortBy} onValueChange={setSortBy}>
                       <SelectTrigger>
                         <SelectValue placeholder="Mais recentes" />
@@ -739,16 +899,21 @@ const GameDetail = () => {
                 </Card>
               ) : filteredReviews.length > 0 ? (
                 filteredReviews.map((review) => (
-                  <Card key={review.id} className="p-6 bg-card/50 backdrop-blur-sm">
+                  <Card
+                    key={review.id}
+                    className="p-6 bg-card/50 backdrop-blur-sm"
+                  >
                     <div className="flex items-start justify-between mb-3">
                       <div>
                         <p className="font-semibold">{review.userName}</p>
                         <p className="text-sm text-muted-foreground">
-                          {new Date(review.date).toLocaleDateString('pt-BR')}
+                          {new Date(review.date).toLocaleDateString("pt-BR")}
                           {review.updatedAt && " (editado)"}
                         </p>
                       </div>
-                      <Badge variant={review.recommended ? "default" : "destructive"}>
+                      <Badge
+                        variant={review.recommended ? "default" : "destructive"}
+                      >
                         {review.recommended ? (
                           <>
                             <ThumbsUp className="w-3 h-3 mr-1" />
@@ -762,23 +927,29 @@ const GameDetail = () => {
                         )}
                       </Badge>
                     </div>
-                    
+
                     {review.title && (
-                      <h4 className="font-medium text-lg mb-2">{review.title}</h4>
+                      <h4 className="font-medium text-lg mb-2">
+                        {review.title}
+                      </h4>
                     )}
-                    
+
                     <div className="flex gap-1 mb-3">
                       {[...Array(5)].map((_, i) => (
                         <Star
                           key={i}
                           className={`w-4 h-4 ${
-                            i < review.rating ? 'fill-primary text-primary' : 'text-muted'
+                            i < review.rating
+                              ? "fill-primary text-primary"
+                              : "text-muted"
                           }`}
                         />
                       ))}
                     </div>
 
-                    <p className="text-muted-foreground mb-3">{review.comment}</p>
+                    <p className="text-muted-foreground mb-3">
+                      {review.comment}
+                    </p>
 
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
                       <button className="flex items-center gap-1 hover:text-foreground transition-smooth">
@@ -799,18 +970,70 @@ const GameDetail = () => {
           </TabsContent>
 
           <TabsContent value="community" className="mt-6">
-            <Card className="p-6 bg-card/50 backdrop-blur-sm text-center">
-              <p className="text-muted-foreground">
-                Posts da comunidade serão exibidos aqui. Visite a página de{" "}
-                <span
-                  className="text-primary cursor-pointer hover:underline"
-                  onClick={() => navigate('/comunidade')}
-                >
-                  Comunidade
-                </span>{" "}
-                para ver todas as discussões.
-              </p>
-            </Card>
+            {postsLoading ? (
+              <Card className="p-6 bg-card/50 backdrop-blur-sm">
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                  <span className="ml-2">Carregando posts...</span>
+                </div>
+              </Card>
+            ) : gamePosts.length > 0 ? (
+              <div className="space-y-4">
+                {gamePosts.map((post) => (
+                  <Card
+                    key={post.id}
+                    className="p-6 bg-card/50 backdrop-blur-sm hover:bg-card/70 transition-smooth cursor-pointer"
+                    onClick={() => navigate("/comunidade")}
+                  >
+                    <div className="mb-3">
+                      <p className="text-sm text-muted-foreground">
+                        {post.autorNome ||
+                          `Autor #${post.autorId.substring(0, 8)}`}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(post.dataPublicacao).toLocaleDateString(
+                          "pt-BR"
+                        )}
+                      </p>
+                    </div>
+
+                    <h4 className="font-semibold text-lg mb-2">
+                      {post.titulo}
+                    </h4>
+                    <p className="text-muted-foreground line-clamp-3">
+                      {post.texto}
+                    </p>
+
+                    {post.tags && post.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-3">
+                        {post.tags.map((tag) => (
+                          <Badge
+                            key={tag}
+                            variant="secondary"
+                            className="text-xs"
+                          >
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card className="p-6 bg-card/50 backdrop-blur-sm text-center">
+                <p className="text-muted-foreground">
+                  Nenhum post sobre este jogo ainda. Visite a página de{" "}
+                  <span
+                    className="text-primary cursor-pointer hover:underline"
+                    onClick={() => navigate("/comunidade")}
+                  >
+                    Comunidade
+                  </span>{" "}
+                  para criar uma discussão.
+                </p>
+              </Card>
+            )}
           </TabsContent>
         </Tabs>
       </section>
@@ -865,7 +1088,7 @@ const GameDetail = () => {
             <AlertDialogAction
               onClick={() => {
                 setShowSuccessModal(false);
-                navigate('/biblioteca');
+                navigate("/biblioteca");
               }}
               className="bg-secondary hover:bg-secondary/90"
             >
