@@ -16,9 +16,7 @@ import java.util.Set;
 public class TokenService {
 
     private static final Key SECRET_KEY = Keys.secretKeyFor(SignatureAlgorithm.HS256);
-    private static final long EXPIRATION_TIME = 86400000; // 1 dia
-    
-    // Blacklist de tokens invalidados (em produção, usar Redis ou banco de dados)
+
     private final Set<String> tokensInvalidados = new HashSet<>();
 
     public String gerarToken(Conta conta) {
@@ -26,8 +24,6 @@ public class TokenService {
                 .setSubject(conta.getId().getValue())
                 .claim("nome", conta.getNome())
                 .claim("tipo", conta.getTipo().toString())
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
                 .signWith(SECRET_KEY)
                 .compact();
     }
