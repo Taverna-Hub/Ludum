@@ -228,7 +228,7 @@ export const postRequests = {
 
   // Obter posts por status
   obterPostsPorStatus: async (
-    status: 'RASCUNHO' | 'AGENDADO' | 'PUBLICADO'
+    status: 'EM_RASCUNHO' | 'AGENDADO' | 'PUBLICADO'
   ): Promise<PostResponse[]> => {
     try {
       const response = await api.get(`/posts/status/${status}`);
