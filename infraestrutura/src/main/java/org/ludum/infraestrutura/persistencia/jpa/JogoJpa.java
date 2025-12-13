@@ -10,6 +10,9 @@ import org.ludum.dominio.catalogo.jogo.repositorios.JogoRepository;
 import org.ludum.dominio.catalogo.tag.entidades.Tag;
 import org.ludum.dominio.catalogo.tag.entidades.TagId;
 import org.ludum.dominio.identidade.conta.entities.ContaId;
+import org.ludum.dominio.catalogo.jogo.entidades.Versao;
+import org.ludum.dominio.catalogo.jogo.entidades.VersaoId;
+import org.ludum.dominio.catalogo.jogo.entidades.PacoteZip;
 
 import java.lang.reflect.Field;
 import java.net.URL;
@@ -60,15 +63,15 @@ class JogoJpa {
     @Column(name = "video_url", length = 500)
     List<String> videos = new ArrayList<>();
 
-    @ElementCollection
-    @CollectionTable(name = "JOGO_TAGS", joinColumns = @JoinColumn(name = "jogo_id"))
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "jogo_tags", joinColumns = @JoinColumn(name = "jogo_id"))
     @Column(name = "tag_id")
     List<String> tagIds = new ArrayList<>();
 
     @Column(nullable = false)
     boolean isNSFW;
 
-    @OneToMany(mappedBy = "jogo", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "jogo", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     List<VersaoJpa> versoes = new ArrayList<>();
 
     LocalDate dataDeLancamento;
@@ -221,6 +224,25 @@ class JogoRepositoryImpl implements JogoRepository, JogoRepositorioConsulta {
 
             for (String url : jpa.screenshots) {
                 jogo.adicionarScreenshot(new URL(url));
+            }
+
+            if (jpa.versoes != null) {
+                Field versaoHistoryField = Jogo.class.getDeclaredField("versaoHistory");
+                versaoHistoryField.setAccessible(true);
+                @SuppressWarnings("unchecked")
+                List<Versao> versaoList = (List<Versao>) versaoHistoryField.get(jogo);
+
+                for (VersaoJpa vJpa : jpa.versoes) {
+                    PacoteZip pacote = new PacoteZip(vJpa.conteudo);
+                    Versao versao = new Versao(
+                            pacote,
+                            new JogoId(jpa.id),
+                            new VersaoId(vJpa.id),
+                            vJpa.nomeVersao,
+                            vJpa.descricaoVersao,
+                            vJpa.dataUpload);
+                    versaoList.add(versao);
+                }
             }
 
             return jogo;

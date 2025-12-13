@@ -26,7 +26,7 @@ import org.ludum.infraestrutura.config.AsaasConfig;
 import org.ludum.dominio.identidade.seguimento.entities.AlvoId;
 import org.ludum.dominio.catalogo.biblioteca.entidades.Biblioteca;
 import org.ludum.dominio.catalogo.biblioteca.entidades.ItemBiblioteca;
-import org.ludum.dominio.catalogo.biblioteca.estruturas.IteratorBiblioteca; 
+import org.ludum.dominio.catalogo.biblioteca.estruturas.IteratorBiblioteca;
 
 import org.modelmapper.AbstractConverter;
 import org.modelmapper.ModelMapper;
@@ -192,8 +192,9 @@ public class JpaMapeador extends ModelMapper {
               .map(tagId -> new Tag(new TagId(tagId), "Tag-" + tagId.substring(0, Math.min(5, tagId.length()))))
               .collect(Collectors.toList()) : new ArrayList<>();
 
-          URL capaOficial = source.capaOficial != null && !source.capaOficial.isEmpty() 
-              ? URI.create(source.capaOficial).toURL() : null;
+          URL capaOficial = source.capaOficial != null && !source.capaOficial.isEmpty()
+              ? URI.create(source.capaOficial).toURL()
+              : null;
 
           Jogo jogo = new Jogo(
               new JogoId(source.id),
@@ -451,20 +452,19 @@ public class JpaMapeador extends ModelMapper {
         try {
           List<VersaoMod> versoes = source.versoes.stream()
               .map(v -> new VersaoMod(
-                v.getNotasDeAtualizacao(),
-                v.getArquivo(),
-                v.getDataDeEnvio()))
+                  v.getNotasDeAtualizacao(),
+                  v.getArquivo(),
+                  v.getDataDeEnvio()))
               .collect(Collectors.toList());
-          
+
           return new Mod(
-            source.getId(),
-            new JogoId(source.getJogoId()),
-            new ContaId(source.getAutorId()),
-            source.getNome(),
-            source.getDescricao(),
-            StatusMod.valueOf(source.getStatus()),
-            versoes
-          );
+              source.getId(),
+              new JogoId(source.getJogoId()),
+              new ContaId(source.getAutorId()),
+              source.getNome(),
+              source.getDescricao(),
+              StatusMod.valueOf(source.getStatus()),
+              versoes);
         } catch (Exception e) {
           throw new RuntimeException("Erro ao converter ModJpa para Mod", e);
         }
@@ -485,11 +485,11 @@ public class JpaMapeador extends ModelMapper {
 
           jpa.versoes = source.getVersoes().stream()
               .map(v -> new VersaoModJpa(
-                v.getNotasDeAtualizacao(),
-                v.getArquivo(),
-                v.getDataDeEnvio()))
+                  v.getNotasDeAtualizacao(),
+                  v.getArquivo(),
+                  v.getDataDeEnvio()))
               .collect(Collectors.toList());
-          
+
           return jpa;
         } catch (Exception e) {
           throw new RuntimeException("Erro ao converter Mod para ModJpa", e);

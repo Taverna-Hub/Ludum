@@ -59,6 +59,7 @@ import { obterJogo } from "@/http/requests/jogoRequests";
 import {
   adicionarJogo,
   verificarPosse,
+  downloadJogo,
 } from "@/http/requests/bibliotecaRequests";
 import { postRequests, PostResponse } from "@/http/requests/postRequests";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -340,8 +341,14 @@ const GameDetail = () => {
     );
   };
 
-  const handleDownload = () => {
-    toast.success(`Download de ${game.title} iniciado!`);
+  const handleDownload = async () => {
+    if (!game || !user) return;
+    
+    toast.promise(downloadJogo(game.id, user.id), {
+        loading: `Preparando download de ${game.title}...`,
+        success: 'Download iniciado!',
+        error: 'Erro ao baixar o jogo.'
+    });
   };
 
   const handleSubmitReview = async (reviewData: {
