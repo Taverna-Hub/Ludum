@@ -17,16 +17,28 @@ import {
 } from "@/components/ui/alert-dialog";
 import { 
   ShoppingCart, Download, Star, ThumbsUp, ThumbsDown, 
-  Calendar, Users, Wrench, ArrowLeft, Edit, Trash2, Plus, CheckCircle
+  Calendar, Users, Wrench, ArrowLeft, Edit, Trash2, Plus, CheckCircle, Loader2
 } from "lucide-react";
-import { mockGames, mockReviews, mockUserLibrary, mockCurrentUser, Review } from "@/data/mockData";
+import { mockGames, mockUserLibrary } from "@/data/mockData";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { ReviewForm } from "@/components/ReviewForm";
 import { PurchaseConfirmModal } from "@/components/PurchaseConfirmModal";
 import { InsufficientBalanceModal } from "@/components/InsufficientBalanceModal";
 import { comprarJogo } from "@/http/requests/carteiraRequests";
+import { 
+  criarReview, 
+  editarReview, 
+  removerReview, 
+  listarReviews, 
+  obterResumoReviews,
+  ReviewFrontend,
+  transformReviewResponse 
+} from "@/http/requests/reviewRequests";
 import { useAuthContext } from "@/contexts/AuthContext";
+
+// Tipo local para Review do frontend
+interface Review extends ReviewFrontend {}
 
 const GameDetail = () => {
   const { slug } = useParams();
@@ -46,24 +58,38 @@ const GameDetail = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showInsufficientBalanceModal, setShowInsufficientBalanceModal] = useState(false);
   const [balanceInfo, setBalanceInfo] = useState({ current: 0, missing: 0 });
+  
+  // Estados para reviews da API
+  const [reviewsLoading, setReviewsLoading] = useState(true);
+  const [reviewResumo, setReviewResumo] = useState({ mediaEstrelas: 0, totalRecomendacoes: 0, porcentagemRecomendacoes: 0 });
+  const [submittingReview, setSubmittingReview] = useState(false);
 
-  // Load reviews from localStorage on mount
-  useEffect(() => {
-    const storedReviews = localStorage.getItem('gameReviews');
-    if (storedReviews) {
-      setReviews(JSON.parse(storedReviews));
-    } else {
-      setReviews(mockReviews);
-      localStorage.setItem('gameReviews', JSON.stringify(mockReviews));
+  // Carregar reviews da API
+  const carregarReviews = async () => {
+    if (!game) return;
+    
+    setReviewsLoading(true);
+    try {
+      const [reviewsData, resumoData] = await Promise.all([
+        listarReviews(game.id, { ordenarPorData: true, maisRecentes: sortBy === "recent" }),
+        obterResumoReviews(game.id)
+      ]);
+      
+      const transformedReviews = reviewsData.map(r => transformReviewResponse(r));
+      setReviews(transformedReviews);
+      setReviewResumo(resumoData);
+    } catch (error) {
+      console.error('Erro ao carregar reviews:', error);
+      // Fallback para lista vazia se houver erro
+      setReviews([]);
+    } finally {
+      setReviewsLoading(false);
     }
-  }, []);
+  };
 
-  // Save reviews to localStorage whenever they change
   useEffect(() => {
-    if (reviews.length > 0) {
-      localStorage.setItem('gameReviews', JSON.stringify(reviews));
-    }
-  }, [reviews]);
+    carregarReviews();
+  }, [game?.id, sortBy]);
 
   if (!game) {
     return (
@@ -77,17 +103,13 @@ const GameDetail = () => {
   const gameReviews = reviews.filter(r => r.gameId === game.id && !r.deleted);
   
   // Check if current user already has a review for this game
-  const userReview = gameReviews.find(r => r.userId === mockCurrentUser.id);
+  const userReview = user ? gameReviews.find(r => r.userId === user.id) : null;
 
-  // Calculate review statistics
+  // Use dados do resumo da API
   const totalReviews = gameReviews.length;
-  const averageRating = totalReviews > 0
-    ? gameReviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews
-    : 0;
-  const recommendedCount = gameReviews.filter(r => r.recommended).length;
-  const recommendationPercentage = totalReviews > 0
-    ? (recommendedCount / totalReviews) * 100
-    : 0;
+  const averageRating = reviewResumo.mediaEstrelas;
+  const recommendedCount = reviewResumo.totalRecomendacoes;
+  const recommendationPercentage = reviewResumo.porcentagemRecomendacoes;
 
   // Filter and sort reviews
   let filteredReviews = [...gameReviews];
@@ -163,42 +185,51 @@ const GameDetail = () => {
     toast.success(`Download de ${game.title} iniciado!`);
   };
 
-  const handleSubmitReview = (reviewData: { rating: number; comment: string; recommended: boolean }) => {
+  const handleSubmitReview = async (reviewData: { rating: number; title: string; comment: string; recommended: boolean }) => {
     if (!isOwned) {
       toast.error("Você precisa ter o jogo na sua biblioteca para avaliar!");
       return;
     }
 
-    if (editingReview) {
-      // Update existing review
-      const updatedReviews = reviews.map(r =>
-        r.id === editingReview.id
-          ? {
-              ...r,
-              ...reviewData,
-              updatedAt: new Date().toISOString().split('T')[0],
-            }
-          : r
-      );
-      setReviews(updatedReviews);
-      toast.success("Review atualizada com sucesso!");
-      setEditingReview(null);
-    } else {
-      // Create new review
-      const newReview: Review = {
-        id: `r${Date.now()}`,
-        gameId: game.id,
-        userId: mockCurrentUser.id,
-        userName: mockCurrentUser.name,
-        ...reviewData,
-        date: new Date().toISOString().split('T')[0],
-        helpful: 0,
-      };
-      setReviews([...reviews, newReview]);
-      toast.success("Review publicada com sucesso!");
+    if (!user) {
+      toast.error("Você precisa estar logado para avaliar!");
+      return;
     }
-    
-    setShowReviewForm(false);
+
+    setSubmittingReview(true);
+
+    try {
+      if (editingReview) {
+        // Editar review existente
+        await editarReview(editingReview.id, {
+          nota: reviewData.rating,
+          titulo: reviewData.title,
+          texto: reviewData.comment,
+          recomenda: reviewData.recommended
+        });
+        toast.success("Review atualizada com sucesso!");
+        setEditingReview(null);
+      } else {
+        // Criar nova review
+        await criarReview(game.id, {
+          nota: reviewData.rating,
+          titulo: reviewData.title,
+          texto: reviewData.comment,
+          recomenda: reviewData.recommended
+        });
+        toast.success("Review publicada com sucesso!");
+      }
+      
+      setShowReviewForm(false);
+      // Recarregar reviews
+      await carregarReviews();
+    } catch (error: any) {
+      console.error('Erro ao enviar review:', error);
+      const mensagem = error.response?.data?.message || error.response?.data || 'Erro ao enviar review';
+      toast.error(typeof mensagem === 'string' ? mensagem : 'Erro ao enviar review');
+    } finally {
+      setSubmittingReview(false);
+    }
   };
 
   const handleEditReview = () => {
@@ -208,14 +239,16 @@ const GameDetail = () => {
     }
   };
 
-  const handleDeleteReview = () => {
-    if (userReview) {
-      // Soft delete - just mark as deleted
-      const updatedReviews = reviews.map(r =>
-        r.id === userReview.id ? { ...r, deleted: true } : r
-      );
-      setReviews(updatedReviews);
+  const handleDeleteReview = async () => {
+    if (!userReview) return;
+    
+    try {
+      await removerReview(userReview.id);
       toast.success("Review removida com sucesso!");
+      await carregarReviews();
+    } catch (error: any) {
+      console.error('Erro ao remover review:', error);
+      toast.error('Erro ao remover review');
     }
   };
 
@@ -385,6 +418,11 @@ const GameDetail = () => {
             <div className="space-y-4">
               {/* Rating Summary */}
               <Card className="p-6 bg-card/50 backdrop-blur-sm">
+                {reviewsLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                  </div>
+                ) : (
                 <div className="flex items-start gap-6">
                   <div className="text-center">
                     <div className="text-5xl font-bold text-primary mb-2">
@@ -429,10 +467,11 @@ const GameDetail = () => {
                     })}
                   </div>
                 </div>
+                )}
               </Card>
 
               {/* User's Review Management */}
-              {isOwned && (
+              {isOwned && user && (
                 <Card className="p-6 bg-card/50 backdrop-blur-sm">
                   {userReview && !showReviewForm ? (
                     <div>
@@ -449,6 +488,7 @@ const GameDetail = () => {
                           </Button>
                         </div>
                       </div>
+                      <h4 className="font-medium text-lg mb-2">{userReview.title}</h4>
                       <div className="flex gap-1 mb-2">
                         {[...Array(5)].map((_, i) => (
                           <Star
@@ -489,6 +529,7 @@ const GameDetail = () => {
                         existingReview={editingReview ? {
                           id: editingReview.id,
                           rating: editingReview.rating,
+                          title: editingReview.title || '',
                           comment: editingReview.comment,
                           recommended: editingReview.recommended,
                         } : undefined}
@@ -498,6 +539,12 @@ const GameDetail = () => {
                           setEditingReview(null);
                         }}
                       />
+                      {submittingReview && (
+                        <div className="flex items-center justify-center mt-4">
+                          <Loader2 className="w-6 h-6 animate-spin text-primary mr-2" />
+                          <span>Enviando...</span>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <Button onClick={() => setShowReviewForm(true)} className="w-full">
@@ -544,7 +591,14 @@ const GameDetail = () => {
               </Card>
 
               {/* Reviews List */}
-              {filteredReviews.length > 0 ? (
+              {reviewsLoading ? (
+                <Card className="p-6 bg-card/50 backdrop-blur-sm">
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                    <span className="ml-2">Carregando reviews...</span>
+                  </div>
+                </Card>
+              ) : filteredReviews.length > 0 ? (
                 filteredReviews.map((review) => (
                   <Card key={review.id} className="p-6 bg-card/50 backdrop-blur-sm">
                     <div className="flex items-start justify-between mb-3">
@@ -569,6 +623,10 @@ const GameDetail = () => {
                         )}
                       </Badge>
                     </div>
+                    
+                    {review.title && (
+                      <h4 className="font-medium text-lg mb-2">{review.title}</h4>
+                    )}
                     
                     <div className="flex gap-1 mb-3">
                       {[...Array(5)].map((_, i) => (

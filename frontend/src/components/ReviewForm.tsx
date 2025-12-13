@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Star, ThumbsUp, ThumbsDown } from "lucide-react";
 import { toast } from "sonner";
 
@@ -10,11 +11,13 @@ interface ReviewFormProps {
   existingReview?: {
     id: string;
     rating: number;
+    title: string;
     comment: string;
     recommended: boolean;
   };
   onSubmit: (review: {
     rating: number;
+    title: string;
     comment: string;
     recommended: boolean;
   }) => void;
@@ -24,6 +27,7 @@ interface ReviewFormProps {
 export const ReviewForm = ({ gameId, existingReview, onSubmit, onCancel }: ReviewFormProps) => {
   const [rating, setRating] = useState(existingReview?.rating || 0);
   const [hoveredRating, setHoveredRating] = useState(0);
+  const [title, setTitle] = useState(existingReview?.title || "");
   const [comment, setComment] = useState(existingReview?.comment || "");
   const [recommended, setRecommended] = useState(existingReview?.recommended ?? true);
 
@@ -34,13 +38,18 @@ export const ReviewForm = ({ gameId, existingReview, onSubmit, onCancel }: Revie
       toast.error("Por favor, selecione uma nota para o jogo");
       return;
     }
+
+    if (title.trim().length < 3) {
+      toast.error("O título deve ter pelo menos 3 caracteres");
+      return;
+    }
     
     if (comment.trim().length < 10) {
       toast.error("O comentário deve ter pelo menos 10 caracteres");
       return;
     }
 
-    onSubmit({ rating, comment, recommended });
+    onSubmit({ rating, title, comment, recommended });
   };
 
   return (
@@ -96,6 +105,21 @@ export const ReviewForm = ({ gameId, existingReview, onSubmit, onCancel }: Revie
               Não recomendo
             </Button>
           </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-2">
+            Título da review * (mínimo 3 caracteres)
+          </label>
+          <Input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Resuma sua experiência em uma frase..."
+            maxLength={100}
+          />
+          <p className="text-xs text-muted-foreground mt-1">
+            {title.length}/100 caracteres
+          </p>
         </div>
 
         <div>
