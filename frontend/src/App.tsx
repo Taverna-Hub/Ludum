@@ -43,7 +43,7 @@ const App = () => (
             <Route path="/campanha/:id" element={<CampaignDetail />} />
             <Route path="/desenvolvedor" element={<DeveloperDashboard />} />
             <Route path="/desenvolvedor/upload" element={<UploadGame />} />
-            <Route path="/desenvolvedor/publicar/:id" element={<PublishGame />} />
+            <Route path="/desenvolvedor/publicar" element={<PublishGame />} />
             <Route path="/desenvolvedor/criar-campanha" element={<CreateCampaign />} />
             <Route path="/mods" element={<Mods />} />
             <Route path="/comunidade" element={<Community />} />
