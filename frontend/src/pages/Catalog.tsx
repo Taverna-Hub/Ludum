@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, Star, TrendingUp, Filter } from 'lucide-react';
-import { mockGames } from '@/data/mockData';
+import { Search, Star, TrendingUp, Filter, Loader2 } from 'lucide-react';
+import { Game } from '@/types/game';
+import { listarJogos } from '@/http/requests/jogoRequests';
 import { useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '@/layouts/DashboardLayout';
 
@@ -12,12 +13,37 @@ const Catalog = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  
+  // Estados para jogos da API
+  const [games, setGames] = useState<Game[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Carregar jogos da API
+  useEffect(() => {
+    const carregarJogos = async () => {
+      setLoading(true);
+      setError(null);
+      
+      try {
+        const jogosData = await listarJogos();
+        setGames(jogosData);
+      } catch (err) {
+        console.error('Erro ao carregar jogos:', err);
+        setError('Erro ao carregar jogos. Tente novamente.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    carregarJogos();
+  }, []);
 
   // Get all unique tags
-  const allTags = Array.from(new Set(mockGames.flatMap((game) => game.tags)));
+  const allTags = Array.from(new Set(games.flatMap((game) => game.tags)));
 
   // Filter games
-  const filteredGames = mockGames.filter((game) => {
+  const filteredGames = games.filter((game) => {
     const matchesSearch =
       game.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       game.description.toLowerCase().includes(searchTerm.toLowerCase());
@@ -104,6 +130,33 @@ const Catalog = () => {
                 </p>
               </div>
 
+              {/* Loading State */}
+              {loading && (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                  <span className="ml-2 text-muted-foreground">Carregando jogos...</span>
+                </div>
+              )}
+
+              {/* Error State */}
+              {error && !loading && (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <p className="text-red-400 mb-4">{error}</p>
+                  <Button variant="outline" onClick={() => window.location.reload()}>
+                    Tentar novamente
+                  </Button>
+                </div>
+              )}
+
+              {/* Empty State */}
+              {!loading && !error && filteredGames.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <p className="text-muted-foreground">Nenhum jogo encontrado</p>
+                </div>
+              )}
+
+              {/* Games List */}
+              {!loading && !error && filteredGames.length > 0 && (
               <div className="grid md:grid-cols-2 gap-6">
                 {filteredGames.map((game) => (
                   <Card
@@ -199,6 +252,7 @@ const Catalog = () => {
                   </Card>
                 ))}
               </div>
+              )}
             </div>
           </div>
         </div>
