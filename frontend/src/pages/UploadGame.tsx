@@ -115,9 +115,7 @@ const UploadGame = () => {
   };
 
   const handlePublish = () => {
-    if (gameId) {
-      navigate(`/desenvolvedor/publicar/${gameId}`);
-    }
+
   };
 
   return (
@@ -275,9 +273,9 @@ const UploadGame = () => {
                   <div className="flex flex-col sm:flex-row gap-4 justify-center">
                     <Button
                       variant="outline"
-                      onClick={() => navigate('/desenvolvedor')}
+                      onClick={() => navigate('/')}
                     >
-                      Voltar ao Painel
+                      Rejeitar
                     </Button>
                     <Button variant="accent" onClick={handlePublish}>
                       Publicar Jogo Agora
