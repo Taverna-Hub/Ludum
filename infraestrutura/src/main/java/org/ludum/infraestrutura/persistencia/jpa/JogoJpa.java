@@ -197,18 +197,12 @@ class JogoRepositoryImpl implements JogoRepository, JogoRepositorioConsulta {
             JogoId jogoId = new JogoId(jpa.id);
 
             List<Tag> tags = new ArrayList<>();
-<<<<<<< Updated upstream
             if (jpa.tagIds != null && !jpa.tagIds.isEmpty()) {
                 for (String tagId : jpa.tagIds) {
                     Tag tag = tagRepository.obterPorId(new TagId(tagId));
                     if (tag != null) {
                         tags.add(tag);
                     }
-=======
-            if (jpa.tagIds != null) {
-                for (String tId : jpa.tagIds) {
-                    tags.add(new Tag(new TagId(tId), "Tag " + tId));
->>>>>>> Stashed changes
                 }
             }
 
