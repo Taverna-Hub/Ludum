@@ -118,11 +118,6 @@ const WalletSettings = () => {
       return;
     }
 
-    if (amount > (carteira?.disponivel || 0)) {
-      toast.error('Saldo insuficiente');
-      return;
-    }
-
     const loadingToast = toast.loading('Processando saque...');
     
     try {

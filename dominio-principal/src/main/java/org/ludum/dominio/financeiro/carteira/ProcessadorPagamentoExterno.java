@@ -59,10 +59,11 @@ public abstract class ProcessadorPagamentoExterno {
 
   protected Transacao registrarResultado(String idGateway, boolean sucesso,
       ContaId contaId, BigDecimal valor) {
+    // Para CREDITO: contaOrigem = null (origem externa), contaDestino = contaId (quem recebe)
     Transacao transacao = new Transacao(
         null,
-        contaId,
-        null,
+        null,           // contaOrigem - origem externa (pagamento via cartão)
+        contaId,        // contaDestino - conta que recebe o crédito
         TipoTransacao.CREDITO,
         sucesso ? StatusTransacao.CONFIRMADA : StatusTransacao.CANCELADA,
         LocalDateTime.now(),

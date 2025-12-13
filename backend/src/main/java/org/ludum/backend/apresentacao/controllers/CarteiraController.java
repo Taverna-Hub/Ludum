@@ -256,16 +256,26 @@ public class CarteiraController {
   }
 
   private boolean isTransacaoRelevante(Transacao transacao, ContaId contaAtual) {
+    // Para CREDITO: mostra se a conta atual é o destino (recebe o crédito)
+    // Isso inclui: adições de saldo externo e recebimentos de vendas
     if (transacao.getTipo() == TipoTransacao.CREDITO) {
       return transacao.getContaDestino() != null && transacao.getContaDestino().equals(contaAtual);
     }
     
-    if (transacao.getTipo() == TipoTransacao.DEBITO ||
-        transacao.getTipo() == TipoTransacao.SAQUE) {
+    // Para DEBITO: mostra se a conta atual é a origem (fez a compra)
+    if (transacao.getTipo() == TipoTransacao.DEBITO) {
       return transacao.getContaOrigem() != null && transacao.getContaOrigem().equals(contaAtual);
     }
     
-    return true;
+    // Para SAQUE: mostra se a conta atual é a origem (solicitou o saque)
+    if (transacao.getTipo() == TipoTransacao.SAQUE) {
+      return transacao.getContaOrigem() != null && transacao.getContaOrigem().equals(contaAtual);
+    }
+    
+    // Para outros tipos, mostra apenas se a conta está envolvida
+    boolean isOrigem = transacao.getContaOrigem() != null && transacao.getContaOrigem().equals(contaAtual);
+    boolean isDestino = transacao.getContaDestino() != null && transacao.getContaDestino().equals(contaAtual);
+    return isOrigem || isDestino;
   }
 
   private String gerarDescricao(Transacao transacao, ContaId contaAtual) {

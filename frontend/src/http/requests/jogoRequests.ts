@@ -1,3 +1,4 @@
+import { applyPriceMapping } from '@/data/gamePriceMapping';
 import { getRequest } from './baseRequests';
 
 // ============================================
@@ -47,21 +48,11 @@ export interface Game {
   downloadCount: number;
 }
 
-// ============================================
-// Funções de API
-// ============================================
-
-/**
- * Lista todos os jogos publicados
- */
 export async function listarJogos(): Promise<Game[]> {
   const response: JogoResponse[] = await getRequest('/jogos');
   return response.map(transformJogoResponse);
 }
 
-/**
- * Obtém um jogo específico por ID ou slug
- */
 export async function obterJogo(idOuSlug: string): Promise<Game | null> {
   try {
     const response: JogoResponse = await getRequest(`/jogos/${idOuSlug}`);
@@ -72,22 +63,17 @@ export async function obterJogo(idOuSlug: string): Promise<Game | null> {
   }
 }
 
-// ============================================
-// Helpers
-// ============================================
-
-/**
- * Transforma a resposta do backend para o formato usado no frontend
- */
 function transformJogoResponse(jogo: JogoResponse): Game {
-  return {
+  const baseGame = {
     id: jogo.id,
     title: jogo.title,
     slug: jogo.slug,
     description: jogo.description,
     price: jogo.price,
     originalPrice: jogo.originalPrice ?? undefined,
-    coverImage: jogo.coverImage || 'https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=800',
+    coverImage:
+      jogo.coverImage ||
+      'https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=800',
     screenshots: jogo.screenshots || [],
     tags: jogo.tags || [],
     developerId: jogo.developerId,
@@ -100,4 +86,6 @@ function transformJogoResponse(jogo: JogoResponse): Game {
     modsEnabled: jogo.modsEnabled,
     downloadCount: jogo.downloadCount,
   };
+
+  return applyPriceMapping(baseGame);
 }
