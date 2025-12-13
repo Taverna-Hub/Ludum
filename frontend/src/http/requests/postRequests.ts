@@ -5,6 +5,7 @@ export interface PostResponse {
   id: string;
   jogoId: string;
   autorId: string;
+  autorNome?: string;
   titulo: string;
   conteudo: string;
   dataPublicacao: string;

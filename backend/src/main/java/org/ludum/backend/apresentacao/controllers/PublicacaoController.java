@@ -33,7 +33,6 @@ public class PublicacaoController {
     @PostMapping("/publicar")
     @Transactional
     public ResponseEntity<Map<String, Object>> publicarJogo(@RequestBody CriarJogoRequest request) throws Exception {
-        // TODO: Extrair devId do usuário autenticado via SecurityContext
         ContaId devId = new ContaId(request.getDesenvolvedoraId());
 
         URL capaOficial = parseUrl(request.getCapaOficial());

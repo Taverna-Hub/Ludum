@@ -10,6 +10,7 @@ public class PostResponse {
     private String id;
     private String jogoId;
     private String autorId;
+    private String autorNome;
     private String titulo;
     private String conteudo;
     private LocalDateTime dataPublicacao;
@@ -23,7 +24,7 @@ public class PostResponse {
     public PostResponse() {
     }
 
-    public PostResponse(String id, String jogoId, String autorId, String titulo,
+    public PostResponse(String id, String jogoId, String autorId, String autorNome, String titulo,
             String conteudo, LocalDateTime dataPublicacao,
             LocalDateTime dataAgendamento, String imagemUrl,
             PostStatus status, List<String> tagIds,
@@ -31,6 +32,7 @@ public class PostResponse {
         this.id = id;
         this.jogoId = jogoId;
         this.autorId = autorId;
+        this.autorNome = autorNome;
         this.titulo = titulo;
         this.conteudo = conteudo;
         this.dataPublicacao = dataPublicacao;
@@ -65,6 +67,14 @@ public class PostResponse {
 
     public void setAutorId(String autorId) {
         this.autorId = autorId;
+    }
+
+    public String getAutorNome() {
+        return autorNome;
+    }
+
+    public void setAutorNome(String autorNome) {
+        this.autorNome = autorNome;
     }
 
     public String getTitulo() {

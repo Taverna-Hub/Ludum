@@ -3,7 +3,10 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { listarJogos, Game } from "@/http/requests/jogoRequests";
-import { listarDesenvolvedoras, DesenvolvedoraResumo } from "@/http/requests/desenvolvedoraRequests";
+import {
+  listarDesenvolvedoras,
+  DesenvolvedoraResumo,
+} from "@/http/requests/desenvolvedoraRequests";
 import {
   Select,
   SelectContent,
@@ -70,19 +73,17 @@ const Community = () => {
   const [dataAgendamento, setDataAgendamento] = useState("");
 
   // Estados para desenvolvedoras da API
-  const [desenvolvedoras, setDesenvolvedoras] = useState<DesenvolvedoraResumo[]>([]);
+  const [desenvolvedoras, setDesenvolvedoras] = useState<
+    DesenvolvedoraResumo[]
+  >([]);
   const [loadingDesenvolvedoras, setLoadingDesenvolvedoras] = useState(false);
 
   // Hook de seguimento
-  const { 
-    toggleSeguir, 
-    verificarMultiplosSeguindo, 
-    followingMap 
-  } = useSeguimento();
+  const { toggleSeguir, verificarMultiplosSeguindo, followingMap } =
+    useSeguimento();
 
   // Log para debug
-  useEffect(() => {
-  }, [user, isAuthenticated]);
+  useEffect(() => {}, [user, isAuthenticated]);
 
   // Carregar posts curtidos do localStorage
   useEffect(() => {
@@ -141,7 +142,7 @@ const Community = () => {
   // Verificar se está seguindo as desenvolvedoras quando carregar
   useEffect(() => {
     if (desenvolvedoras.length > 0) {
-      const devIds = desenvolvedoras.map(dev => dev.id);
+      const devIds = desenvolvedoras.map((dev) => dev.id);
       verificarMultiplosSeguindo(devIds);
     }
   }, [desenvolvedoras, verificarMultiplosSeguindo]);
@@ -204,7 +205,6 @@ const Community = () => {
     setLikingPost(postId);
 
     try {
-
       if (isLiked) {
         await postRequests.descurtirPost(postId, user.id);
         const newLikes = likedPosts.filter((id) => id !== postId);
@@ -275,7 +275,6 @@ const Community = () => {
         imagemUrl: imagemUrl.trim() || undefined,
         tagIds: tagsSelecionadas, // Converter nomes para IDs do backend
       };
-
 
       await postRequests.publicarPost(postData);
       toast.success("Post publicado com sucesso!");
@@ -585,7 +584,7 @@ const Community = () => {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {desenvolvedoras.slice(0, 5).map((dev) => {
+                    {desenvolvedoras.map((dev) => {
                       const isFollowed = followingMap[dev.id];
                       return (
                         <div
@@ -601,7 +600,9 @@ const Community = () => {
                           <Button
                             size="sm"
                             variant={isFollowed ? "outline" : "hero"}
-                            onClick={() => toggleSeguir(dev.id, 'DESENVOLVEDORA', dev.nome)}
+                            onClick={() =>
+                              toggleSeguir(dev.id, "DESENVOLVEDORA", dev.nome)
+                            }
                           >
                             {isFollowed ? (
                               <>
@@ -806,7 +807,8 @@ const Community = () => {
                                 <div className="w-10 h-10 rounded-full bg-gradient-primary" />
                                 <div>
                                   <p className="font-semibold">
-                                    Autor #{post.autorId.substring(0, 8)}
+                                    {post.autorNome ||
+                                      `Autor #${post.autorId.substring(0, 8)}`}
                                   </p>
                                   <p className="text-sm text-muted-foreground">
                                     {post.dataPublicacao
@@ -828,7 +830,8 @@ const Community = () => {
                                   onClick={() =>
                                     handleFollowUser(
                                       post.autorId,
-                                      `Autor #${post.autorId.substring(0, 8)}`
+                                      post.autorNome ||
+                                        `Autor #${post.autorId.substring(0, 8)}`
                                     )
                                   }
                                 >
@@ -844,7 +847,8 @@ const Community = () => {
                                   onClick={() =>
                                     handleBlockUser(
                                       post.autorId,
-                                      `Autor #${post.autorId.substring(0, 8)}`
+                                      post.autorNome ||
+                                        `Autor #${post.autorId.substring(0, 8)}`
                                     )
                                   }
                                 >

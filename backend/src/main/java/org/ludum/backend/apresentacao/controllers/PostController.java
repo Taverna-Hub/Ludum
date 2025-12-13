@@ -25,12 +25,15 @@ public class PostController {
 
     private final PostService postService;
     private final TagRepository tagRepository;
+    private final org.ludum.dominio.identidade.conta.repositories.ContaRepository contaRepository;
 
     public PostController(
             PostService postService,
-            TagRepository tagRepository) {
+            TagRepository tagRepository,
+            org.ludum.dominio.identidade.conta.repositories.ContaRepository contaRepository) {
         this.postService = postService;
         this.tagRepository = tagRepository;
+        this.contaRepository = contaRepository;
     }
 
     @GetMapping
@@ -38,8 +41,10 @@ public class PostController {
         List<Post> posts = postService.obterTodosOsPosts();
         return ResponseEntity.ok(posts.stream()
                 .sorted((p1, p2) -> {
-                    if (p2.getDataPublicacao() == null) return -1;
-                    if (p1.getDataPublicacao() == null) return 1;
+                    if (p2.getDataPublicacao() == null)
+                        return -1;
+                    if (p1.getDataPublicacao() == null)
+                        return 1;
                     return p2.getDataPublicacao().compareTo(p1.getDataPublicacao());
                 })
                 .map(this::toResponse)
@@ -196,6 +201,18 @@ public class PostController {
         response.setId(post.getId().getId());
         response.setJogoId(post.getJogoId().getValue());
         response.setAutorId(post.getAutorId().getValue());
+
+        // Buscar nome do autor
+        try {
+            org.ludum.dominio.identidade.conta.entities.Conta autor = contaRepository.obterPorId(post.getAutorId());
+            if (autor != null) {
+                response.setAutorNome(autor.getNome());
+            }
+        } catch (Exception e) {
+            // Se não encontrar o autor, deixa em branco
+            response.setAutorNome("Autor Desconhecido");
+        }
+
         response.setTitulo(post.getTitulo());
         response.setConteudo(post.getConteudo());
         response.setDataPublicacao(post.getDataPublicacao());
