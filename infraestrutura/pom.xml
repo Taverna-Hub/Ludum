@@ -28,12 +28,6 @@
             <scope>compile</scope>
         </dependency>
 
-        <dependency>
-            <groupId>org.ludum</groupId>
-            <artifactId>aplicacao</artifactId>
-            <version>1.0-SNAPSHOT</version>
-            <scope>compile</scope>
-        </dependency>
 
         <dependency>
             <groupId>org.modelmapper</groupId>
