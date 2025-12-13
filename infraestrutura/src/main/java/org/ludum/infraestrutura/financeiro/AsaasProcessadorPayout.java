@@ -27,6 +27,7 @@ public class AsaasProcessadorPayout extends ProcessadorPayoutExterno {
                                   CarteiraRepository carteiraRepository) {
         super(transacaoRepository, carteiraRepository);
         this.apiKey = apiKey;
+        this.apiUrl = "https://sandbox.asaas.com/api/v3";
         this.httpClient = new OkHttpClient();
         this.gson = new Gson();
     }
