@@ -7,8 +7,12 @@ import org.ludum.dominio.catalogo.jogo.entidades.JogoId;
 import org.ludum.dominio.catalogo.jogo.entidades.Slug;
 import org.ludum.dominio.catalogo.jogo.enums.StatusPublicacao;
 import org.ludum.dominio.catalogo.jogo.repositorios.JogoRepository;
+import org.ludum.dominio.catalogo.tag.entidades.Tag;
 import org.ludum.dominio.catalogo.tag.entidades.TagId;
 import org.ludum.dominio.identidade.conta.entities.ContaId;
+
+import java.lang.reflect.Field;
+import java.net.URL;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -130,14 +134,14 @@ class JogoRepositoryImpl implements JogoRepository, JogoRepositorioConsulta {
     @Transactional(readOnly = true)
     public Jogo obterPorId(JogoId id) {
         Optional<JogoJpa> jogoJpa = repositorio.findById(id.getValue());
-        return jogoJpa.map(jpa -> mapeador.map(jpa, Jogo.class)).orElse(null);
+        return jogoJpa.map(this::reconstruirJogo).orElse(null);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Jogo obterPorSlug(Slug slug) {
         Optional<JogoJpa> jogoJpa = repositorio.findBySlug(slug.getValor());
-        return jogoJpa.map(jpa -> mapeador.map(jpa, Jogo.class)).orElse(null);
+        return jogoJpa.map(this::reconstruirJogo).orElse(null);
     }
 
     @Override
@@ -154,7 +158,7 @@ class JogoRepositoryImpl implements JogoRepository, JogoRepositorioConsulta {
     public List<Jogo> obterJogosPorTag(TagId tagId) {
         List<JogoJpa> jogosJpa = repositorio.findByTagId(tagId.getValue());
         return jogosJpa.stream()
-                .map(jpa -> mapeador.map(jpa, Jogo.class))
+                .map(this::reconstruirJogo)
                 .collect(Collectors.toList());
     }
 
@@ -165,7 +169,7 @@ class JogoRepositoryImpl implements JogoRepository, JogoRepositorioConsulta {
     public List<Jogo> listarTodosPublicados() {
         List<JogoJpa> jogosJpa = repositorio.findAllPublicados();
         return jogosJpa.stream()
-                .map(jpa -> mapeador.map(jpa, Jogo.class))
+                .map(this::reconstruirJogo)
                 .collect(Collectors.toList());
     }
 
@@ -174,7 +178,44 @@ class JogoRepositoryImpl implements JogoRepository, JogoRepositorioConsulta {
     public List<Jogo> listarPorDesenvolvedora(ContaId devId) {
         List<JogoJpa> jogosJpa = repositorio.findByDesenvolvedoraId(devId.getValue());
         return jogosJpa.stream()
-                .map(jpa -> mapeador.map(jpa, Jogo.class))
+                .map(this::reconstruirJogo)
                 .collect(Collectors.toList());
+    }
+
+    private Jogo reconstruirJogo(JogoJpa jpa) {
+        if (jpa == null)
+            return null;
+        try {
+            URL capa = jpa.capaOficial != null ? new URL(jpa.capaOficial) : null;
+            ContaId devId = new ContaId(jpa.desenvolvedoraId);
+            JogoId jogoId = new JogoId(jpa.id);
+
+            List<Tag> tags = new ArrayList<>();
+
+            Jogo jogo = new Jogo(
+                    jogoId,
+                    devId,
+                    jpa.titulo,
+                    jpa.descricao,
+                    capa,
+                    tags,
+                    jpa.isNSFW,
+                    jpa.dataDeLancamento);
+
+            if ("PUBLICADO".equals(jpa.status.name())) {
+                Field statusField = Jogo.class.getDeclaredField("status");
+                statusField.setAccessible(true);
+                statusField.set(jogo, StatusPublicacao.PUBLICADO);
+            }
+
+            for (String url : jpa.screenshots) {
+                jogo.adicionarScreenshot(new URL(url));
+            }
+
+            return jogo;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null; // ou lançar runtime
+        }
     }
 }

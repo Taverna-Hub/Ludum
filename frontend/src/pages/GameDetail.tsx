@@ -37,6 +37,7 @@ import {
   transformReviewResponse 
 } from "@/http/requests/reviewRequests";
 import { obterJogo } from "@/http/requests/jogoRequests";
+import { adicionarJogo, verificarPosse } from "@/http/requests/bibliotecaRequests";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useSeguimento } from "@/hooks/useSeguimento";
 
@@ -81,7 +82,21 @@ const GameDetail = () => {
   } = useSeguimento();
   
   // Verificar se o jogo é possuído (depois de carregar o game)
-  const isOwned = game && mockUserLibrary.includes(game.id);
+  const [isOwned, setIsOwned] = useState(false);
+
+  useEffect(() => {
+    const checkOwnership = async () => {
+      if (game && user) {
+        try {
+          const owned = await verificarPosse(game.id, user.id);
+          setIsOwned(owned);
+        } catch (error) {
+          console.error("Erro ao verificar posse:", error);
+        }
+      }
+    };
+    checkOwnership();
+  }, [game, user]);
 
   // Carregar jogo da API
   useEffect(() => {
@@ -189,11 +204,25 @@ const GameDetail = () => {
     filteredReviews.sort((a, b) => b.helpful - a.helpful);
   }
 
-  const handlePurchase = () => {
+  const handlePurchase = async () => {
     if (!isOwned) {
       if (game.price === 0) {
-        toast.success(`${game.title} adicionado à sua biblioteca!`);
-        mockUserLibrary.push(game.id);
+        if (!user) {
+             toast.error("Faça login para adicionar jogos à biblioteca");
+             return;
+        }
+        try {
+            await adicionarJogo({
+                jogoId: game.id,
+                contaId: user.id,
+                modeloDeAcesso: 'GRATUITO'
+            });
+            toast.success(`${game.title} adicionado à sua biblioteca!`);
+            setIsOwned(true);
+        } catch (e) {
+            toast.error("Erro ao adicionar jogo à biblioteca");
+            console.error(e);
+        }
       } else {
         setShowPurchaseModal(true);
       }
