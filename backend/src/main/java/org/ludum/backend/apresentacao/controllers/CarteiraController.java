@@ -180,8 +180,6 @@ public class CarteiraController {
         return "Compra de jogo";
       case SAQUE:
         return "Saque";
-      case PIX:
-        return "Transferência PIX";
       default:
         return "Transação";
     }
