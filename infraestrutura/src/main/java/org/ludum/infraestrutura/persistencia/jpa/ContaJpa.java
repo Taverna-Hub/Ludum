@@ -3,6 +3,8 @@ package org.ludum.infraestrutura.persistencia.jpa;
 import jakarta.persistence.*;
 import org.ludum.aplicacao.identidade.conta.DesenvolvedoraRepositorioConsulta;
 import org.ludum.aplicacao.identidade.conta.DesenvolvedoraResumo;
+import org.ludum.aplicacao.identidade.conta.JogadorRepositorioConsulta;
+import org.ludum.aplicacao.identidade.conta.JogadorResumo;
 import org.ludum.dominio.identidade.conta.entities.Conta;
 import org.ludum.dominio.identidade.conta.entities.ContaId;
 import org.ludum.dominio.identidade.conta.enums.StatusConta;
@@ -38,7 +40,7 @@ interface ContaJpaRepository extends JpaRepository<ContaJpa, String> {
 }
 
 @Repository
-class ContaRepositoryImpl implements ContaRepository, DesenvolvedoraRepositorioConsulta {
+class ContaRepositoryImpl implements ContaRepository, DesenvolvedoraRepositorioConsulta, JogadorRepositorioConsulta {
     @Autowired
     ContaJpaRepository repositorio;
 
@@ -73,6 +75,15 @@ class ContaRepositoryImpl implements ContaRepository, DesenvolvedoraRepositorioC
     public List<DesenvolvedoraResumo> listarTodas() {
         return repositorio.findByTipo(TipoConta.DESENVOLVEDORA).stream()
                 .map(jpa -> new DesenvolvedoraResumo(jpa.id, jpa.nome))
+                .collect(Collectors.toList());
+    }
+
+    // ========== Métodos do JogadorRepositorioConsulta (Aplicação) ==========
+
+    @Override
+    public List<JogadorResumo> listarTodos() {
+        return repositorio.findByTipo(TipoConta.JOGADOR).stream()
+                .map(jpa -> new JogadorResumo(jpa.id, jpa.nome))
                 .collect(Collectors.toList());
     }
 }

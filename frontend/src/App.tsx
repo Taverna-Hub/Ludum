@@ -21,6 +21,7 @@ import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
 import WalletSettings from "./pages/WalletSettings";
 import Payment from "./pages/Payment";
+import Players from "./pages/Players";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -46,6 +47,7 @@ const App = () => (
             <Route path="/desenvolvedor/criar-campanha" element={<CreateCampaign />} />
             <Route path="/mods" element={<Mods />} />
             <Route path="/comunidade" element={<Community />} />
+            <Route path="/jogadores" element={<Players />} />
             {/* Dashboard routes (authenticated) */}
             <Route path="/painel" element={<Profile />} />
             <Route path="/painel/carteira" element={<WalletSettings />} />

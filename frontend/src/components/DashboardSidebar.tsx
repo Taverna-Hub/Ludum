@@ -12,7 +12,8 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
-  House
+  House,
+  Users
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuthContext } from '@/contexts/AuthContext';
@@ -32,6 +33,7 @@ export const DashboardSidebar = () => {
     { label: 'Catálogo', href: '/catalogo', icon: ShoppingBag },
     { label: 'Biblioteca', href: '/biblioteca', icon: Library },
     { label: 'Crowdfunding', href: '/crowdfunding', icon: Heart },
+    { label: 'Jogadores', href: '/jogadores', icon: Users },
   ];
 
   const developerLinks = [
