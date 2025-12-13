@@ -7,11 +7,47 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { DashboardLayout } from '@/layouts/DashboardLayout';
 
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { obterBiblioteca } from '@/http/requests/bibliotecaRequests';
+import { Game } from '@/data/mockData';
+
 const Library = () => {
   const navigate = useNavigate();
-  const userGames = mockGames.filter((game) =>
-    mockUserLibrary.includes(game.id),
-  );
+  const { user } = useAuth();
+  const [userGames, setUserGames] = useState<Game[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchLibrary = async () => {
+      if (user) {
+        try {
+          const games = await obterBiblioteca(user.id);
+          setUserGames(games);
+        } catch (error) {
+          console.error("Erro ao carregar biblioteca:", error);
+          toast.error("Erro ao carregar sua biblioteca.");
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        setLoading(false);
+      }
+    };
+
+    fetchLibrary();
+  }, [user]);
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="min-h-screen pt-16 flex items-center justify-center">
+          <p>Carregando biblioteca...</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
 
   const handleDownload = (gameTitle: string) => {
     toast.success(`Download de ${gameTitle} iniciado!`);

@@ -2,22 +2,27 @@ package org.ludum.dominio.catalogo.biblioteca.services;
 
 import org.ludum.dominio.catalogo.biblioteca.entidades.Biblioteca;
 import org.ludum.dominio.catalogo.biblioteca.entidades.ItemBiblioteca;
-
 import org.ludum.dominio.catalogo.biblioteca.enums.ModeloDeAcesso;
-import org.ludum.dominio.catalogo.jogo.entidades.Jogo;
-import org.ludum.dominio.catalogo.jogo.entidades.PacoteZip;
+import org.ludum.dominio.catalogo.biblioteca.estruturas.IteratorBiblioteca;
 import org.ludum.dominio.catalogo.biblioteca.repositorios.BibliotecaRepository;
+import org.ludum.dominio.catalogo.jogo.entidades.Jogo;
 import org.ludum.dominio.catalogo.jogo.entidades.JogoId;
+import org.ludum.dominio.catalogo.jogo.entidades.PacoteZip;
 import org.ludum.dominio.catalogo.jogo.entidades.Versao;
 import org.ludum.dominio.catalogo.jogo.repositorios.JogoRepository;
 import org.ludum.dominio.financeiro.transacao.TransacaoRepository;
 import org.ludum.dominio.financeiro.transacao.entidades.Transacao;
 import org.ludum.dominio.financeiro.transacao.entidades.TransacaoId;
 import org.ludum.dominio.financeiro.transacao.enums.StatusTransacao;
-import org.ludum.dominio.identidade.conta.repositories.ContaRepository;
 import org.ludum.dominio.identidade.conta.entities.Conta;
 import org.ludum.dominio.identidade.conta.entities.ContaId;
 import org.ludum.dominio.identidade.conta.enums.StatusConta;
+import org.ludum.dominio.identidade.conta.repositories.ContaRepository;
+
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import java.time.LocalDate;
 
@@ -57,6 +62,34 @@ public class BibliotecaService {
         currentBiblioteca.adicionarJogo(modeloDeAcesso, jogoid);
         bibliotecaRepository.salvar(currentBiblioteca);
 
+    }
+
+    public boolean verificarPosse(ContaId contaId, JogoId jogoId) {
+        Biblioteca biblioteca = bibliotecaRepository.obterPorJogador(contaId);
+        if (biblioteca == null) {
+            return false;
+        }
+        return biblioteca.buscarJogoEmBiblioteca(jogoId).isPresent();
+    }
+
+    public List<Jogo> obterJogosEmBiblioteca(ContaId contaId) {
+        Biblioteca biblioteca = bibliotecaRepository.obterPorJogador(contaId);
+        if (biblioteca == null) {
+            return Collections.emptyList();
+        }
+
+        List<Jogo> jogos = new ArrayList<>();
+
+        IteratorBiblioteca<ItemBiblioteca> iterator = biblioteca.criarIterator();
+        while (iterator.existeProximo()) {
+            ItemBiblioteca item = iterator.proximo();
+            Jogo jogo = jogoRepository.obterPorId(item.getJogoId());
+            if (jogo != null) {
+                jogos.add(jogo);
+            }
+        }
+
+        return jogos;
     }
 
     public PacoteZip processarDownload(ContaId contaId, JogoId jogoId) {
