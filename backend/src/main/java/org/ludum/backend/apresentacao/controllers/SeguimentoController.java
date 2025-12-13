@@ -44,7 +44,7 @@ public class SeguimentoController {
 
     @DeleteMapping("/{alvoId}")
     public ResponseEntity<Void> deixarDeSeguir(
-            @PathVariable String alvoId,
+            @PathVariable("alvoId") String alvoId,
             HttpServletRequest httpRequest) {
         
         String userId = (String) httpRequest.getAttribute("userId");
