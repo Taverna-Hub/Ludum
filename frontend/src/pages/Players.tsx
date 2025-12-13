@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/table";
 import { listarJogadores, JogadorResumo } from "@/http/requests/jogadorRequests";
 import { useSeguimento } from "@/hooks/useSeguimento";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { UserPlus, UserMinus, Loader2, Users } from "lucide-react";
 import { toast } from "sonner";
 
@@ -21,6 +22,7 @@ const Players = () => {
   const [seguindoLoading, setSeguindoLoading] = useState<string | null>(null);
 
   const { toggleSeguir, verificarMultiplosSeguindo, followingMap } = useSeguimento();
+  const { user } = useAuthContext();
 
   useEffect(() => {
     carregarJogadores();
@@ -89,7 +91,7 @@ const Players = () => {
             </div>
           </CardHeader>
           <CardContent>
-            {jogadores.length === 0 ? (
+            {jogadores.filter(j => j.id !== user?.id).length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 <Users className="h-16 w-16 mx-auto mb-4 opacity-50" />
                 <p className="text-lg">Nenhum jogador encontrado</p>
@@ -104,7 +106,7 @@ const Players = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {jogadores.map((jogador) => {
+                    {jogadores.filter(j => j.id !== user?.id).map((jogador) => {
                       const estaSeguindo = followingMap[jogador.id];
                       const isLoading = seguindoLoading === jogador.id;
 
