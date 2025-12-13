@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { listarJogos, Game } from "@/http/requests/jogoRequests";
+import { listarDesenvolvedoras, DesenvolvedoraResumo } from "@/http/requests/desenvolvedoraRequests";
 import {
   Select,
   SelectContent,
@@ -34,6 +35,7 @@ import { toast } from "sonner";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { postRequests, PostResponse } from "@/http/requests/postRequests";
 import { useAuth } from "@/hooks/useAuth";
+import { useSeguimento } from "@/hooks/useSeguimento";
 
 const Community = () => {
   const { user, isAuthenticated } = useAuth();
@@ -66,6 +68,17 @@ const Community = () => {
     null
   );
   const [dataAgendamento, setDataAgendamento] = useState("");
+
+  // Estados para desenvolvedoras da API
+  const [desenvolvedoras, setDesenvolvedoras] = useState<DesenvolvedoraResumo[]>([]);
+  const [loadingDesenvolvedoras, setLoadingDesenvolvedoras] = useState(false);
+
+  // Hook de seguimento
+  const { 
+    toggleSeguir, 
+    verificarMultiplosSeguindo, 
+    followingMap 
+  } = useSeguimento();
 
   // Log para debug
   useEffect(() => {
@@ -108,6 +121,30 @@ const Community = () => {
     };
     carregarJogos();
   }, []);
+
+  // Carregar desenvolvedoras da API
+  useEffect(() => {
+    const carregarDesenvolvedoras = async () => {
+      setLoadingDesenvolvedoras(true);
+      try {
+        const data = await listarDesenvolvedoras();
+        setDesenvolvedoras(data);
+      } catch (error) {
+        console.error("Erro ao carregar desenvolvedoras:", error);
+      } finally {
+        setLoadingDesenvolvedoras(false);
+      }
+    };
+    carregarDesenvolvedoras();
+  }, []);
+
+  // Verificar se está seguindo as desenvolvedoras quando carregar
+  useEffect(() => {
+    if (desenvolvedoras.length > 0) {
+      const devIds = desenvolvedoras.map(dev => dev.id);
+      verificarMultiplosSeguindo(devIds);
+    }
+  }, [desenvolvedoras, verificarMultiplosSeguindo]);
 
   // Carregar posts ao montar o componente
   useEffect(() => {
@@ -489,18 +526,6 @@ const Community = () => {
   // Get popular tags from AVAILABLE_TAGS
   const popularTags = AVAILABLE_TAGS.slice(0, 10);
 
-  // Get developers from games reais do backend (deduplicated by ID)
-  const developersMap = new Map();
-  jogosDisponiveis.forEach((game) => {
-    if (!developersMap.has(game.developerId)) {
-      developersMap.set(game.developerId, {
-        id: game.developerId,
-        name: game.developerName,
-      });
-    }
-  });
-  const developers = Array.from(developersMap.values()).slice(0, 5);
-
   // Filter blocked users' posts
   const visiblePosts = posts.filter(
     (post) => !blockedUsers.includes(post.autorId)
@@ -554,43 +579,47 @@ const Community = () => {
               {/* Desenvolvedoras */}
               <Card className="p-6 bg-card/50 backdrop-blur-sm">
                 <h3 className="font-bold text-lg mb-4">Desenvolvedoras</h3>
-                <div className="space-y-3">
-                  {developers.map((dev) => {
-                    const isFollowed = followedDevelopers.includes(dev.id);
-                    return (
-                      <div
-                        key={dev.id}
-                        className="flex items-center justify-between"
-                      >
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full bg-gradient-secondary" />
-                          <span className="text-sm font-medium">
-                            {dev.name}
-                          </span>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant={isFollowed ? "outline" : "hero"}
-                          onClick={() =>
-                            handleFollowDeveloper(dev.id, dev.name)
-                          }
+                {loadingDesenvolvedoras ? (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {desenvolvedoras.slice(0, 5).map((dev) => {
+                      const isFollowed = followingMap[dev.id];
+                      return (
+                        <div
+                          key={dev.id}
+                          className="flex items-center justify-between"
                         >
-                          {isFollowed ? (
-                            <>
-                              <UserMinus className="w-3 h-3 mr-1" />
-                              Seguindo
-                            </>
-                          ) : (
-                            <>
-                              <UserPlus className="w-3 h-3 mr-1" />
-                              Seguir
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                    );
-                  })}
-                </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-full bg-gradient-secondary" />
+                            <span className="text-sm font-medium">
+                              {dev.nome}
+                            </span>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant={isFollowed ? "outline" : "hero"}
+                            onClick={() => toggleSeguir(dev.id, 'DESENVOLVEDORA', dev.nome)}
+                          >
+                            {isFollowed ? (
+                              <>
+                                <UserMinus className="w-3 h-3 mr-1" />
+                                Seguindo
+                              </>
+                            ) : (
+                              <>
+                                <UserPlus className="w-3 h-3 mr-1" />
+                                Seguir
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </Card>
             </div>
 
