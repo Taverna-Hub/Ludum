@@ -1,6 +1,7 @@
 package org.ludum.infraestrutura.persistencia.jpa;
 
 import jakarta.persistence.*;
+import org.ludum.aplicacao.identidade.seguimento.SeguimentoRepositorioConsulta;
 import org.ludum.dominio.identidade.conta.entities.ContaId;
 import org.ludum.dominio.identidade.seguimento.entities.AlvoId;
 import org.ludum.dominio.identidade.seguimento.entities.Seguimento;
@@ -11,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -24,21 +26,27 @@ class SeguimentoJpa {
     String seguidoId;
     @Enumerated(EnumType.STRING)
     TipoAlvo tipoAlvo;
+    LocalDateTime dataSeguimento;
 }
 
 interface SeguimentoJpaRepository extends JpaRepository<SeguimentoJpa, String> {
     Optional<SeguimentoJpa> findBySeguidorIdAndSeguidoId(String seguidorId, String seguidoId);
     List<SeguimentoJpa> findBySeguidoId(String seguidoId);
     List<SeguimentoJpa> findBySeguidorId(String seguidorId);
+    boolean existsBySeguidorIdAndSeguidoId(String seguidorId, String seguidoId);
+    long countBySeguidoId(String seguidoId);
+    long countBySeguidorId(String seguidorId);
 }
 
 @Repository
-class SeguimentoRepositoryImpl implements SeguimentoRepository {
+class SeguimentoRepositoryImpl implements SeguimentoRepository, SeguimentoRepositorioConsulta {
     @Autowired
     SeguimentoJpaRepository repositorio;
 
     @Autowired
     JpaMapeador mapeador;
+
+    // ========== Métodos do SeguimentoRepository (Domínio) ==========
 
     @Override
     public void salvar(Seguimento seguimento) {
@@ -69,5 +77,32 @@ class SeguimentoRepositoryImpl implements SeguimentoRepository {
         return repositorio.findBySeguidorId(seguidorId.getValue()).stream()
                 .map(s -> mapeador.map(s, Seguimento.class))
                 .collect(Collectors.toList());
+    }
+
+    // ========== Métodos do SeguimentoRepositorioConsulta (Aplicação) ==========
+
+    @Override
+    public boolean estaSeguindo(ContaId seguidorId, AlvoId alvoId) {
+        return repositorio.existsBySeguidorIdAndSeguidoId(seguidorId.getValue(), alvoId.getValue());
+    }
+
+    @Override
+    public long contarSeguidores(AlvoId alvoId) {
+        return repositorio.countBySeguidoId(alvoId.getValue());
+    }
+
+    @Override
+    public long contarSeguindo(ContaId seguidorId) {
+        return repositorio.countBySeguidorId(seguidorId.getValue());
+    }
+
+    @Override
+    public List<Seguimento> listarSeguindo(ContaId seguidorId) {
+        return obterSeguidosPor(seguidorId);
+    }
+
+    @Override
+    public List<Seguimento> listarSeguidores(AlvoId alvoId) {
+        return obterSeguidoresDe(alvoId);
     }
 }

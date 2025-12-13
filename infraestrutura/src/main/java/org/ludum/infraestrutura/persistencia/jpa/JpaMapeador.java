@@ -138,7 +138,7 @@ public class JpaMapeador extends ModelMapper {
         var id = new SeguimentoId(source.id);
         var seguidorId = new ContaId(source.seguidorId);
         var seguidoId = new AlvoId(source.seguidoId);
-        return new Seguimento(id, seguidorId, seguidoId, source.tipoAlvo);
+        return new Seguimento(id, seguidorId, seguidoId, source.tipoAlvo, source.dataSeguimento);
       }
     });
 
@@ -150,6 +150,7 @@ public class JpaMapeador extends ModelMapper {
         jpa.seguidorId = source.getSeguidorId().getValue();
         jpa.seguidoId = source.getSeguidoId().getValue();
         jpa.tipoAlvo = source.getTipoAlvo();
+        jpa.dataSeguimento = source.getDataSeguimento();
         return jpa;
       }
     });

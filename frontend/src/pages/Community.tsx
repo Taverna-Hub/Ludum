@@ -1,20 +1,58 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Heart, MessageSquare, Share2, Image as ImageIcon, UserPlus, UserMinus, Ban } from "lucide-react";
+import { Heart, MessageSquare, Share2, Image as ImageIcon, UserPlus, UserMinus, Ban, Loader2 } from "lucide-react";
 import { mockPosts, mockGames } from "@/data/mockData";
 import { toast } from "sonner";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
+import { useAuthContext } from "@/contexts/AuthContext";
+import { useSeguimento } from "@/hooks/useSeguimento";
+import { TipoAlvo } from "@/http/requests/seguimentoRequests";
 
 const Community = () => {
+  const { isAuthenticated } = useAuthContext();
   const [newPost, setNewPost] = useState("");
   const [likedPosts, setLikedPosts] = useState<string[]>([]);
-  const [followedUsers, setFollowedUsers] = useState<string[]>([]);
   const [blockedUsers, setBlockedUsers] = useState<string[]>([]);
-  const [followedTags, setFollowedTags] = useState<string[]>([]);
-  const [followedDevelopers, setFollowedDevelopers] = useState<string[]>([]);
+  
+  // Hook de seguimento para API real
+  const { 
+    loading: seguimentoLoading,
+    followingMap,
+    verificarMultiplosSeguindo,
+    toggleSeguir,
+    isSeguindo
+  } = useSeguimento();
+
+  // Get popular tags from games
+  const allTags = mockGames.flatMap(game => game.tags);
+  const popularTags = [...new Set(allTags)].slice(0, 10);
+
+  // Get developers from games
+  const developers = [...new Set(mockGames.map(game => ({ 
+    id: game.developerId, 
+    name: game.developerName 
+  })))].slice(0, 5);
+
+  // Filter blocked users' posts
+  const visiblePosts = mockPosts.filter(post => !blockedUsers.includes(post.userId));
+
+  // Carregar estado de seguimento inicial quando autenticado
+  useEffect(() => {
+    if (isAuthenticated) {
+      // IDs de usuários dos posts
+      const userIds = mockPosts.map(p => p.userId);
+      // IDs de desenvolvedores
+      const devIds = developers.map(d => d.id);
+      // IDs de tags (usando a própria tag como ID)
+      const tagIds = popularTags;
+      
+      // Verificar todos de uma vez
+      verificarMultiplosSeguindo([...userIds, ...devIds, ...tagIds]);
+    }
+  }, [isAuthenticated, verificarMultiplosSeguindo]);
 
   const handleLike = (postId: string) => {
     if (likedPosts.includes(postId)) {
@@ -31,14 +69,12 @@ const Community = () => {
     }
   };
 
-  const handleFollowUser = (userId: string, userName: string) => {
-    if (followedUsers.includes(userId)) {
-      setFollowedUsers(followedUsers.filter(id => id !== userId));
-      toast.success(`Você deixou de seguir ${userName}`);
-    } else {
-      setFollowedUsers([...followedUsers, userId]);
-      toast.success(`Você está seguindo ${userName}`);
+  const handleFollowUser = async (userId: string, userName: string) => {
+    if (!isAuthenticated) {
+      toast.error("Faça login para seguir usuários");
+      return;
     }
+    await toggleSeguir(userId, 'CONTA' as TipoAlvo, userName);
   };
 
   const handleBlockUser = (userId: string, userName: string) => {
@@ -51,38 +87,21 @@ const Community = () => {
     }
   };
 
-  const handleFollowTag = (tag: string) => {
-    if (followedTags.includes(tag)) {
-      setFollowedTags(followedTags.filter(t => t !== tag));
-      toast.success(`Você deixou de seguir #${tag}`);
-    } else {
-      setFollowedTags([...followedTags, tag]);
-      toast.success(`Você está seguindo #${tag}`);
+  const handleFollowTag = async (tag: string) => {
+    if (!isAuthenticated) {
+      toast.error("Faça login para seguir tags");
+      return;
     }
+    await toggleSeguir(tag, 'TAG' as TipoAlvo, `#${tag}`);
   };
 
-  const handleFollowDeveloper = (devId: string, devName: string) => {
-    if (followedDevelopers.includes(devId)) {
-      setFollowedDevelopers(followedDevelopers.filter(id => id !== devId));
-      toast.success(`Você deixou de seguir ${devName}`);
-    } else {
-      setFollowedDevelopers([...followedDevelopers, devId]);
-      toast.success(`Você está seguindo ${devName}`);
+  const handleFollowDeveloper = async (devId: string, devName: string) => {
+    if (!isAuthenticated) {
+      toast.error("Faça login para seguir desenvolvedoras");
+      return;
     }
+    await toggleSeguir(devId, 'DESENVOLVEDORA' as TipoAlvo, devName);
   };
-
-  // Get popular tags from games
-  const allTags = mockGames.flatMap(game => game.tags);
-  const popularTags = [...new Set(allTags)].slice(0, 10);
-
-  // Get developers from games
-  const developers = [...new Set(mockGames.map(game => ({ 
-    id: game.developerId, 
-    name: game.developerName 
-  })))].slice(0, 5);
-
-  // Filter blocked users' posts
-  const visiblePosts = mockPosts.filter(post => !blockedUsers.includes(post.userId));
 
   return (
     <DashboardLayout>
@@ -110,16 +129,17 @@ const Community = () => {
                 <h3 className="font-bold text-lg mb-4">Tags Populares</h3>
                 <div className="flex flex-wrap gap-2">
                   {popularTags.map((tag) => {
-                    const isFollowed = followedTags.includes(tag);
+                    const isFollowed = isSeguindo(tag);
                     return (
                       <button
                         key={tag}
                         onClick={() => handleFollowTag(tag)}
+                        disabled={seguimentoLoading}
                         className={`px-3 py-1 rounded-full text-sm transition-smooth ${
                           isFollowed
                             ? 'bg-gradient-primary text-white'
                             : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                        }`}
+                        } ${seguimentoLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         #{tag}
                       </button>
@@ -133,7 +153,7 @@ const Community = () => {
                 <h3 className="font-bold text-lg mb-4">Desenvolvedoras</h3>
                 <div className="space-y-3">
                   {developers.map((dev) => {
-                    const isFollowed = followedDevelopers.includes(dev.id);
+                    const isFollowed = isSeguindo(dev.id);
                     return (
                       <div key={dev.id} className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -144,8 +164,11 @@ const Community = () => {
                           size="sm"
                           variant={isFollowed ? "outline" : "hero"}
                           onClick={() => handleFollowDeveloper(dev.id, dev.name)}
+                          disabled={seguimentoLoading}
                         >
-                          {isFollowed ? (
+                          {seguimentoLoading ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : isFollowed ? (
                             <>
                               <UserMinus className="w-3 h-3 mr-1" />
                               Seguindo
@@ -224,10 +247,13 @@ const Community = () => {
                           <Badge variant="outline">{post.gameName}</Badge>
                           <Button
                             size="sm"
-                            variant={followedUsers.includes(post.userId) ? "outline" : "secondary"}
+                            variant={isSeguindo(post.userId) ? "outline" : "secondary"}
                             onClick={() => handleFollowUser(post.userId, post.userName)}
+                            disabled={seguimentoLoading}
                           >
-                            {followedUsers.includes(post.userId) ? (
+                            {seguimentoLoading ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : isSeguindo(post.userId) ? (
                               <UserMinus className="w-4 h-4" />
                             ) : (
                               <UserPlus className="w-4 h-4" />

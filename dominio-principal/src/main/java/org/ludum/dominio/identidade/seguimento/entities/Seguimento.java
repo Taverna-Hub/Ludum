@@ -3,6 +3,7 @@ package org.ludum.dominio.identidade.seguimento.entities;
 import org.ludum.dominio.identidade.conta.entities.ContaId;
 import org.ludum.dominio.identidade.seguimento.enums.TipoAlvo;
 
+import java.time.LocalDateTime;
 import java.util.Objects;
 
 public class Seguimento {
@@ -11,12 +12,22 @@ public class Seguimento {
     private ContaId seguidorId;
     private AlvoId seguidoId;
     private TipoAlvo tipoAlvo;
+    private LocalDateTime dataSeguimento;
 
     public Seguimento(SeguimentoId id, ContaId seguidorId, AlvoId seguidoId, TipoAlvo tipoAlvo) {
         this.id = Objects.requireNonNull(id);
         this.seguidorId = Objects.requireNonNull(seguidorId);
         this.seguidoId = Objects.requireNonNull(seguidoId);
         this.tipoAlvo = Objects.requireNonNull(tipoAlvo);
+        this.dataSeguimento = LocalDateTime.now();
+    }
+
+    public Seguimento(SeguimentoId id, ContaId seguidorId, AlvoId seguidoId, TipoAlvo tipoAlvo, LocalDateTime dataSeguimento) {
+        this.id = Objects.requireNonNull(id);
+        this.seguidorId = Objects.requireNonNull(seguidorId);
+        this.seguidoId = Objects.requireNonNull(seguidoId);
+        this.tipoAlvo = Objects.requireNonNull(tipoAlvo);
+        this.dataSeguimento = dataSeguimento != null ? dataSeguimento : LocalDateTime.now();
     }
 
     public SeguimentoId getId() {
@@ -49,5 +60,13 @@ public class Seguimento {
 
     public void setTipoAlvo(TipoAlvo tipoAlvo) {
         this.tipoAlvo = tipoAlvo;
+    }
+
+    public LocalDateTime getDataSeguimento() {
+        return dataSeguimento;
+    }
+
+    public void setDataSeguimento(LocalDateTime dataSeguimento) {
+        this.dataSeguimento = dataSeguimento;
     }
 }

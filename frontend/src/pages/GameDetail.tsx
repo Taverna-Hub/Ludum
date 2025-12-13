@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { 
   ShoppingCart, Download, Star, ThumbsUp, ThumbsDown, 
-  Calendar, Users, Wrench, ArrowLeft, Edit, Trash2, Plus, CheckCircle, Loader2
+  Calendar, Users, Wrench, ArrowLeft, Edit, Trash2, Plus, CheckCircle, Loader2, Heart
 } from "lucide-react";
 import { mockUserLibrary } from "@/data/mockData";
 import { Game } from "@/types/game";
@@ -38,6 +38,7 @@ import {
 } from "@/http/requests/reviewRequests";
 import { obterJogo } from "@/http/requests/jogoRequests";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { useSeguimento } from "@/hooks/useSeguimento";
 
 // Tipo local para Review do frontend
 interface Review extends ReviewFrontend {}
@@ -69,6 +70,16 @@ const GameDetail = () => {
   const [reviewResumo, setReviewResumo] = useState({ mediaEstrelas: 0, totalRecomendacoes: 0, porcentagemRecomendacoes: 0 });
   const [submittingReview, setSubmittingReview] = useState(false);
   
+  // Hook de seguimento
+  const { 
+    loading: seguimentoLoading,
+    verificarSeguindo,
+    buscarContadorSeguidores,
+    toggleSeguir,
+    isSeguindo,
+    getContadorSeguidores
+  } = useSeguimento();
+  
   // Verificar se o jogo é possuído (depois de carregar o game)
   const isOwned = game && mockUserLibrary.includes(game.id);
 
@@ -93,6 +104,16 @@ const GameDetail = () => {
     
     carregarJogo();
   }, [slug]);
+
+  // Verificar se está seguindo o jogo e buscar contador de seguidores
+  useEffect(() => {
+    if (game?.id && user) {
+      verificarSeguindo(game.id);
+      buscarContadorSeguidores(game.id);
+    } else if (game?.id) {
+      buscarContadorSeguidores(game.id);
+    }
+  }, [game?.id, user]);
 
   // Carregar reviews da API
   const carregarReviews = async () => {
@@ -357,6 +378,30 @@ const GameDetail = () => {
                     <Wrench className="w-5 h-5 mr-2" />
                     Ver Mods
                   </Button>
+                  
+                  {/* Botão Seguir Jogo - também disponível para jogos na biblioteca */}
+                  <Button
+                    variant={isSeguindo(game.id) ? "outline" : "secondary"}
+                    className="w-full"
+                    onClick={() => {
+                      if (!user) {
+                        toast.error("Faça login para seguir jogos");
+                        return;
+                      }
+                      toggleSeguir(game.id, 'JOGO', game.title);
+                    }}
+                    disabled={seguimentoLoading}
+                  >
+                    {seguimentoLoading ? (
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    ) : (
+                      <Heart className={`w-5 h-5 mr-2 ${isSeguindo(game.id) ? 'fill-current text-red-500' : ''}`} />
+                    )}
+                    {isSeguindo(game.id) ? 'Seguindo' : 'Seguir'}
+                    <span className="ml-1 text-xs text-muted-foreground">
+                      ({getContadorSeguidores(game.id)})
+                    </span>
+                  </Button>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -380,6 +425,30 @@ const GameDetail = () => {
                   <Button variant="hero" className="w-full" onClick={handlePurchase}>
                     <ShoppingCart className="w-5 h-5 mr-2" />
                     {game.price > 0 ? 'Comprar' : 'Adicionar à Biblioteca'}
+                  </Button>
+                  
+                  {/* Botão Seguir Jogo */}
+                  <Button
+                    variant={isSeguindo(game.id) ? "outline" : "secondary"}
+                    className="w-full"
+                    onClick={() => {
+                      if (!user) {
+                        toast.error("Faça login para seguir jogos");
+                        return;
+                      }
+                      toggleSeguir(game.id, 'JOGO', game.title);
+                    }}
+                    disabled={seguimentoLoading}
+                  >
+                    {seguimentoLoading ? (
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    ) : (
+                      <Heart className={`w-5 h-5 mr-2 ${isSeguindo(game.id) ? 'fill-current text-red-500' : ''}`} />
+                    )}
+                    {isSeguindo(game.id) ? 'Seguindo' : 'Seguir'}
+                    <span className="ml-1 text-xs text-muted-foreground">
+                      ({getContadorSeguidores(game.id)})
+                    </span>
                   </Button>
                 </div>
               )}
