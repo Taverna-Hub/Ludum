@@ -20,11 +20,12 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/publicacoes")
+@CrossOrigin(origins = "http://localhost:5173", allowedHeaders = "*")
 public class PublicacaoController {
 
     private final PublicacaoService publicacaoService;
     private final TagRepository tagRepository;
-    
+
     public PublicacaoController(PublicacaoService publicacaoService, TagRepository tagRepository) {
         this.publicacaoService = publicacaoService;
         this.tagRepository = tagRepository;
@@ -62,9 +63,9 @@ public class PublicacaoController {
     @Transactional
     public ResponseEntity<Map<String, Object>> validar(@PathVariable("id") String id) {
         JogoId jogoId = new JogoId(id);
-        
+
         publicacaoService.validarEPublicar(jogoId);
-        
+
         return ResponseEntity.ok(Map.of(
                 "sucesso", true,
                 "mensagem", "Jogo validado e publicado com sucesso",

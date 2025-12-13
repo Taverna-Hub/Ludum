@@ -9,7 +9,7 @@ import { DashboardLayout } from '@/layouts/DashboardLayout';
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { obterBiblioteca } from '@/http/requests/bibliotecaRequests';
+import { obterBiblioteca, downloadJogo } from '@/http/requests/bibliotecaRequests';
 import { Game } from '@/data/mockData';
 
 const Library = () => {
@@ -38,6 +38,23 @@ const Library = () => {
     fetchLibrary();
   }, [user]);
 
+  const handleDownload = async (gameId: string, gameTitle: string) => {
+    if (!user) {
+        toast.error('Você precisa estar logado para baixar jogos.');
+        return;
+    }
+    
+    toast.promise(downloadJogo(gameId, user.id), {
+        loading: `Preparando download de ${gameTitle}...`,
+        success: 'Download iniciado!',
+        error: 'Erro ao baixar o jogo.'
+    });
+  };
+
+  const handlePlay = (gameTitle: string) => {
+    toast.success(`Iniciando ${gameTitle}...`);
+  };
+
   if (loading) {
     return (
       <DashboardLayout>
@@ -47,15 +64,6 @@ const Library = () => {
       </DashboardLayout>
     );
   }
-
-
-  const handleDownload = (gameTitle: string) => {
-    toast.success(`Download de ${gameTitle} iniciado!`);
-  };
-
-  const handlePlay = (gameTitle: string) => {
-    toast.success(`Iniciando ${gameTitle}...`);
-  };
 
   return (
     <DashboardLayout>
@@ -158,7 +166,7 @@ const Library = () => {
                         </Button>
                         <Button
                           variant="outline"
-                          onClick={() => handleDownload(game.title)}
+                          onClick={() => handleDownload(game.id, game.title)}
                         >
                           <Download className="w-4 h-4 mr-2" />
                           Baixar

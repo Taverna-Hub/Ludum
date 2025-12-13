@@ -14,6 +14,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/jogos")
+@CrossOrigin(origins = "http://localhost:5173", allowedHeaders = "*")
 public class GestaoDeJogosController {
 
     private final GestaoDeJogosService gestaoDeJogosService;

@@ -95,7 +95,16 @@ public class BibliotecaService {
     public PacoteZip processarDownload(ContaId contaId, JogoId jogoId) {
         Biblioteca currentBiblioteca = this.bibliotecaRepository.obterPorJogador(contaId);
         Jogo currentJogo = jogoRepository.obterPorId(jogoId);
-        Versao currentVersao = this.jogoRepository.obterPorId(jogoId).getVersaoHistory().getLast();
+
+        if (currentJogo == null) {
+            throw new IllegalArgumentException("Jogo não encontrado com ID: " + jogoId);
+        }
+
+        if (currentJogo.getVersaoHistory() == null || currentJogo.getVersaoHistory().isEmpty()) {
+            throw new IllegalStateException("O jogo não possui versões publicadas para download.");
+        }
+
+        Versao currentVersao = currentJogo.getVersaoHistory().getLast();
 
         ItemBiblioteca currentItemBiblioteca = currentBiblioteca.buscarJogoEmBiblioteca(jogoId).orElse(null);
 

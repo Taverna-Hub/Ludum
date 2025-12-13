@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/biblioteca")
+@CrossOrigin(origins = "http://localhost:5173", allowedHeaders = "*")
 public class BibliotecaController {
 
     private final BibliotecaService bibliotecaService;

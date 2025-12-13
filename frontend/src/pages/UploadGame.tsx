@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
+import { gestaoJogosRequests } from "@/http/requests/gestaoJogosRequests";
+import { useAuthContext } from "@/contexts/AuthContext";
 
 const UploadGame = () => {
   const navigate = useNavigate();
@@ -30,22 +32,15 @@ const UploadGame = () => {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
 
-    // Validação: deve ser .zip
-    if (!selectedFile.name.endsWith(".zip")) {
-      toast({
-        title: "Arquivo inválido",
-        description: "O jogo deve ser enviado em um arquivo .zip único.",
-        variant: "destructive",
-      });
-      return;
-    }
+    // Modificado: verificação de .zip removida a pedido do usuário.
+    // O backend ainda valida magic bytes para integridade do pacote.
 
-    // Validação: tamanho máximo (exemplo: 2GB)
-    const maxSize = 2 * 1024 * 1024 * 1024; // 2GB
+    // Validação: tamanho máximo modificado para 10MB
+    const maxSize = 10 * 1024 * 1024; // 10MB
     if (selectedFile.size > maxSize) {
       toast({
         title: "Arquivo muito grande",
-        description: "O arquivo não pode ter mais de 2GB.",
+        description: "O arquivo não pode ter mais de 10MB.",
         variant: "destructive",
       });
       return;
@@ -69,6 +64,8 @@ const UploadGame = () => {
     });
   };
 
+  const { user } = useAuthContext();
+
   const handleUpload = async () => {
     if (!file) {
       toast({
@@ -79,36 +76,66 @@ const UploadGame = () => {
       return;
     }
 
+    if (!user) {
+      toast({
+        title: "Erro de autenticação",
+        description: "Você precisa estar logado para fazer upload.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!jogoId) {
+      toast({
+        title: "Erro de jogo",
+        description: "ID do jogo não encontrado.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setUploading(true);
     setUploadProgress(0);
 
     try {
-      // Simular upload
-      await simulateUpload();
+      // Simular progresso visual enquanto faz o upload real
+      // O axios não dá progresso fácil sem config extra, então mantemos a animação visual por enquanto
+      // ou apenas mostramos o spinner.
+      const progressInterval = setInterval(() => {
+        setUploadProgress((prev) => Math.min(prev + 10, 90));
+      }, 500);
 
-      // Simular verificação de malware
-      toast({
-        title: "Verificando segurança...",
-        description: "Analisando o arquivo em busca de malware.",
-      });
+      // Backend requires strictly "Name_Major.Minor.Patch.zip"
+      // Split by _ must be size 2. Split by . must be size 4.
+      const sanitizedName = file.name.replace(/\.zip$/i, "").replace(/_/g, "-");
+      const nomeVersao = `${sanitizedName}_1.0.0.zip`;
+      const descricaoVersao = "Versão Inicial 1.0.0";
 
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await gestaoJogosRequests.uploadJogo(
+        jogoId,
+        file,
+        nomeVersao,
+        descricaoVersao,
+        user.id
+      );
 
-      // Gerar ID fictício
-      const newGameId = `game-${Date.now()}`;
-      setGameId(newGameId);
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+
+      // Usar o ID real do jogo que já temos
+      setGameId(jogoId);
       setUploadComplete(true);
 
       toast({
         title: "Upload concluído! ✅",
         description:
-          "Arquivo verificado e salvo com sucesso. Agora você pode publicar o jogo.",
+          "Arquivo enviado e salvo com sucesso. Agora você pode finalizar a publicação.",
       });
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Erro no upload:", error);
       toast({
         title: "Erro no upload",
-        description:
-          "Ocorreu um erro ao fazer upload do arquivo. Tente novamente.",
+        description: "Falha ao enviar arquivo: " + (error.response?.status === 413 ? "Arquivo muito grande by server" : "Erro desconhecido"),
         variant: "destructive",
       });
     } finally {
@@ -225,7 +252,7 @@ const UploadGame = () => {
                         {file ? file.name : "Clique para selecionar o arquivo"}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        Apenas arquivos .zip (máximo 2GB)
+                        Arquivos até 10MB
                       </p>
                       <Input
                         id="game-file"

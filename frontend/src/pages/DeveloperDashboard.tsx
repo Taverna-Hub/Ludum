@@ -8,12 +8,12 @@ const DeveloperDashboard = () => {
 
   const quickActions = [
     {
-      title: "Upload de Jogo",
-      description: "Envie o arquivo .zip do seu jogo para a plataforma",
+      title: "Publicar Novo Jogo",
+      description: "Cadastre e envie o arquivo .zip do seu jogo",
       icon: Upload,
       color: "text-primary",
       bgColor: "bg-primary/20",
-      action: () => navigate("/desenvolvedor/upload"),
+      action: () => navigate("/desenvolvedor/publicar"),
     },
     {
       title: "Criar Crowdfunding",

@@ -9,12 +9,12 @@ const DeveloperPanel = () => {
 
   const quickActions = [
     {
-      title: 'Upload de Jogo',
-      description: 'Faça upload de um novo jogo para a plataforma',
+      title: 'Publicar Novo Jogo',
+      description: 'Cadastre e faça upload de um novo jogo',
       icon: Upload,
       color: 'text-secondary',
       bgColor: 'bg-secondary/10',
-      action: () => navigate('/desenvolvedor/upload'),
+      action: () => navigate('/desenvolvedor/publicar'),
     },
     {
       title: 'Criar Campanha',
