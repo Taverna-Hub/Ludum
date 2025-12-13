@@ -56,19 +56,6 @@ export interface Mod {
   subscribers: number;
 }
 
-export interface Post {
-  id: string;
-  gameId: string;
-  gameName: string;
-  userId: string;
-  userName: string;
-  content: string;
-  image?: string;
-  date: string;
-  likes: number;
-  comments: number;
-}
-
 export interface User {
   id: string;
   name: string;

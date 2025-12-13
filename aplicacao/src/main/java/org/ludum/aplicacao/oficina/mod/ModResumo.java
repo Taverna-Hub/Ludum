@@ -1,11 +1,13 @@
 package org.ludum.aplicacao.oficina.mod;
 
-import org.ludum.dominio.oficina.mod.enums.StatusMod;
+import java.time.LocalDateTime;
 
 public interface ModResumo {
     String getId();
     String getNome();
     String getDescricao();
-    StatusMod getStatus();
-    String getNomeAutor();
+    String getAutorId();
+    String getStatus();
+    int getTotalVersoes();
+    LocalDateTime getDataUltimoEnvio();
 }
