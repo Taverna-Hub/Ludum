@@ -8,16 +8,19 @@ public class CarteiraResponse {
   private BigDecimal disponivel;
   private BigDecimal bloqueado;
   private boolean contaExternaValida;
+  private String contaExterna;
+
 
   public CarteiraResponse() {
   }
 
   public CarteiraResponse(String id, BigDecimal disponivel,
-      BigDecimal bloqueado, boolean contaExternaValida) {
+      BigDecimal bloqueado, boolean contaExternaValida, String contaExterna) {
     this.id = id;
     this.disponivel = disponivel;
     this.bloqueado = bloqueado;
     this.contaExternaValida = contaExternaValida;
+    this.contaExterna = contaExterna;
   }
 
   // Getters e Setters
@@ -51,5 +54,13 @@ public class CarteiraResponse {
 
   public void setContaExternaValida(boolean contaExternaValida) {
     this.contaExternaValida = contaExternaValida;
+  }
+
+  public String getContaExterna() {
+    return contaExterna;
+  }
+
+  public void setContaExterna(String contaExterna) {
+    this.contaExterna = contaExterna;
   }
 }

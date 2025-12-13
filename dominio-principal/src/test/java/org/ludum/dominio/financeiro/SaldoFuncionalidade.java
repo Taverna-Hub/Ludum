@@ -138,14 +138,56 @@ public class SaldoFuncionalidade {
     private MockTransacaoRepository mockTransacaoRepo;
     private MockCarteiraRepository mockCarteiraRepo;
     private MockProcessadorPagamento mockProcessadorPagamento;
+    private MockBibliotecaService mockBibliotecaService;
+    private MockProcessadorPayout mockProcessadorPayout;
+
+    private static class MockProcessadorPayout extends org.ludum.dominio.financeiro.carteira.ProcessadorPayoutExterno {
+        public MockProcessadorPayout(org.ludum.dominio.financeiro.transacao.TransacaoRepository transacaoRepository,
+                                    org.ludum.dominio.financeiro.carteira.CarteiraRepository carteiraRepository) {
+            super(transacaoRepository, carteiraRepository);
+        }
+
+        @Override
+        protected void validarDadosPayout(org.ludum.dominio.financeiro.carteira.entidades.Carteira carteira, BigDecimal valor) {
+            // Mock - validação simplificada
+        }
+
+        @Override
+        protected org.ludum.dominio.financeiro.dto.DadosTransferencia prepararTransferencia(org.ludum.dominio.financeiro.carteira.entidades.Carteira carteira, 
+                                                           BigDecimal valor, String descricao) {
+            return new org.ludum.dominio.financeiro.dto.DadosTransferencia("mock-pix-key", valor, descricao);
+        }
+
+        @Override
+        protected String executarTransferenciaNoGateway(org.ludum.dominio.financeiro.dto.DadosTransferencia dados) {
+            return "mock-transfer-id";
+        }
+    }
+
+    private static class MockBibliotecaService extends org.ludum.dominio.catalogo.biblioteca.services.BibliotecaService {
+        public MockBibliotecaService() {
+            super(null, null, null, null);
+        }
+
+        @Override
+        public void adicionarJogo(org.ludum.dominio.catalogo.biblioteca.enums.ModeloDeAcesso modeloDeAcesso, 
+                                 org.ludum.dominio.catalogo.jogo.entidades.JogoId jogoId, 
+                                 ContaId contaId, 
+                                 org.ludum.dominio.financeiro.transacao.entidades.TransacaoId transacaoId) {
+            // Mock - não faz nada
+        }
+    }
 
     @Before
     public void setup() {
         this.mockTransacaoRepo = new MockTransacaoRepository();
         this.mockCarteiraRepo = new MockCarteiraRepository();
         this.mockProcessadorPagamento = new MockProcessadorPagamento(mockTransacaoRepo);
-        this.operacoesService = new OperacoesFinanceirasService(mockTransacaoRepo, mockCarteiraRepo);
+        this.mockBibliotecaService = new MockBibliotecaService();
+        this.mockProcessadorPayout = new MockProcessadorPayout(mockTransacaoRepo, mockCarteiraRepo);
+        this.operacoesService = new OperacoesFinanceirasService(mockTransacaoRepo, mockCarteiraRepo, mockBibliotecaService);
         this.operacoesService.setProcessadorPagamento(mockProcessadorPagamento);
+        this.operacoesService.setProcessadorPayout(mockProcessadorPayout);
 
         this.conta = new ContaId("comprador");
         this.saldo = new Saldo();
@@ -173,7 +215,8 @@ public class SaldoFuncionalidade {
         carteira.liberarSaldoBloqueado();
         mockCarteiraRepo.salvar(carteira);
 
-        operacoesService.comprarJogo(carteira, carteira2, BigDecimal.valueOf(VALOR));
+        operacoesService.comprarJogo(carteira, carteira2, BigDecimal.valueOf(VALOR), 
+                new org.ludum.dominio.catalogo.jogo.entidades.JogoId("jogo-teste"));
     }
 
     @Given("que adicionei R$50 na carteira")
@@ -258,7 +301,8 @@ public class SaldoFuncionalidade {
 
     @When("finalizo a compra imediatamente")
     public void finalizo_a_compra() {
-        compraComSucesso = operacoesService.comprarJogo(carteira, carteira2, valorJogo);
+        compraComSucesso = operacoesService.comprarJogo(carteira, carteira2, valorJogo, 
+                new org.ludum.dominio.catalogo.jogo.entidades.JogoId("jogo-teste"));
     }
 
     @Then("a compra não deve ser concluída e o saldo bloqueado deve permanecer inalterado")
@@ -282,7 +326,8 @@ public class SaldoFuncionalidade {
 
     @When("finalizo a compra do jogo")
     public void compro_o_jogo() {
-        compraComSucesso = operacoesService.comprarJogo(carteira, carteira2, valorJogo);
+        compraComSucesso = operacoesService.comprarJogo(carteira, carteira2, valorJogo, 
+                new org.ludum.dominio.catalogo.jogo.entidades.JogoId("jogo-teste"));
     }
 
     @Then("o saldo deve ser debitado em R$25 e a compra deve ser concluída com sucesso")
@@ -308,7 +353,8 @@ public class SaldoFuncionalidade {
 
     @When("tento comprar o jogo")
     public void compro_o_jogo_2() {
-        compraComSucesso = operacoesService.comprarJogo(carteira, carteira2, valorJogo);
+        compraComSucesso = operacoesService.comprarJogo(carteira, carteira2, valorJogo, 
+                new org.ludum.dominio.catalogo.jogo.entidades.JogoId("jogo-teste"));
     }
 
     @Then("a compra não deve ser concluída e nenhum débito deve ocorrer no saldo")

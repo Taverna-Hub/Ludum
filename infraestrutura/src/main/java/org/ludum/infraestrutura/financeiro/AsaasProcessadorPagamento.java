@@ -141,74 +141,6 @@ public class AsaasProcessadorPagamento extends ProcessadorPagamentoExterno {
     }
   }
 
-  @Override
-  public String executarPayout(ContaId contaId, BigDecimal valor, String descricao) throws Exception {
-    if (contaId == null || contaId.getValue() == null) {
-      throw new IllegalArgumentException("ContaId não pode ser nula");
-    }
-
-    Carteira carteira = carteiraRepository.obterPorContaId(contaId);
-    if (carteira == null) {
-      throw new IllegalArgumentException("Carteira não encontrada para ContaId: " + contaId.getValue());
-    }
-
-    String chavePix = carteira.getContaExterna();
-    if (chavePix == null || chavePix.isBlank()) {
-      throw new IllegalArgumentException("Chave PIX não cadastrada na carteira");
-    }
-
-    if (!carteira.isContaExternaValida()) {
-      throw new IllegalArgumentException("Conta externa (PIX) não validada");
-    }
-
-    if (valor == null || valor.compareTo(BigDecimal.ZERO) <= 0) {
-      throw new IllegalArgumentException("Valor deve ser maior que zero");
-    }
-
-    BigDecimal valorMinimo = new BigDecimal("0.01");
-    if (valor.compareTo(valorMinimo) < 0) {
-      throw new IllegalArgumentException("Valor mínimo para transferência: R$ " + valorMinimo);
-    }
-
-    Map<String, Object> transferData = new HashMap<>();
-    transferData.put("value", valor);
-    transferData.put("pixAddressKey", chavePix);
-    transferData.put("description", descricao != null ? descricao : "Saque de vendas");
-
-    String json = gson.toJson(transferData);
-
-    System.out.println("Executando transferência PIX no Asaas...");
-    System.out.println("ContaId: " + contaId.getValue());
-    System.out.println("Chave PIX: " + chavePix);
-    System.out.println("Valor: R$ " + valor);
-
-    Request request = new Request.Builder()
-        .url(apiUrl + "/transfers")
-        .addHeader("access_token", apiKey)
-        .addHeader("Content-Type", "application/json")
-        .post(RequestBody.create(json, JSON))
-        .build();
-
-    try (Response response = httpClient.newCall(request).execute()) {
-      String responseBody = response.body() != null ? response.body().string() : "";
-
-      if (!response.isSuccessful()) {
-        System.err.println("Erro ao executar transferência PIX: " + response.code());
-        System.err.println("Response: " + responseBody);
-        throw new IOException("Erro na API Asaas: " + response.code() + " - " + responseBody);
-      }
-
-      JsonObject jsonResponse = gson.fromJson(responseBody, JsonObject.class);
-      String transferId = jsonResponse.get("id").getAsString();
-      String status = jsonResponse.has("status") ? jsonResponse.get("status").getAsString() : "PENDING";
-
-      System.out.println("Transferência PIX criada: " + transferId);
-      System.out.println("Status: " + status);
-
-      return transferId;
-    }
-  }
-
   public String criarCliente(String nome, String cpfCnpj, String email, String telefone) throws IOException {
     Map<String, Object> customerData = new HashMap<>();
     customerData.put("name", nome);
@@ -278,31 +210,6 @@ public class AsaasProcessadorPagamento extends ProcessadorPagamentoExterno {
     return false;
   }
 
-  public void validarCredenciais() {
-    try {
-      Request request = new Request.Builder()
-          .url(apiUrl + "/myAccount")
-          .addHeader("access_token", apiKey)
-          .get()
-          .build();
-
-      try (Response response = httpClient.newCall(request).execute()) {
-        if (response.isSuccessful()) {
-          System.out.println("Credenciais Asaas validadas com sucesso");
-
-          String responseBody = response.body() != null ? response.body().string() : "";
-          JsonObject account = gson.fromJson(responseBody, JsonObject.class);
-          if (account.has("name")) {
-            System.out.println("  Conta: " + account.get("name").getAsString());
-          }
-        } else {
-          System.err.println("✗ Erro ao validar credenciais Asaas: " + response.code());
-        }
-      }
-    } catch (IOException e) {
-      System.err.println("✗ Erro ao validar credenciais Asaas: " + e.getMessage());
-    }
-  }
 
   public void setCustomerId(String customerId) {
     currentCustomerId.set(customerId);

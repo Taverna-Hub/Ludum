@@ -1,4 +1,4 @@
-import { getRequest, postRequest } from './baseRequests';
+import { getRequest, postRequest, putRequest } from './baseRequests';
 
 export interface Transacao {
   id: string;
@@ -16,6 +16,7 @@ export interface Carteira {
   disponivel: number;
   bloqueado: number;
   contaExternaValida: boolean;
+  contaExterna: string;
 }
 
 export interface ComprarJogoRequest {
@@ -33,6 +34,20 @@ export interface ComprarJogoResponse {
   valorFaltante?: number;
 }
 
+export interface SaqueRequest {
+  valor: number;
+  dataVenda?: Date;
+  crowdfunding?: boolean;
+  metaAtingida?: boolean;
+}
+
+export interface SaqueResponse {
+  sucesso: boolean;
+  mensagem: string;
+  dataProcessamento?: string;
+  valorProcessado?: number;
+}
+
 export async function getTransacoesPorConta(
   contaId: string,
 ): Promise<Transacao[]> {
@@ -47,4 +62,21 @@ export async function comprarJogo(
   request: ComprarJogoRequest,
 ): Promise<ComprarJogoResponse> {
   return postRequest('/jogos/comprar', request);
+}
+
+export async function solicitarSaque(
+  contaId: string,
+  request: SaqueRequest,
+): Promise<SaqueResponse> {
+  return postRequest(`/carteira/${contaId}/sacar`, request);
+}
+
+export async function atualizarChavePix(
+  contaId: string,
+  chavePix: string,
+): Promise<{ mensagem: string }> {
+  return putRequest(
+    `/carteira/${contaId}/chave-pix?chavePix=${encodeURIComponent(chavePix)}`,
+    {},
+  );
 }

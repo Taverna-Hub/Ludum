@@ -252,7 +252,7 @@ Repository CarteiraRepository {
     Service OperacoesFinanceirasService { 
       Carteira obterCarteira(ContaId contaId);
       Carteira obterOuCriarCarteira(ContaId contaId);
-      boolean comprarJogo(Conta jogadorId, JogoId jogoId, Valor valorOfertado);
+      boolean comprarJogo(Carteira carteiraSaida, Carteira carteiraEntrada, BigDecimal valor, JogoId jogoId);
       boolean solicitarReembolso(Conta jogadorId, ReciboId reciboId);
       boolean adicionarSaldo(Carteira carteira, BigDecimal valor, boolean pagamentoConfirmado);
       boolean solicitarSaque(Carteira carteira, BigDecimal valor, boolean contaValidada, Date dataVenda, boolean isCrowdfunding, boolean metaAtingida);

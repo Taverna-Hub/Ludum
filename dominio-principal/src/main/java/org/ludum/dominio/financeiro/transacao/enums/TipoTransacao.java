@@ -4,5 +4,4 @@ public enum TipoTransacao {
   CREDITO, 
   DEBITO, 
   SAQUE,
-    PIX
 }

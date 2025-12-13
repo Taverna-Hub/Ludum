@@ -2,8 +2,10 @@ package org.ludum.infraestrutura.config;
 
 import org.ludum.dominio.financeiro.carteira.CarteiraRepository;
 import org.ludum.dominio.financeiro.carteira.ProcessadorPagamentoExterno;
+import org.ludum.dominio.financeiro.carteira.ProcessadorPayoutExterno;
 import org.ludum.dominio.financeiro.transacao.TransacaoRepository;
 import org.ludum.infraestrutura.financeiro.AsaasProcessadorPagamento;
+import org.ludum.infraestrutura.financeiro.AsaasProcessadorPayout;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -37,9 +39,13 @@ public class AsaasConfig {
     AsaasProcessadorPagamento processador = new AsaasProcessadorPagamento(
         apiKey, carteiraRepository, transacaoRepository);
 
-    if (apiKey != null && !apiKey.isBlank()) {
-      processador.validarCredenciais();
-    }
+    return processador;
+  }
+
+  @Bean
+  public ProcessadorPayoutExterno processadorPayout() {
+    AsaasProcessadorPayout processador = new AsaasProcessadorPayout(
+        apiKey, transacaoRepository, carteiraRepository);
 
     return processador;
   }

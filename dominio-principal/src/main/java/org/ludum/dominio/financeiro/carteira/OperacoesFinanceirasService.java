@@ -6,6 +6,9 @@ import java.util.Date;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
+import org.ludum.dominio.catalogo.biblioteca.enums.ModeloDeAcesso;
+import org.ludum.dominio.catalogo.biblioteca.services.BibliotecaService;
+import org.ludum.dominio.catalogo.jogo.entidades.JogoId;
 import org.ludum.dominio.financeiro.carteira.ProcessadorPagamentoExterno.ResultadoPagamento;
 import org.ludum.dominio.financeiro.carteira.entidades.Carteira;
 import org.ludum.dominio.financeiro.carteira.entidades.Saldo;
@@ -18,15 +21,24 @@ import org.ludum.dominio.identidade.conta.entities.ContaId;
 public class OperacoesFinanceirasService {
     private final TransacaoRepository transacaoRepository;
     private final CarteiraRepository carteiraRepository;
+    private final BibliotecaService bibliotecaService;
     private ProcessadorPagamentoExterno processadorPagamento;
+    private ProcessadorPayoutExterno processadorPayout;
 
-    public OperacoesFinanceirasService(TransacaoRepository transacaoRepository, CarteiraRepository carteiraRepository) {
+    public OperacoesFinanceirasService(TransacaoRepository transacaoRepository, 
+                                      CarteiraRepository carteiraRepository,
+                                      BibliotecaService bibliotecaService) {
         this.transacaoRepository = transacaoRepository;
         this.carteiraRepository = carteiraRepository;
+        this.bibliotecaService = bibliotecaService;
     }
 
     public void setProcessadorPagamento(ProcessadorPagamentoExterno processadorPagamento) {
         this.processadorPagamento = processadorPagamento;
+    }
+
+    public void setProcessadorPayout(ProcessadorPayoutExterno processadorPayout) {
+        this.processadorPayout = processadorPayout;
     }
 
     public Carteira obterOuCriarCarteira(ContaId contaId) {
@@ -43,6 +55,19 @@ public class OperacoesFinanceirasService {
     public Carteira obterCarteira(ContaId contaId) {
         Objects.requireNonNull(contaId, "ContaId não pode ser nulo");
         return carteiraRepository.obterPorContaId(contaId);
+    }
+
+    public void atualizarChavePix(ContaId contaId, String chavePix) {
+        Objects.requireNonNull(contaId, "ContaId não pode ser nulo");
+        Objects.requireNonNull(chavePix, "Chave PIX não pode ser nula");
+        
+        if (chavePix.isBlank()) {
+            throw new IllegalArgumentException("Chave PIX não pode estar vazia");
+        }
+        
+        Carteira carteira = obterOuCriarCarteira(contaId);
+        carteira.setContaExterna(chavePix);
+        carteiraRepository.salvar(carteira);
     }
 
     public boolean adicionarSaldo(ContaId contaId, BigDecimal valor, String moeda, String descricao,
@@ -98,10 +123,11 @@ public class OperacoesFinanceirasService {
         carteiraRepository.salvar(carteira);
     }
 
-    public boolean comprarJogo(Carteira carteiraSaida, Carteira carteiraEntrada, BigDecimal valor) {
+    public boolean comprarJogo(Carteira carteiraSaida, Carteira carteiraEntrada, BigDecimal valor, JogoId jogoId) {
         Objects.requireNonNull(carteiraSaida, "Carteira de saída não pode ser nula");
         Objects.requireNonNull(carteiraEntrada, "Carteira de entrada não pode ser nula");
         Objects.requireNonNull(valor, "Valor não pode ser nulo");
+        Objects.requireNonNull(jogoId, "JogoId não pode ser nulo");
 
         if (valor.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Valor deve ser maior que zero");
@@ -111,7 +137,6 @@ public class OperacoesFinanceirasService {
             carteiraSaida.getSaldo().subtrairDisponivel(valor);
             carteiraEntrada.getSaldo().addBloqueado(valor);
 
-            // Salvar carteiras atualizadas
             carteiraRepository.salvar(carteiraSaida);
             carteiraRepository.salvar(carteiraEntrada);
 
@@ -122,6 +147,12 @@ public class OperacoesFinanceirasService {
             Transacao transacaoCredito = new Transacao(null, carteiraSaida.getId(), carteiraEntrada.getId(),
                     TipoTransacao.CREDITO, StatusTransacao.PENDENTE, LocalDateTime.now(), valor);
             transacaoRepository.salvar(transacaoCredito);
+
+            try {
+                bibliotecaService.adicionarJogo(ModeloDeAcesso.PAGO, jogoId, carteiraSaida.getId(), transacaoDebito.getTransacaoId());
+            } catch (Exception e) {
+                System.err.println("Erro ao adicionar jogo à biblioteca: " + e.getMessage());
+            }
 
             return true;
         }
@@ -144,52 +175,48 @@ public class OperacoesFinanceirasService {
         return false;
     }
 
-    public boolean solicitarSaque(Carteira carteira, String recipientId, BigDecimal valor,
-            Date dataVenda, boolean isCrowdfunding, boolean metaAtingida) {
+    public boolean solicitarSaque(Carteira carteira, BigDecimal valor, Date dataVenda, 
+            boolean isCrowdfunding, boolean metaAtingida) {
+        Objects.requireNonNull(carteira, "Carteira não pode ser nula");
+        Objects.requireNonNull(valor, "Valor não pode ser nulo");
+        Objects.requireNonNull(dataVenda, "Data da venda não pode ser nula");
 
-        if (!carteira.isContaExternaValida()) {
-            return false;
-        }
-
-        if (recipientId == null || recipientId.isBlank()) {
-            return false;
-        }
-
+        // Validar tempo desde a venda (regra de negócio do domínio)
         long diferencaMillis = new Date().getTime() - dataVenda.getTime();
         long diferencaHoras = TimeUnit.MILLISECONDS.toHours(diferencaMillis);
 
         if (isCrowdfunding) {
             if (!metaAtingida) {
-                return false;
+                throw new IllegalStateException("Crowdfunding: meta não foi atingida");
             }
             if (diferencaHoras < 24) {
-                return false;
+                throw new IllegalStateException("Crowdfunding: aguarde 24 horas após atingir a meta");
             }
         } else if (diferencaHoras < 24) {
-            return false;
+            throw new IllegalStateException("Aguarde 24 horas após a venda para solicitar saque");
         }
 
-        if (carteira.getSaldo().getDisponivel().compareTo(valor) < 0) {
-            return false;
+        if (processadorPayout == null) {
+            throw new IllegalStateException("Processador de payout não configurado");
         }
 
-        if (processadorPagamento == null) {
-            return false;
-        }
+        // ╭───────────────────────────────────────────────────────────────╮
+        // │  AQUI O TEMPLATE METHOD DE PAYOUT É INVOCADO                    │
+        // │  O método executarPayout() executa todo o algoritmo:           │
+        // │  1. beforeExecutarPayout() - Hook                            │
+        // │  2. obterCarteira() - Busca carteira                         │
+        // │  3. validarDadosPayout() - Abstract Step (validações Asaas) │
+        // │  4. prepararTransferencia() - Abstract Step (formata dados)  │
+        // │  5. executarTransferenciaNoGateway() - Abstract Step (API)   │
+        // │  6. atualizarSaldoERegistrar() - Optional Step (atualiza DB)│
+        // │  7. afterExecutarPayout() - Hook                             │
+        // ╰───────────────────────────────────────────────────────────────╯
+        org.ludum.dominio.financeiro.dto.ResultadoPayout resultado = processadorPayout.executarPayout(
+            carteira.getId(), 
+            valor, 
+            "Saque de vendas - Ludum"
+        );
 
-        try {
-            processadorPagamento.executarPayout(carteira.getId(), valor, "Saque de vendas - Ludum");
-
-            carteira.getSaldo().subtrairDisponivel(valor);
-
-            Transacao transacao = new Transacao(null, carteira.getId(), null, TipoTransacao.SAQUE,
-                    StatusTransacao.CONFIRMADA, LocalDateTime.now(), valor);
-            transacaoRepository.salvar(transacao);
-            carteiraRepository.salvar(carteira);
-
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
+        return resultado.isSucesso();
     }
 }

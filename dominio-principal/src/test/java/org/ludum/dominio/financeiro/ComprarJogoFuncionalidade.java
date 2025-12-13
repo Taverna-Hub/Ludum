@@ -69,6 +69,16 @@ public class ComprarJogoFuncionalidade {
     private MockJogoRepository mockJogoRepository;
     private MockCarteiraRepository mockCarteiraRepository;
     private MockTransacaoRepository mockTransacaoRepository;
+    private MockBibliotecaService mockBibliotecaService;
+
+    private static class MockBibliotecaService extends org.ludum.dominio.catalogo.biblioteca.services.BibliotecaService {
+        private MockBibliotecaRepository bibliotecaRepo;
+
+        public MockBibliotecaService(MockBibliotecaRepository bibliotecaRepo, MockTransacaoRepository transacaoRepo, MockJogoRepository jogoRepo) {
+            super(bibliotecaRepo, transacaoRepo, jogoRepo, null);
+            this.bibliotecaRepo = bibliotecaRepo;
+        }
+    }
 
     private static class MockBibliotecaRepository implements BibliotecaRepository {
         private List<Biblioteca> bibliotecas = new ArrayList<>();
@@ -192,14 +202,32 @@ public class ComprarJogoFuncionalidade {
         protected String executarPagamentoNoGateway(Object dadosGateway, java.math.BigDecimal valor) throws Exception {
             return "mock-gateway-id";
         }
+    }
+
+    private static class MockProcessadorPayout extends org.ludum.dominio.financeiro.carteira.ProcessadorPayoutExterno {
+        public MockProcessadorPayout(org.ludum.dominio.financeiro.transacao.TransacaoRepository transacaoRepository,
+                                    org.ludum.dominio.financeiro.carteira.CarteiraRepository carteiraRepository) {
+            super(transacaoRepository, carteiraRepository);
+        }
 
         @Override
-        public String executarPayout(ContaId contaId, java.math.BigDecimal valor, String descricao) throws Exception {
-            return "mock-payout-id";
+        protected void validarDadosPayout(org.ludum.dominio.financeiro.carteira.entidades.Carteira carteira, java.math.BigDecimal valor) {
+        }
+
+        @Override
+        protected org.ludum.dominio.financeiro.dto.DadosTransferencia prepararTransferencia(org.ludum.dominio.financeiro.carteira.entidades.Carteira carteira, 
+                                                           java.math.BigDecimal valor, String descricao) {
+            return new org.ludum.dominio.financeiro.dto.DadosTransferencia("mock-pix", valor, descricao);
+        }
+
+        @Override
+        protected String executarTransferenciaNoGateway(org.ludum.dominio.financeiro.dto.DadosTransferencia dados) {
+            return "mock-transfer-id";
         }
     }
 
     private MockProcessadorPagamento mockProcessadorPagamento;
+    private MockProcessadorPayout mockProcessadorPayout;
 
     @Before
     public void setup() {
@@ -208,9 +236,12 @@ public class ComprarJogoFuncionalidade {
         this.mockJogoRepository = new MockJogoRepository();
         this.mockCarteiraRepository = new MockCarteiraRepository();
         this.mockProcessadorPagamento = new MockProcessadorPagamento(mockTransacaoRepository);
+        this.mockProcessadorPayout = new MockProcessadorPayout(mockTransacaoRepository, mockCarteiraRepository);
+        this.mockBibliotecaService = new MockBibliotecaService(mockBibliotecaRepository, mockTransacaoRepository, mockJogoRepository);
 
-        this.operacoesService = new OperacoesFinanceirasService(mockTransacaoRepository, mockCarteiraRepository);
+        this.operacoesService = new OperacoesFinanceirasService(mockTransacaoRepository, mockCarteiraRepository, mockBibliotecaService);
         this.operacoesService.setProcessadorPagamento(mockProcessadorPagamento);
+        this.operacoesService.setProcessadorPayout(mockProcessadorPayout);
 
         this.conta = new ContaId("comprador");
         this.contaDesenvolvedor = new ContaId("desenvolvedor");
@@ -270,7 +301,7 @@ public class ComprarJogoFuncionalidade {
             this.carteira.getSaldo().addDisponivel(new BigDecimal(valorCartao));
             mockCarteiraRepository.salvar(this.carteira);
 
-            compraRealizada = operacoesService.comprarJogo(this.carteira, this.carteiraDesenvolvedor, valorJogo);
+            compraRealizada = operacoesService.comprarJogo(this.carteira, this.carteiraDesenvolvedor, valorJogo, jogoId);
 
             if (compraRealizada) {
                 Biblioteca biblioteca = mockBibliotecaRepository.obterPorJogador(conta);
@@ -321,7 +352,7 @@ public class ComprarJogoFuncionalidade {
     @When("finalizo a compra")
     public void finalizo_a_compra() {
         if (!formaPagamentoValida) {
-            operacaoSucesso = operacoesService.comprarJogo(carteira, carteiraDesenvolvedor, this.valorJogo);
+            operacaoSucesso = operacoesService.comprarJogo(carteira, carteiraDesenvolvedor, this.valorJogo, jogoId);
         } else {
             operacaoSucesso = true;
         }
@@ -357,7 +388,7 @@ public class ComprarJogoFuncionalidade {
             operacaoSucesso = false;
         } else {
             operacaoSucesso = operacoesService.comprarJogo(carteira, carteiraDesenvolvedor,
-                    new BigDecimal(valorCompra));
+                    new BigDecimal(valorCompra), jogoId);
         }
     }
 
@@ -387,7 +418,7 @@ public class ComprarJogoFuncionalidade {
             carteira = mockCarteiraRepository.obterPorContaId(conta);
             carteira.liberarSaldoBloqueado();
             mockCarteiraRepository.salvar(carteira);
-            operacaoSucesso = operacoesService.comprarJogo(carteira, carteiraDesenvolvedor, BigDecimal.valueOf(100));
+            operacaoSucesso = operacoesService.comprarJogo(carteira, carteiraDesenvolvedor, BigDecimal.valueOf(100), jogoId);
         }
     }
 
@@ -413,7 +444,7 @@ public class ComprarJogoFuncionalidade {
         if (jaPossuiJogo) {
             operacaoSucesso = false;
         } else {
-            operacaoSucesso = operacoesService.comprarJogo(carteira, carteiraDesenvolvedor, this.valorJogo);
+            operacaoSucesso = operacoesService.comprarJogo(carteira, carteiraDesenvolvedor, this.valorJogo, jogoId);
         }
     }
 
@@ -438,7 +469,7 @@ public class ComprarJogoFuncionalidade {
             carteira = mockCarteiraRepository.obterPorContaId(conta);
             carteira.liberarSaldoBloqueado();
             mockCarteiraRepository.salvar(carteira);
-            operacaoSucesso = operacoesService.comprarJogo(carteira, carteiraDesenvolvedor, this.valorJogo);
+            operacaoSucesso = operacoesService.comprarJogo(carteira, carteiraDesenvolvedor, this.valorJogo, jogoId);
         }
     }
 

@@ -17,7 +17,6 @@ import DeveloperDashboard from "./pages/DeveloperDashboard";
 import DeveloperPanel from "./pages/DeveloperPanel";
 import Mods from "./pages/Mods";
 import Community from "./pages/Community";
-import Wallet from "./pages/Wallet";
 import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
 import WalletSettings from "./pages/WalletSettings";
@@ -47,7 +46,6 @@ const App = () => (
             <Route path="/desenvolvedor/criar-campanha" element={<CreateCampaign />} />
             <Route path="/mods" element={<Mods />} />
             <Route path="/comunidade" element={<Community />} />
-            <Route path="/carteira" element={<Wallet />} />
             {/* Dashboard routes (authenticated) */}
             <Route path="/painel" element={<Profile />} />
             <Route path="/painel/carteira" element={<WalletSettings />} />

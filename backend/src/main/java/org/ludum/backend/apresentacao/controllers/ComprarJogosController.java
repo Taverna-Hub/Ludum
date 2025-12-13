@@ -2,6 +2,7 @@ package org.ludum.backend.apresentacao.controllers;
 
 import org.ludum.backend.apresentacao.dto.ComprarJogoRequest;
 import org.ludum.backend.apresentacao.dto.ComprarJogoResponse;
+import org.ludum.dominio.catalogo.jogo.entidades.JogoId;
 import org.ludum.dominio.financeiro.carteira.CarteiraRepository;
 import org.ludum.dominio.financeiro.carteira.OperacoesFinanceirasService;
 import org.ludum.dominio.financeiro.carteira.entidades.Carteira;
@@ -38,16 +39,18 @@ public class ComprarJogosController {
         try {
             ContaId compradorId = new ContaId(request.getCompradorId());
             ContaId desenvolvedoraId = new ContaId(request.getDesenvolvedoraId());
+            JogoId jogoId = new JogoId(request.getJogoId());
 
             // Obter ou criar carteiras
             Carteira carteiraComprador = operacoesFinanceirasService.obterOuCriarCarteira(compradorId);
             Carteira carteiraDesenvolvedora = operacoesFinanceirasService.obterOuCriarCarteira(desenvolvedoraId);
 
-            // Realizar compra
+            // Realizar compra (inclui adição à biblioteca)
             boolean sucesso = operacoesFinanceirasService.comprarJogo(
                     carteiraComprador,
                     carteiraDesenvolvedora,
-                    request.getValor());
+                    request.getValor(),
+                    jogoId);
 
             if (sucesso) {
                 logger.info("Compra realizada com sucesso para jogo: {}", request.getJogoId());

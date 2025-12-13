@@ -5,11 +5,14 @@ import jakarta.validation.Valid;
 import org.ludum.backend.apresentacao.dto.AdicionarSaldoRequest;
 import org.ludum.backend.apresentacao.dto.CarteiraResponse;
 import org.ludum.backend.apresentacao.dto.PagamentoResponse;
+import org.ludum.backend.apresentacao.dto.SaqueRequest;
 import org.ludum.backend.apresentacao.dto.TransacaoResponse;
 import org.ludum.dominio.financeiro.carteira.OperacoesFinanceirasService;
 import org.ludum.dominio.financeiro.carteira.entidades.Carteira;
 import org.ludum.dominio.financeiro.transacao.TransacaoRepository;
 import org.ludum.dominio.financeiro.transacao.entidades.Transacao;
+import org.ludum.dominio.financeiro.transacao.enums.TipoTransacao;
+
 import org.ludum.dominio.identidade.conta.entities.ContaId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +20,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -85,14 +89,16 @@ public class CarteiraController {
             contaIdStr,
             BigDecimal.ZERO,
             BigDecimal.ZERO,
-            false));
+            false,
+                null));
       }
 
       CarteiraResponse response = new CarteiraResponse(
           carteira.getId().getValue(),
           carteira.getSaldo().getDisponivel(),
           carteira.getSaldo().getBloqueado(),
-          carteira.isContaExternaValida());
+          carteira.isContaExternaValida(),
+              carteira.getContaExterna());
       logger.info("Carteira obtida com sucesso: id={}, disponivel={}, bloqueado={}", 
           response.getId(), response.getDisponivel(), response.getBloqueado());
       return ResponseEntity.ok(response);
@@ -120,6 +126,34 @@ public class CarteiraController {
     }
   }
 
+  @PutMapping("/{contaId}/chave-pix")
+  public ResponseEntity<?> atualizarChavePix(
+      @PathVariable("contaId") String contaIdStr,
+      @RequestParam("chavePix") String chavePix) {
+    
+    logger.info("Atualizando chave PIX para conta: {}, chave: {}", contaIdStr, chavePix);
+    
+    try {
+      ContaId contaId = new ContaId(contaIdStr);
+      operacoesFinanceirasService.atualizarChavePix(contaId, chavePix);
+      logger.info("Chave PIX atualizada com sucesso para conta: {}", contaIdStr);
+      
+      java.util.Map<String, String> response = new java.util.HashMap<>();
+      response.put("mensagem", "Chave PIX atualizada com sucesso");
+      return ResponseEntity.ok(response);
+    } catch (IllegalArgumentException e) {
+      logger.error("Erro de validação ao atualizar chave PIX: {}", e.getMessage());
+      java.util.Map<String, String> errorResponse = new java.util.HashMap<>();
+      errorResponse.put("mensagem", e.getMessage());
+      return ResponseEntity.badRequest().body(errorResponse);
+    } catch (Exception e) {
+      logger.error("Erro ao atualizar chave PIX: {}", e.getMessage(), e);
+      java.util.Map<String, String> errorResponse = new java.util.HashMap<>();
+      errorResponse.put("mensagem", "Erro ao atualizar chave PIX: " + e.getMessage());
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+    }
+  }
+
   @PostMapping("/{contaId}/liberar-saldo")
   public ResponseEntity<String> liberarSaldoBloqueado(@PathVariable("contaId") String contaIdStr) {
     try {
@@ -140,6 +174,57 @@ public class CarteiraController {
     }
   }
 
+  @PostMapping("/{contaId}/sacar")
+  public ResponseEntity<PagamentoResponse> solicitarSaque(
+      @PathVariable("contaId") String contaIdStr,
+      @Valid @RequestBody SaqueRequest request) {
+    
+    logger.info("Recebendo solicitação de saque para conta: {}, valor: {}", contaIdStr, request.getValor());
+    
+    try {
+      ContaId contaId = new ContaId(contaIdStr);
+      Carteira carteira = operacoesFinanceirasService.obterCarteira(contaId);
+
+      if (carteira == null) {
+        logger.warn("Carteira não encontrada para conta: {}", contaIdStr);
+        PagamentoResponse errorResponse = PagamentoResponse.falha("Carteira não encontrada");
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+      }
+
+      // Utiliza a data atual como data da venda (pode ser ajustado conforme necessidade)
+      java.util.Date dataVenda = request.getDataVenda() != null ? 
+          request.getDataVenda() : new java.util.Date(System.currentTimeMillis() - 24 * 60 * 60 * 1000);
+
+      boolean sucesso = operacoesFinanceirasService.solicitarSaque(
+          carteira,
+          request.getValor(),
+          dataVenda,
+          request.isCrowdfunding(),
+          request.isMetaAtingida()
+      );
+
+      if (sucesso) {
+        logger.info("Saque realizado com sucesso para conta: {}", contaIdStr);
+        PagamentoResponse response = PagamentoResponse.sucesso(request.getValor());
+        return ResponseEntity.ok(response);
+      } else {
+        logger.warn("Falha ao realizar saque para conta: {}", contaIdStr);
+        PagamentoResponse response = PagamentoResponse.falha("Falha ao processar saque");
+        return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED).body(response);
+      }
+      
+    } catch (IllegalArgumentException | IllegalStateException e) {
+      logger.error("Erro de validação ao processar saque: {}", e.getMessage());
+      PagamentoResponse errorResponse = PagamentoResponse.falha(e.getMessage());
+      return ResponseEntity.badRequest().body(errorResponse);
+    } catch (RuntimeException e) {
+      logger.error("Erro ao processar saque: {}", e.getMessage(), e);
+      PagamentoResponse errorResponse = PagamentoResponse.falha(
+          "Erro ao processar saque: " + e.getMessage());
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+    }
+  }
+
   @GetMapping(value = "/{contaId}/transacoes", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<List<TransacaoResponse>> obterTransacoes(@PathVariable("contaId") String contaIdStr) {
     logger.info("Recebendo requisição para obter transações da conta: {}", contaIdStr);
@@ -148,6 +233,7 @@ public class CarteiraController {
       List<Transacao> transacoes = transacaoRepository.obterPorContaId(contaId);
 
       List<TransacaoResponse> responses = transacoes.stream()
+          .filter(t -> isTransacaoRelevante(t, contaId))
           .map(t -> {
             String descricao = gerarDescricao(t, contaId);
             return new TransacaoResponse(
@@ -167,6 +253,19 @@ public class CarteiraController {
     } catch (Exception e) {
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
     }
+  }
+
+  private boolean isTransacaoRelevante(Transacao transacao, ContaId contaAtual) {
+    if (transacao.getTipo() == TipoTransacao.CREDITO) {
+      return transacao.getContaDestino() != null && transacao.getContaDestino().equals(contaAtual);
+    }
+    
+    if (transacao.getTipo() == TipoTransacao.DEBITO ||
+        transacao.getTipo() == TipoTransacao.SAQUE) {
+      return transacao.getContaOrigem() != null && transacao.getContaOrigem().equals(contaAtual);
+    }
+    
+    return true;
   }
 
   private String gerarDescricao(Transacao transacao, ContaId contaAtual) {

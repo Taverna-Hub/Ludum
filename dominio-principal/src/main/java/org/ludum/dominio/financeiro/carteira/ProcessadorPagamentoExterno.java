@@ -48,13 +48,7 @@ public abstract class ProcessadorPagamentoExterno {
     }
   }
 
-  /**
-   * Configura o cliente no gateway de pagamento.
-   * Implementações podem sobrescrever este método para criar/buscar o cliente no
-   * gateway.
-   */
   protected void configurarCliente(String nome, String cpfCnpj, String email, String telefone) {
-    // Implementação padrão não faz nada - subclasses podem sobrescrever
   }
 
   protected abstract void validarSolicitacao(ContaId contaId, BigDecimal valor, String moeda);
@@ -62,8 +56,6 @@ public abstract class ProcessadorPagamentoExterno {
   protected abstract Object prepararDadosGateway(ContaId contaId, BigDecimal valor, String moeda, String descricao);
 
   protected abstract String executarPagamentoNoGateway(Object dadosGateway, BigDecimal valor) throws Exception;
-
-  public abstract String executarPayout(ContaId contaId, BigDecimal valor, String descricao) throws Exception;
 
   protected Transacao registrarResultado(String idGateway, boolean sucesso,
       ContaId contaId, BigDecimal valor) {

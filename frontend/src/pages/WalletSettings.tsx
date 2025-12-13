@@ -13,7 +13,14 @@ import { useAuthContext } from '@/contexts/AuthContext';
 import { DashboardLayout } from '@/layouts/DashboardLayout';
 import { mockWallet } from '@/data/mockData';
 import { toast } from 'sonner';
-import { getTransacoesPorConta, getCarteiraPorConta, Transacao, Carteira } from '@/http/requests/carteiraRequests';
+import { 
+  getTransacoesPorConta, 
+  getCarteiraPorConta, 
+  solicitarSaque,
+  atualizarChavePix,
+  Transacao, 
+  Carteira 
+} from '@/http/requests/carteiraRequests';
 
 const WalletSettings = () => {
   const navigate = useNavigate();
@@ -40,6 +47,7 @@ const WalletSettings = () => {
         ]);
         setTransacoes(transacoesData);
         setCarteira(carteiraData);
+        setPixKey(carteiraData.contaExterna);
       } catch (error) {
         console.error('Erro ao buscar dados:', error);
         toast.error('Erro ao carregar dados da carteira');
@@ -52,11 +60,28 @@ const WalletSettings = () => {
   }, [user?.id]);
 
   const handleSavePixKey = async () => {
+    if (!user?.id) {
+      toast.error('Usuário não autenticado');
+      return;
+    }
+
+    if (!pixKey || pixKey.trim() === '') {
+      toast.error('Digite uma chave PIX válida');
+      return;
+    }
+
     setIsSaving(true);
     try {
+      await atualizarChavePix(user.id, pixKey);
       updateProfile({ pixKey });
+      
+      // Recarregar dados da carteira para atualizar contaExternaValida
+      const carteiraAtualizada = await getCarteiraPorConta(user.id);
+      setCarteira(carteiraAtualizada);
+      
       toast.success('Chave PIX salva com sucesso!');
-    } catch {
+    } catch (error) {
+      console.error('Erro ao salvar chave PIX:', error);
       toast.error('Erro ao salvar chave PIX');
     } finally {
       setIsSaving(false);
@@ -70,10 +95,15 @@ const WalletSettings = () => {
     }
   };
 
-  const handleWithdraw = () => {
+  const handleWithdraw = async () => {
     const amount = parseFloat(withdrawAmount);
     
-    if (!user?.pixKey) {
+    if (!user?.id) {
+      toast.error('Usuário não autenticado');
+      return;
+    }
+
+    if (!user?.pixKey && !carteira?.contaExternaValida) {
       toast.error('Configure sua chave PIX antes de sacar');
       return;
     }
@@ -93,8 +123,38 @@ const WalletSettings = () => {
       return;
     }
 
-    toast.success(`Saque de R$ ${amount.toFixed(2)} solicitado! Será transferido em até 2 dias úteis.`);
-    setWithdrawAmount('');
+    const loadingToast = toast.loading('Processando saque...');
+    
+    try {
+      const response = await solicitarSaque(user.id, {
+        valor: amount,
+        crowdfunding: false,
+        metaAtingida: false,
+      });
+
+      toast.dismiss(loadingToast);
+
+      if (response.sucesso) {
+        toast.success(
+          `Saque de R$ ${amount.toFixed(2)} realizado com sucesso! O valor será transferido via PIX em até 2 dias úteis.`
+        );
+        setWithdrawAmount('');
+        
+        // Recarregar dados da carteira
+        const carteiraAtualizada = await getCarteiraPorConta(user.id);
+        setCarteira(carteiraAtualizada);
+        
+        // Recarregar transações
+        const transacoesAtualizadas = await getTransacoesPorConta(user.id);
+        setTransacoes(transacoesAtualizadas);
+      } else {
+        toast.error(response.mensagem || 'Erro ao processar saque');
+      }
+    } catch (error) {
+      toast.dismiss(loadingToast);
+      console.error('Erro ao solicitar saque:', error);
+      toast.error('Erro ao processar saque. Tente novamente.');
+    }
   };
 
   const getTransactionIcon = (type: string) => {
