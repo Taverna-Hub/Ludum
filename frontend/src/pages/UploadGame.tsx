@@ -137,7 +137,7 @@ const UploadGame = () => {
       });
 
       setTimeout(() => {
-        navigate("/desenvolvedor");
+        navigate("/painel/desenvolvedor");
       }, 1500);
     } catch (error: any) {
       console.error("Erro ao rejeitar jogo:", error);
@@ -172,7 +172,7 @@ const UploadGame = () => {
       });
 
       setTimeout(() => {
-        navigate("/desenvolvedor");
+        navigate("/painel/desenvolvedor");
       }, 1500);
     } catch (error: any) {
       console.error("Erro ao publicar jogo:", error);
