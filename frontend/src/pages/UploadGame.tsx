@@ -33,10 +33,6 @@ const UploadGame = () => {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
 
-    // Modificado: verificação de .zip removida a pedido do usuário.
-    // O backend ainda valida magic bytes para integridade do pacote.
-
-    // Validação: tamanho máximo modificado para 10MB
     const maxSize = 10 * 1024 * 1024; // 10MB
     if (selectedFile.size > maxSize) {
       toast({
