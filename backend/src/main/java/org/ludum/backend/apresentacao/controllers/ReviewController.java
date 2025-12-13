@@ -8,8 +8,10 @@ import org.ludum.dominio.comunidade.review.entidades.ReviewId;
 import org.ludum.dominio.comunidade.review.services.ReviewService;
 import org.ludum.dominio.identidade.conta.entities.ContaId;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.HashMap;
 import java.util.List;
@@ -25,13 +27,21 @@ public class ReviewController {
         this.reviewService = reviewService;
     }
 
+    private String obterUserIdAutenticado(HttpServletRequest request) {
+        String userId = (String) request.getAttribute("userId");
+        if (userId == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuário não autenticado");
+        }
+        return userId;
+    }
+
     @PostMapping("/jogos/{jogoId}/reviews")
     public ResponseEntity<Void> avaliarJogo(
-            @PathVariable String jogoId,
+            @PathVariable("jogoId") String jogoId,
             @RequestBody CriarReviewRequest request,
             HttpServletRequest httpRequest) {
         
-        String userId = (String) httpRequest.getAttribute("userId");
+        String userId = obterUserIdAutenticado(httpRequest);
         ContaId autorId = new ContaId(userId);
         
         reviewService.avaliarJogo(
@@ -47,11 +57,11 @@ public class ReviewController {
 
     @PutMapping("/reviews/{reviewId}")
     public ResponseEntity<Void> editarReview(
-            @PathVariable String reviewId,
+            @PathVariable("reviewId") String reviewId,
             @RequestBody EditarReviewRequest request,
             HttpServletRequest httpRequest) {
 
-        String userId = (String) httpRequest.getAttribute("userId");
+        String userId = obterUserIdAutenticado(httpRequest);
         ContaId autorId = new ContaId(userId);
 
         reviewService.editarAvaliacao(
@@ -67,10 +77,10 @@ public class ReviewController {
 
     @DeleteMapping("/reviews/{reviewId}")
     public ResponseEntity<Void> removerReview(
-            @PathVariable String reviewId,
+            @PathVariable("reviewId") String reviewId,
             HttpServletRequest httpRequest) {
 
-        String userId = (String) httpRequest.getAttribute("userId");
+        String userId = obterUserIdAutenticado(httpRequest);
         ContaId autorId = new ContaId(userId);
 
         reviewService.removerReview(new ReviewId(reviewId), autorId);
@@ -79,10 +89,10 @@ public class ReviewController {
 
     @GetMapping("/jogos/{jogoId}/reviews")
     public ResponseEntity<List<Review>> listarReviews(
-            @PathVariable String jogoId,
-            @RequestParam(required = false) Integer nota,
-            @RequestParam(required = false) Boolean ordenarPorData,
-            @RequestParam(required = false, defaultValue = "true") Boolean maisRecentes) {
+            @PathVariable("jogoId") String jogoId,
+            @RequestParam(value = "nota", required = false) Integer nota,
+            @RequestParam(value = "ordenarPorData", required = false) Boolean ordenarPorData,
+            @RequestParam(value = "maisRecentes", required = false, defaultValue = "true") Boolean maisRecentes) {
         
         JogoId jId = new JogoId(jogoId);
         List<Review> reviews;
@@ -99,7 +109,7 @@ public class ReviewController {
     }
 
     @GetMapping("/jogos/{jogoId}/reviews/resumo")
-    public ResponseEntity<Map<String, Object>> obterResumo(@PathVariable String jogoId) {
+    public ResponseEntity<Map<String, Object>> obterResumo(@PathVariable("jogoId") String jogoId) {
         JogoId jId = new JogoId(jogoId);
         
         Map<String, Object> resumo = new HashMap<>();
